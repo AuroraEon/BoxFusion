@@ -401,10 +401,32 @@ if __name__ == "__main__":
     augmentor = Augmentor(("wide/image", "wide/depth"))
     preprocessor = Preprocessor()
     
+    # if args.device is not None:
+    #     model = model.to(args.device)
+    #     clip_model, preprocess = load_clip(args.clip_path)
+    #     text_class = np.genfromtxt(args.class_txt, delimiter='\n', dtype=str) 
+    #     text_features = torch.load('./data/class_features.pt').cuda()
+    # --- 修改后 ---
     if args.device is not None:
         model = model.to(args.device)
-        clip_model, preprocess = load_clip(args.clip_path)
+        
+        # ------------------- 修改开始 -------------------
+        print("正在加载本地 CLIP 模型...")
+        # 1. 设置为你下载权重的绝对路径
+        local_model_path = '/home/aurora/workspace1/BoxFusion/models/ViT-B-32/open_clip_pytorch_model.bin'
+        
+        # 2. 直接使用 open_clip 加载本地权重 (注意：必须与 gen_features.py 中的 model_name 一致)
+        clip_model, _, preprocess = open_clip.create_model_and_transforms(
+            model_name='ViT-B-32', 
+            pretrained=local_model_path
+        )
+        clip_model = clip_model.to(args.device).eval()
+        
         text_class = np.genfromtxt(args.class_txt, delimiter='\n', dtype=str) 
-        text_features = torch.load('./data/class_features.pt').cuda()
+        
+        # 3. 加载你刚刚生成的新特征文件 (class_features_small.pt)
+        print("正在加载新生成的文本特征...")
+        text_features = torch.load('./data/class_features_small.pt').to(args.device)
+        # ------------------- 修改结束 -------------------
 
     run(cfg, model, dataset, clip_model, preprocess, text_class, text_features, augmentor, preprocessor, score_thresh=cfg['detection']['score_thresh'], viz_on_gt_points=args.viz_on_gt_points, gap=cfg["data"]["gap"], re_vis=cfg['vis']['rerun'])

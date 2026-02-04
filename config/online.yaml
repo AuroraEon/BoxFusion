@@ -1,5 +1,10 @@
 dataset: online
 
+# ROS 1 特定配置 (新增)
+ros:
+  map_frame: world        # 对应 launch 中的 odom_frame (use_gt_frame=true 时为 world)
+  camera_frame: left_cam  # 对应 launch 中的 sensor_frame (use_gt_frame=true 时为 left_cam)
+
 data:
   datadir: /online/
   start: 0 
@@ -9,12 +14,12 @@ data:
 
 cam:
   H: 480
-  W: 640
-  fx: 320.0
-  fy: 320.0
-  cx: 319.5
-  cy: 239.5
-  png_depth_scale: 1000.
+  W: 720
+  fx: 415.692
+  fy: 415.692
+  cx: 360.0
+  cy: 240.0
+  png_depth_scale: 1
 
 detection:
   score_thresh: 0.35 #0.4 #0.25
@@ -22,6 +27,7 @@ detection:
   uv_bound_value: 0.9
   floor_mask: True #False
   floor_ratio: 15
+  scale_box: 1.5
 
 association:
   small_threshold: 0.1 #0.2

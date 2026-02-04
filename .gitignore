@@ -1,0 +1,11 @@
+boxfusion/__pycache__/*.pyc
+data/example/42898570/depth/*.png
+data/example/42898570/rgb/*.png
+data/example/42898570/
+tools/__pycache__/*.pyc
+data/class_features_small.pt
+data/example.zip
+models/ViT-B-32/
+boxfusion.egg-info/
+models/cutr_rgbd.pth
+models/open_clip_pytorch_model.bin

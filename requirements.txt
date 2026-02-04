@@ -8,7 +8,7 @@ Pillow==11.3.0
 pycuda==2025.1.1
 PyYAML==6.0.2
 PyYAML==6.0.2
-rclpy==3.3.17
+# rclpy==3.3.17
 rerun-sdk==0.22.1
 scikit_learn==1.7.1
 scipy==1.15.3
