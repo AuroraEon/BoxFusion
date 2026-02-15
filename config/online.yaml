@@ -51,7 +51,7 @@ box_fusion:
 
 
 vis:
-  rerun: True 
+  rerun: False 
   show_class: False 
   show_label: False 
   trajectory: True

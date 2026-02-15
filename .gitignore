@@ -9,3 +9,5 @@ models/ViT-B-32/
 boxfusion.egg-info/
 models/cutr_rgbd.pth
 models/open_clip_pytorch_model.bin
+debug_room/
+models/segformer-b0-finetuned-ade-512-512/

@@ -226,6 +226,7 @@ class ROSDataset(IterableDataset):
     def __len__(self):
         # return 100000000
         return 2500
+        # return 1800
 
     def __iter__(self):
         index = 0

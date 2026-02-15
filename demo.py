@@ -4,6 +4,7 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 import argparse
 import glob
 import itertools
+import json
 import numpy as np
 import rerun
 import rerun.blueprint as rrb
@@ -20,6 +21,7 @@ from tools.utils import *
 import open_clip 
 import torch.nn.functional as F
 import time
+import cv2
 
 from boxfusion.cubify_transformer import make_cubify_transformer
 
@@ -29,7 +31,106 @@ from boxfusion.preprocessor import Augmentor, Preprocessor
 from boxfusion.box_manager import BoxManager
 from boxfusion.box_fusion import BoxFusion
 
+from boxfusion.room_segmenter import GridRoomSegmenter
+from boxfusion.segmentor import SceneSegmenter
+import yaml
 
+def save_room_mapping_to_yaml(all_pred_box, room_segmenter, output_path="room_objects.yaml"):
+    """
+    将物体按房间归类并保存为 YAML，包含针对靠墙物体的邻域修正逻辑。
+    """
+    # 1. 安全检查
+    if all_pred_box is None:
+        print("跳过 YAML 导出：未检测到任何物体。")
+        return
+    
+    if room_segmenter.last_room_markers is None:
+        print("跳过 YAML 导出：房间分割图尚未生成。")
+        return
+
+    # 提取物体的 3D 信息
+    # pred_boxes_3d.tensor: [N, 7] -> (x, y, z, w, h, l, yaw)
+    box_tensors = all_pred_box.pred_boxes_3d.tensor.cpu().numpy()
+    categories = all_pred_box.categories
+    instance_ids = all_pred_box.init_id.cpu().numpy()
+    
+    # 2. 转换世界坐标到栅格坐标
+    u_coords, v_coords = room_segmenter._world_to_grid(box_tensors[:, :2])
+    markers = room_segmenter.last_room_markers
+    wall_label = np.max(markers) # 假设墙壁是最大的标签值
+    
+    room_data = {}
+    search_radius = 10 # 搜索范围：21x21 像素 (约 1.05m x 1.05m)
+
+    for i in range(len(box_tensors)):
+        u, v = u_coords[i], v_coords[i]
+        label = markers[v, u]
+        
+        # 3. 邻域修正逻辑：如果点落在墙壁(wall_label)或无效区(<=1)
+        if label <= 1 or label == wall_label:
+            # 截取邻域切片
+            v_start, v_end = max(0, v - search_radius), min(markers.shape[0], v + search_radius)
+            u_start, u_end = max(0, u - search_radius), min(markers.shape[1], u + search_radius)
+            patch = markers[v_start:v_end, u_start:u_end]
+            
+            # 过滤掉背景、噪声和墙壁，只留房间标签
+            valid_labels = patch[(patch > 1) & (patch != wall_label)]
+            
+            if valid_labels.size > 0:
+                # 取邻域内出现次数最多的有效房间标签
+                label = np.bincount(valid_labels.flatten()).argmax()
+            else:
+                label = wall_label # 依然找不到则标记为墙
+
+        # 4. 组织数据
+        if label > 1 and label != wall_label:
+            room_key = f"room_{int(label)}"
+        else:
+            room_key = "unassigned_or_wall"
+
+        if room_key not in room_data:
+            room_data[room_key] = []
+
+        room_data[room_key].append({
+            "instance_id": int(instance_ids[i]),
+            "category": str(categories[i]),
+            "position_world": [round(float(x), 3) for x in box_tensors[i, :3].tolist()]
+        })
+
+    # 5. 写入 YAML
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        yaml.dump(room_data, f, allow_unicode=True, sort_keys=False)
+    
+    print(f"成功保存房间-物体映射至: {output_path}")
+
+def extract_architecture_points(xyz, valid, wall_mask, ceil_mask, floor_mask, door_mask, step=4):
+    """
+    xyz: [H, W, 3] 全量点云
+    """
+    # 1. 墙壁提取 (利用语义优势，放宽高度以获取高密度)
+    wall_mask_torch = torch.from_numpy(wall_mask).to(xyz.device)
+    # 只要是墙，且在合理高度范围内 (1.0 - 3.2m)，都算墙
+    final_wall_mask = valid & wall_mask_torch & (xyz[..., 2] > 2.8) & (xyz[..., 2] < 3.2)
+    wall_pts = xyz[final_wall_mask] 
+
+    # 2. [新增] 门提取 (作为障碍物处理)
+    # 门的高度一般是落地到顶框 (0.1m - 2.5m)
+    door_mask_torch = torch.from_numpy(door_mask).to(xyz.device)
+    # final_door_mask = valid & door_mask_torch & (xyz[..., 2] > 1.2) & (xyz[..., 2] < 3.5)
+    final_door_mask = valid & door_mask_torch & (xyz[..., 2] > 2.8) & (xyz[..., 2] < 3.2)
+    door_pts = xyz[final_door_mask]
+
+    # 3. 天花板/地面提取 (步长=4)
+    xyz_s = xyz[::step, ::step]
+    valid_s = valid[::step, ::step]
+    
+    ceil_mask_s = torch.from_numpy(ceil_mask[::step, ::step]).to(xyz.device)
+    ceil_h_mask = (xyz_s[..., 2] > 3.7) & (xyz_s[..., 2] < 5.5)
+    
+    final_ceil_pts = xyz_s[valid_s & (ceil_mask_s | ceil_h_mask)]
+
+    return wall_pts, door_pts, final_ceil_pts
 def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_features, augmentor, preprocessor, score_thresh=0.0, viz_on_gt_points=False, gap=25, re_vis=True):
     is_depth_model = "wide/depth" in augmentor.measurement_keys
     blueprint = rrb.Blueprint(
@@ -83,7 +184,11 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
     box_count = 0
     start_time = time.time()
     
-    
+    # segmentor = SceneSegmenter(device=args.device, model_name="nvidia/segformer-b0-finetuned-ade20k-512-512")
+    segmentor = SceneSegmenter(device=args.device, local_path="./models/segformer-b0-finetuned-ade-512-512")
+    room_segmenter = GridRoomSegmenter(resolution=0.05)
+    accumulated_walls = []
+    accumulated_doors = []
     
     for sample in dataset:
         sample_video_id = sample["meta"]["video_id"] #(['sensor_info', 'wide', 'gt', 'meta'])
@@ -154,6 +259,102 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
                     uv_mask = box_manager.check_uv_bounds(pred_instances.pred_proj_xy,image.shape[1],image.shape[0],ratio=cfg["detection"]["uv_bound_value"]) #[N]
                     pred_instances = pred_instances[uv_mask]
                 print("again",count,"pred_instances",len(pred_instances))
+            
+            image_rgb = np.moveaxis(sample["wide"]["image"][-1].numpy(), 0, -1)
+            depth_map = sample["wide"]["depth"][-1]
+            K = sample["sensor_info"].wide.depth.K[-1]
+            pose = sample['sensor_info'].gt.RT.squeeze()
+
+            # 1. 2D 语义分割获取 3 种 Mask (确保顺序一致)
+            # 假设你的 segmentor.get_masks 现在返回 wall, floor, ceil, door
+            wall_mask_raw, floor_mask_raw, ceil_mask_raw, door_mask_raw = segmentor.get_masks(image_rgb)
+
+            # 2. 反投影
+            xyz, valid = unproject(depth_map, K, pose, max_depth=8.0)
+            target_h, target_w = valid.shape
+
+            # 3. 强制对齐 Mask (保持 bool 类型)
+            wall_mask = cv2.resize(wall_mask_raw.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST).astype(bool)
+            floor_mask = cv2.resize(floor_mask_raw.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST).astype(bool)
+            ceil_mask = cv2.resize(ceil_mask_raw.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST).astype(bool)
+            door_mask = cv2.resize(door_mask_raw.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST).astype(bool)
+
+            # 4. 提取点云 (传入 door_mask)
+            wall_pts_torch, door_pts_torch, ceil_pts_torch = extract_architecture_points(
+                xyz, valid, wall_mask, ceil_mask, floor_mask, door_mask, step=4
+            )
+
+            # 5. 更新房间分割器
+            if wall_pts_torch.shape[0] > 0:
+                room_segmenter.update_wall_map(wall_pts_torch.cpu().numpy())
+                accumulated_walls.append(wall_pts_torch.cpu().numpy())
+
+            if door_pts_torch.shape[0] > 0:
+                room_segmenter.update_door_map(door_pts_torch.cpu().numpy()) # 门也是墙
+                accumulated_doors.append(door_pts_torch.cpu().numpy())
+
+            if ceil_pts_torch.shape[0] > 0:
+                room_segmenter.update_ceil_map(ceil_pts_torch.cpu().numpy())
+
+            # 提取地面点
+            floor_valid = valid & torch.from_numpy(floor_mask).to(valid.device)
+            floor_pts_all = xyz[floor_valid].cpu().numpy()
+            if len(floor_pts_all) > 0:
+                # 【修复 2】高度阈值改为 0.2m，只取真正的地面
+                room_segmenter.update_floor_map(floor_pts_all[floor_pts_all[:, 2] < 0.2])
+
+            # 6. 执行分割
+            if count % 100 == 0:
+                markers = room_segmenter.perform_segmentation(debug_path="./debug_room/")
+                if markers is not None:
+                    # 1. 保存房间-物体映射 (现有逻辑)
+                    if all_pred_box is not None:
+                        yaml_name = f"./debug_room/room_objects_{count}.yaml"
+                        save_room_mapping_to_yaml(all_pred_box, room_segmenter, output_path=yaml_name)
+                    
+                    # 2. [新增] 保存轻量化 Vector Map
+                    vector_map = room_segmenter.get_vector_map_data()
+                    
+                    # 如果有物体，也可以把物体以 Box 的形式加进去
+                    if all_pred_box is not None:
+                        # 将物体 3D box 简化为 2D 带方向的矩形
+                        obj_vectors = []
+                        box_tensors = all_pred_box.pred_boxes_3d.tensor.cpu().numpy()
+                        cats = all_pred_box.categories
+                        ids = all_pred_box.init_id.cpu().numpy()
+                        
+                        for i in range(len(box_tensors)):
+                            # box_tensors[i] = x, y, z, w, h, l, yaw
+                            # 这里做个简单的转换，实际可以用 box_corners 的投影
+                            # obj_vectors.append({
+                            #     "id": int(ids[i]),
+                            #     "category": str(cats[i]),
+                            #     "pose": [float(x) for x in box_tensors[i, :2]], # x, y
+                            #     "size": [float(x) for x in box_tensors[i, 3:6]], # w, h, l
+                            #     "yaw": float(box_tensors[i, 6])
+                            # })
+                            obj_vectors.append({
+                                "id": int(ids[i]),
+                                "category": str(cats[i]),
+                                "pose": [float(x) for x in box_tensors[i, :2]], # x, y
+                                "size": [float(x) for x in box_tensors[i, 3:6]] # w, h, l
+                            })
+                        vector_map["objects"] = obj_vectors
+
+                    # 保存为 JSON
+                    with open(f"./debug_room/vector_map_{count}.json", 'w') as f:
+                        json.dump(vector_map, f, indent=2)
+                        
+                    print(f"Vector Map 已生成: ./debug_room/vector_map_{count}.json")
+            
+            # # 将 Mask 转换为 2D 可视化
+            # seg_vis = np.zeros((*wall_mask.shape, 3), dtype=np.uint8)
+            # seg_vis[wall_mask] = [255, 0, 0]   # 墙：红色
+            # seg_vis[floor_mask] = [0, 255, 0]  # 地：绿色
+            
+            # # 推送到 Rerun
+            # if re_vis:
+            #     rerun.log("/device/wide/semantic_mask", rerun.Image(seg_vis).compress())
 
         # Hold off on logging anything until now, since the delay might confuse the user in the visualizer.
         RT = sample["sensor_info"].gt.RT[-1].numpy()
@@ -332,7 +533,32 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
                     save_list = [[(int(0), (boxes_3d[n]), 1.0) for n in range(boxes_3d.shape[0])]] # list of tuples class_idx[n]
 
                     save_box(save_list, os.path.join(cfg['data']['output_dir'], video_id[0]+"_boxes.pkl"))
-                    
+
+            print("正在保存点云文件...")
+            save_path = "./exported_pc/"
+            os.makedirs(save_path, exist_ok=True)
+            
+            if accumulated_walls:
+                all_walls = np.concatenate(accumulated_walls, axis=0)
+                pcd_wall = o3d.geometry.PointCloud()
+                pcd_wall.points = o3d.utility.Vector3dVector(all_walls)
+                pcd_wall.paint_uniform_color([1, 0, 0]) # 红色
+                o3d.io.write_point_cloud(f"{save_path}/only_walls.ply", pcd_wall)
+                print(f"墙壁点云已保存至: {save_path}/only_walls.ply")
+
+            if accumulated_doors:
+                all_doors = np.concatenate(accumulated_doors, axis=0)
+                pcd_door = o3d.geometry.PointCloud()
+                pcd_door.points = o3d.utility.Vector3dVector(all_doors)
+                pcd_door.paint_uniform_color([0, 1, 0]) # 绿色
+                o3d.io.write_point_cloud(f"{save_path}/only_doors.ply", pcd_door)
+                print(f"门点云已保存至: {save_path}/only_doors.ply")   
+            # 制作合并点云 (墙+门)
+            if accumulated_walls or accumulated_doors:
+                combined_pcd = pcd_wall + pcd_door
+                o3d.io.write_point_cloud(f"{save_path}/walls_and_doors_combined.ply", combined_pcd)
+                print(f"合并点云已保存至: {save_path}/walls_and_doors_combined.ply") 
+
             exit(0)
             break
 
