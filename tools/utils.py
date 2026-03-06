@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation
 
 from boxfusion.batching import Sensors
 from boxfusion.color import random_color_v2
-from boxfusion.capture_stream import ScannetDataset, CA1MDataset, ROSDataset
+from boxfusion.capture_stream import ScannetDataset, CA1MDataset, ROSDataset, HM3DDataset
 import pickle
 import open_clip
 
@@ -291,6 +291,9 @@ def get_dataset(config):
         
     elif config['dataset'] == 'online':
         dataset = ROSDataset
+
+    elif config['dataset'] == 'hm3d':
+        dataset = HM3DDataset
         
     return dataset(config,)
 
@@ -376,89 +379,55 @@ def scale_boxes(boxes, H, W, scale=1.2):
     return np.stack([x_min, y_min, x_max, y_max], axis=1)
 
 @torch.no_grad()
-def retriev(
-    model, preprocess, elements, text_features, device
-) -> int:
-    preprocessed_images = [preprocess(image).to(device) for image in elements]
-    stacked_images = torch.stack(preprocessed_images)
+def retriev(model, preprocess, elements, text_features, device) -> int:
+    """
+    批处理优化：先在 CPU 上完成所有预处理并堆叠，然后一次性整体发送给 GPU
+    """
+    # 1. 列表推导式仅做 CPU 上的图像尺寸变换
+    preprocessed_list = [preprocess(image) for image in elements]
+    
+    # 2. 堆叠成一个大的 Tensor [N, 3, 224, 224] 后，一次性转移到 GPU
+    stacked_images = torch.stack(preprocessed_list).to(device)
+    
+    # 3. 批量推理
     image_features = model.encode_image(stacked_images)
     image_features /= image_features.norm(dim=-1, keepdim=True)
-    text_features /= text_features.norm(dim=-1, keepdim=True) # added
+    text_features /= text_features.norm(dim=-1, keepdim=True) 
 
     probs = 100.0 * image_features @ text_features.T
 
     return probs, image_features
 
-def segment_image(image, bbox):
+def segment_image(image_array, bbox):
     """
-    Segments an image based on a bounding box and returns the cropped region.
-    
-    This function takes an input image and a bounding box, extracts the region
-    specified by the bounding box coordinates, and returns the cropped portion
-    as a PIL Image.
-    
-    Args:
-        image (PIL.Image): The input image to be segmented
-        bbox (tuple): A tuple of four integers (x1, y1, x2, y2) representing
-                     the bounding box coordinates where:
-                     - x1, y1: top-left corner coordinates
-                     - x2, y2: bottom-right corner coordinates
-    
-    Returns:
-        PIL.Image: The cropped image containing only the region specified
-                  by the bounding box
-    
-    Note:
-        The function also creates intermediate processing steps including
-        a segmented image with transparency mask, but only returns the
-        cropped portion of the original image.
+    极速裁剪函数：抛弃所有无用的蒙版生成，直接在内存中进行 Numpy 切片
     """
-    image_array = np.array(image)
-    segmented_image_array = np.zeros_like(image_array)
-    x1, y1, x2, y2 = bbox
-    x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+    x1, y1, x2, y2 = map(int, bbox)
+    
+    # 增加边界保护，防止预测框超出图像边缘导致程序崩溃
+    h, w = image_array.shape[:2]
+    x1, y1 = max(0, x1), max(0, y1)
+    x2, y2 = min(w, x2), min(h, y2)
 
-    #
-    crop_img = Image.fromarray(image_array[y1:y2, x1:x2])
-
-    segmented_image_array[y1:y2, x1:x2] = image_array[y1:y2, x1:x2]
-    segmented_image = Image.fromarray(segmented_image_array)
-    black_image = Image.new("RGB", image.size, (255, 255, 255))
-
-    transparency_mask = np.zeros(
-        (image_array.shape[0], image_array.shape[1]), dtype=np.uint8
-    )
-    transparency_mask[y1:y2, x1:x2] = 255
-    transparency_mask_image = Image.fromarray(transparency_mask, mode="L")
-    black_image.paste(segmented_image, mask=transparency_mask_image)
-
-    return crop_img
+    # 纯 Numpy 切片，耗时几乎为 0
+    crop_array = image_array[y1:y2, x1:x2]
+    
+    # 防止因越界产生空数组
+    if crop_array.size == 0:
+        return Image.new("RGB", (224, 224), (0, 0, 0))
+        
+    return Image.fromarray(crop_array)
 
 def crop_image(boxes, rgb):
     """
-    Crop multiple regions from an RGB image based on bounding boxes.
-    Args:
-        boxes (list): List of bounding boxes, where each box defines a region to crop
-        rgb (numpy.ndarray): RGB image array to be cropped
-    Returns:
-        tuple: A tuple containing:
-            - cropped_boxes (list): List of bounding boxes that were processed
-            - cropped_images (list): List of cropped image segments corresponding to each box
-    Note:
-        This function uses the segment_image() function to perform the actual cropping
-        operation for each bounding box region.
+    直接传入 numpy 数组，避免重复转换
     """
-    image = Image.fromarray(rgb) #Image.open(image_path)
-    ori_w, ori_h = image.size
     cropped_boxes = []
     cropped_images = []
 
-    for _, cur_box in enumerate(boxes):
- 
-        bbox = cur_box  
-        cropped_images.append(segment_image(image, bbox))  
-
-        cropped_boxes.append(bbox)  
+    for cur_box in boxes:
+        cropped_images.append(segment_image(rgb, cur_box))  
+        cropped_boxes.append(cur_box)  
 
     return cropped_boxes, cropped_images
 

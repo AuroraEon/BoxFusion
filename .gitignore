@@ -11,3 +11,6 @@ models/cutr_rgbd.pth
 models/open_clip_pytorch_model.bin
 debug_room/
 models/segformer-b0-finetuned-ade-512-512/
+vis_global.py
+vis_point_clouds.py
+visualize_ply.py

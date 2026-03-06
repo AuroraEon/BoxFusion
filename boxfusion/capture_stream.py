@@ -224,8 +224,8 @@ class ROSDataset(IterableDataset):
         self.spin_thread.start()
     
     def __len__(self):
-        # return 100000000
-        return 2500
+        return 100000000
+        # return 2500
         # return 1800
 
     def __iter__(self):
@@ -680,3 +680,197 @@ class CA1MDataset(IterableDataset):
             index+=1
             yield result
 
+class HM3DDataset(IterableDataset):
+    def __init__(self, cfg, has_depth=True):
+        super(HM3DDataset, self).__init__()
+
+        self.load_arkit_depth = False
+        self.start = cfg['data']['start']
+        self.basedir = cfg['data']['datadir']
+
+        # 辅助函数：提取文件名中的数字进行排序，避免 10.png 排在 2.png 前面
+        def extract_num(path):
+            basename = os.path.basename(path)
+            num_str = ''.join(filter(str.isdigit, basename))
+            return int(num_str) if num_str else 0
+
+        # 获取 RGB 图片 (兼容 png 和 jpg)
+        rgb_paths = glob.glob(os.path.join(self.basedir, 'rgb', '*.png')) + \
+                    glob.glob(os.path.join(self.basedir, 'rgb', '*.jpg'))
+        self.img_files = sorted(rgb_paths, key=extract_num)
+        
+        # 获取深度图 (兼容 png 和 exr)
+        depth_paths = glob.glob(os.path.join(self.basedir, 'depth', '*.png')) + \
+                      glob.glob(os.path.join(self.basedir, 'depth', '*.exr'))
+        self.depth_paths = sorted(depth_paths, key=extract_num)
+
+        # 加载 pose 文件
+        self.load_poses(os.path.join(self.basedir, 'pose'), extract_num)
+        
+        self.img_files = self.img_files[self.start:]
+        self.depth_paths = self.depth_paths[self.start:]
+        self.poses = self.poses[self.start:]
+
+        self.frame_ids = range(0, len(self.img_files))
+        self.num_frames = len(self.frame_ids)
+        self.cfg = cfg
+
+        # 直接从 yaml 配置文件中读取内参
+        self.img_height = cfg['cam']['H']
+        self.img_width = cfg['cam']['W']
+        self.fx = cfg['cam']['fx']
+        self.fy = cfg['cam']['fy']
+        self.cx = cfg['cam']['cx']
+        self.cy = cfg['cam']['cy']
+        self.depth_scale = cfg['cam']['png_depth_scale']
+        self.has_depth = has_depth
+
+        # 提取视频/场景 ID (例如 '00824-Dd4bFSTQ8gi')
+        self.video_id = [os.path.basename(os.path.normpath(self.basedir))]
+
+    def load_poses(self, path, key_func):
+        self.poses = []
+        pose_paths = sorted(glob.glob(os.path.join(path, '*.txt')), key=key_func)
+        self.last_valid_pose = None
+        
+        # 1. 局部相机坐标系转换 (Habitat OpenGL -> OpenCV)
+        # 翻转 Y 轴和 Z 轴
+        C_habitat2opencv = np.eye(4)
+        C_habitat2opencv[1, 1] = -1
+        C_habitat2opencv[2, 2] = -1
+        
+        # 2. 世界坐标系转换 (Habitat Y-up -> ScanNet Z-up)
+        # 绕 X 轴旋转 90 度: 将原来的 +Y 映射为 +Z，原来的 +Z 映射为 -Y
+        T_Yup2Zup = np.array([
+            [1.0,  0.0,  0.0, 0.0],
+            [0.0,  0.0, -1.0, 0.0],
+            [0.0,  1.0,  0.0, 0.0],
+            [0.0,  0.0,  0.0, 1.0]
+        ])
+
+        for pose_path in pose_paths:
+            with open(pose_path, "r") as f:
+                lines = f.readlines()
+            ls = []
+            for line in lines:
+                l = list(map(float, line.strip().split()))
+                ls.append(l)
+            c2w = np.array(ls).reshape(4, 4)
+
+            if not np.isinf(c2w).any() and not np.isnan(c2w).any():
+                # 先进行局部相机轴转换，再将整体位姿扳正到 Z-up
+                c2w = T_Yup2Zup @ c2w @ C_habitat2opencv
+                self.last_valid_pose = c2w
+            else:
+                c2w = self.last_valid_pose 
+            self.poses.append(c2w)
+
+    def __len__(self):
+        return self.num_frames
+
+    def __iter__(self):
+        print(f"Waiting for frames from HM3D scene: {self.video_id}...")
+        video_id = self.video_id
+        index = 0
+        
+        # 使用 index < num_frames 防止数组越界异常
+        while index < self.num_frames:
+            # Step 1: load data
+            color_path = self.img_files[index]
+            depth_path = self.depth_paths[index]
+            color_data = cv2.imread(color_path)
+
+            if '.png' in depth_path:
+                depth_data = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED)
+            elif '.exr' in depth_path:
+                os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
+                depth_data = cv2.imread(depth_path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+            else:
+                raise NotImplementedError(f"Unsupported depth format: {depth_path}")
+
+            color_data = cv2.cvtColor(color_data, cv2.COLOR_BGR2RGB)
+            depth_data = depth_data.astype(np.float32) / self.depth_scale 
+
+            # 不再使用深度图原始尺寸，而是直接使用 yaml 配置中的目标尺寸缩放
+            color_data = cv2.resize(color_data, (self.img_width, self.img_height))
+            pose = self.poses[index]
+
+            # Step 2: try to warp the data like the original dataset    
+            result = dict(wide=dict())
+            wide = PosedSensorInfo()            
+            
+            image_info = ImageMeasurementInfo(
+                size=(self.img_width, self.img_height),
+                K=torch.tensor([
+                    [self.fx, 0.0, self.cx],
+                    [0.0, self.fy, self.cy],
+                    [0.0, 0.0, 1.0]
+                ])[None])
+
+            # 因为已经 resize 过，直接转 numpy 数组即可，去掉强制的 reshape 以防崩溃
+            image = np.asarray(color_data)
+            wide.image = image_info
+            result["wide"]["image"] = torch.tensor(np.moveaxis(image, -1, 0))[None]
+
+            if self.load_arkit_depth and not self.has_depth:
+                raise ValueError("Depth was not found, you likely can only run the RGB only model with your device")
+
+            depth_info = None            
+            if self.has_depth:
+                depth_info = DepthMeasurementInfo(
+                    size=(self.img_width, self.img_height),
+                    K=torch.tensor([
+                        [self.fx  , 0.0, self.cx ],
+                        [0.0, self.fy , self.cy ],
+                        [0.0, 0.0, 1.0]
+                    ])[None])
+
+                wide.depth = depth_info
+                depth_data = cv2.resize(depth_data, (self.img_width, self.img_height))
+                depth = torch.tensor(depth_data.view(dtype=np.float32).reshape((self.img_height, self.img_width)))[None].float()
+                result["wide"]["depth"] = depth
+                
+                if max(wide.image.size) > MAX_LONG_SIDE:
+                    scale_factor = MAX_LONG_SIDE / max(wide.image.size)
+                    new_size = (int(wide.image.size[0] * scale_factor), int(wide.image.size[1] * scale_factor))
+                    wide.image = wide.image.resize(new_size)
+                    result["wide"]["image"] = torch.tensor(np.moveaxis(np.array(Image.fromarray(image).resize(new_size)), -1, 0))[None]
+            else:
+                scale_factor = 1
+                new_size = (int(wide.image.size[0] * scale_factor), int(wide.image.size[1] * scale_factor))
+                wide.image = wide.image.resize(new_size)
+                result["wide"]["image"] = torch.tensor(np.moveaxis(np.array(Image.fromarray(image).resize(new_size)), -1, 0))[None]
+
+            RT = torch.from_numpy(pose.astype(np.float32).reshape((4, 4)))
+            wide.RT = RT[None]
+
+            current_orientation = wide.orientation
+            target_orientation = ImageOrientation.UPRIGHT
+
+            T_gravity = get_camera_to_gravity_transform(wide.RT[-1], current_orientation, target=target_orientation)
+            wide = wide.orient(current_orientation, target_orientation)
+
+            '''
+            Rotate IMG and Depth
+            '''
+            result["wide"]["image"] = rotate_tensor(result["wide"]["image"], current_orientation, target=target_orientation)
+            if wide.has("depth"):
+                result["wide"]["depth"] = rotate_tensor(result["wide"]["depth"], current_orientation, target=target_orientation)
+
+            wide.RT = torch.eye(4)[None]
+            wide.T_gravity = T_gravity[None]
+
+            gt = PosedSensorInfo()        
+            gt.RT = parse_transform_4x4_np(pose)[None]
+            if depth_info is not None:
+                gt.depth = depth_info
+
+            sensor_info = SensorArrayInfo()
+            sensor_info.wide = wide
+            sensor_info.gt = gt
+
+            result["meta"] = dict(video_id=video_id, timestamp=index)
+            result["sensor_info"] = sensor_info
+
+            index += 1
+            yield result

@@ -31,106 +31,8 @@ from boxfusion.preprocessor import Augmentor, Preprocessor
 from boxfusion.box_manager import BoxManager
 from boxfusion.box_fusion import BoxFusion
 
-from boxfusion.room_segmenter import GridRoomSegmenter
-from boxfusion.segmentor import SceneSegmenter
-import yaml
+from boxfusion.dynamic_room_segmenter import DynamicRoomSegmenter
 
-def save_room_mapping_to_yaml(all_pred_box, room_segmenter, output_path="room_objects.yaml"):
-    """
-    将物体按房间归类并保存为 YAML，包含针对靠墙物体的邻域修正逻辑。
-    """
-    # 1. 安全检查
-    if all_pred_box is None:
-        print("跳过 YAML 导出：未检测到任何物体。")
-        return
-    
-    if room_segmenter.last_room_markers is None:
-        print("跳过 YAML 导出：房间分割图尚未生成。")
-        return
-
-    # 提取物体的 3D 信息
-    # pred_boxes_3d.tensor: [N, 7] -> (x, y, z, w, h, l, yaw)
-    box_tensors = all_pred_box.pred_boxes_3d.tensor.cpu().numpy()
-    categories = all_pred_box.categories
-    instance_ids = all_pred_box.init_id.cpu().numpy()
-    
-    # 2. 转换世界坐标到栅格坐标
-    u_coords, v_coords = room_segmenter._world_to_grid(box_tensors[:, :2])
-    markers = room_segmenter.last_room_markers
-    wall_label = np.max(markers) # 假设墙壁是最大的标签值
-    
-    room_data = {}
-    search_radius = 10 # 搜索范围：21x21 像素 (约 1.05m x 1.05m)
-
-    for i in range(len(box_tensors)):
-        u, v = u_coords[i], v_coords[i]
-        label = markers[v, u]
-        
-        # 3. 邻域修正逻辑：如果点落在墙壁(wall_label)或无效区(<=1)
-        if label <= 1 or label == wall_label:
-            # 截取邻域切片
-            v_start, v_end = max(0, v - search_radius), min(markers.shape[0], v + search_radius)
-            u_start, u_end = max(0, u - search_radius), min(markers.shape[1], u + search_radius)
-            patch = markers[v_start:v_end, u_start:u_end]
-            
-            # 过滤掉背景、噪声和墙壁，只留房间标签
-            valid_labels = patch[(patch > 1) & (patch != wall_label)]
-            
-            if valid_labels.size > 0:
-                # 取邻域内出现次数最多的有效房间标签
-                label = np.bincount(valid_labels.flatten()).argmax()
-            else:
-                label = wall_label # 依然找不到则标记为墙
-
-        # 4. 组织数据
-        if label > 1 and label != wall_label:
-            room_key = f"room_{int(label)}"
-        else:
-            room_key = "unassigned_or_wall"
-
-        if room_key not in room_data:
-            room_data[room_key] = []
-
-        room_data[room_key].append({
-            "instance_id": int(instance_ids[i]),
-            "category": str(categories[i]),
-            "position_world": [round(float(x), 3) for x in box_tensors[i, :3].tolist()]
-        })
-
-    # 5. 写入 YAML
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, 'w', encoding='utf-8') as f:
-        yaml.dump(room_data, f, allow_unicode=True, sort_keys=False)
-    
-    print(f"成功保存房间-物体映射至: {output_path}")
-
-def extract_architecture_points(xyz, valid, wall_mask, ceil_mask, floor_mask, door_mask, step=4):
-    """
-    xyz: [H, W, 3] 全量点云
-    """
-    # 1. 墙壁提取 (利用语义优势，放宽高度以获取高密度)
-    wall_mask_torch = torch.from_numpy(wall_mask).to(xyz.device)
-    # 只要是墙，且在合理高度范围内 (1.0 - 3.2m)，都算墙
-    final_wall_mask = valid & wall_mask_torch & (xyz[..., 2] > 2.8) & (xyz[..., 2] < 3.2)
-    wall_pts = xyz[final_wall_mask] 
-
-    # 2. [新增] 门提取 (作为障碍物处理)
-    # 门的高度一般是落地到顶框 (0.1m - 2.5m)
-    door_mask_torch = torch.from_numpy(door_mask).to(xyz.device)
-    # final_door_mask = valid & door_mask_torch & (xyz[..., 2] > 1.2) & (xyz[..., 2] < 3.5)
-    final_door_mask = valid & door_mask_torch & (xyz[..., 2] > 2.8) & (xyz[..., 2] < 3.2)
-    door_pts = xyz[final_door_mask]
-
-    # 3. 天花板/地面提取 (步长=4)
-    xyz_s = xyz[::step, ::step]
-    valid_s = valid[::step, ::step]
-    
-    ceil_mask_s = torch.from_numpy(ceil_mask[::step, ::step]).to(xyz.device)
-    ceil_h_mask = (xyz_s[..., 2] > 3.7) & (xyz_s[..., 2] < 5.5)
-    
-    final_ceil_pts = xyz_s[valid_s & (ceil_mask_s | ceil_h_mask)]
-
-    return wall_pts, door_pts, final_ceil_pts
 def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_features, augmentor, preprocessor, score_thresh=0.0, viz_on_gt_points=False, gap=25, re_vis=True):
     is_depth_model = "wide/depth" in augmentor.measurement_keys
     blueprint = rrb.Blueprint(
@@ -184,13 +86,18 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
     box_count = 0
     start_time = time.time()
     
-    # segmentor = SceneSegmenter(device=args.device, model_name="nvidia/segformer-b0-finetuned-ade20k-512-512")
-    segmentor = SceneSegmenter(device=args.device, local_path="./models/segformer-b0-finetuned-ade-512-512")
-    room_segmenter = GridRoomSegmenter(resolution=0.05)
-    accumulated_walls = []
-    accumulated_doors = []
+    room_segmenter = DynamicRoomSegmenter(resolution=0.05)
+    accumulated_all_pts = []
+    
+    # 在循环外初始化起点
+    t_loop_start = time.time()
     
     for sample in dataset:
+        # ---------------------------------------------------------
+        # 阶段 1: 数据加载与预处理 (Data Loading & Preprocessing)
+        # ---------------------------------------------------------
+        t_data_end = time.time()
+        
         sample_video_id = sample["meta"]["video_id"] #(['sensor_info', 'wide', 'gt', 'meta'])
         pose = sample['sensor_info'].gt.RT
         
@@ -235,6 +142,11 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
         packaged = move_input_to_current_device(packaged, device)
         packaged = preprocessor.preprocess([packaged])
 
+        # ---------------------------------------------------------
+        # 阶段 2: 主模型推理 (Network Inference)
+        # ---------------------------------------------------------
+        t_infer_start = time.time()
+        
         # Every gap nth frame is selected as keyframe
         if count % gap == 0:
             with torch.no_grad():
@@ -249,113 +161,94 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
                 floor_mask = box_manager.check_floor_mask(pred_instances.pred_boxes_3d.tensor, ratio=cfg["detection"]["floor_ratio"])
                 pred_instances = pred_instances[~floor_mask]
 
-           # avoid first frame empty predictions
+            # avoid first frame empty predictions
             if len(pred_instances) == 0 and count ==0:
                 with torch.no_grad():
                     pred_instances = model(packaged)[0]
                 pred_instances = pred_instances[pred_instances.scores >= float(cfg['detection']['score_thresh']/4)]
-                print("again",count,"pred_instances",len(pred_instances))
                 if cfg["detection"]["uv_bound"]:
                     uv_mask = box_manager.check_uv_bounds(pred_instances.pred_proj_xy,image.shape[1],image.shape[0],ratio=cfg["detection"]["uv_bound_value"]) #[N]
                     pred_instances = pred_instances[uv_mask]
-                print("again",count,"pred_instances",len(pred_instances))
             
+            # ================= 点云反投影增量收集 =================
             image_rgb = np.moveaxis(sample["wide"]["image"][-1].numpy(), 0, -1)
             depth_map = sample["wide"]["depth"][-1]
             K = sample["sensor_info"].wide.depth.K[-1]
             pose = sample['sensor_info'].gt.RT.squeeze()
 
-            # 1. 2D 语义分割获取 3 种 Mask (确保顺序一致)
-            # 假设你的 segmentor.get_masks 现在返回 wall, floor, ceil, door
-            wall_mask_raw, floor_mask_raw, ceil_mask_raw, door_mask_raw = segmentor.get_masks(image_rgb)
-
-            # 2. 反投影
+            # 反投影并将当前帧有效点云收集起来
             xyz, valid = unproject(depth_map, K, pose, max_depth=8.0)
-            target_h, target_w = valid.shape
+            matched_image = torch.tensor(np.array(Image.fromarray(image_rgb).resize((depth_map.shape[1], depth_map.shape[0]))))
+            xyzrgb = torch.cat((xyz, matched_image / 255.0), dim=-1)[valid]
+            
+            # --- 极速降采样单帧点云 ---
+            xyzrgb_np = xyzrgb.cpu().numpy()
+            if xyzrgb_np.shape[0] > 0:
+                pcd_frame = o3d.geometry.PointCloud()
+                # 【关键修复】：强制转换为 float64 和连续内存，防止 Open3D 报错或静默失败！
+                pcd_frame.points = o3d.utility.Vector3dVector(np.ascontiguousarray(xyzrgb_np[:, :3], dtype=np.float64))
+                pcd_frame.colors = o3d.utility.Vector3dVector(np.ascontiguousarray(xyzrgb_np[:, 3:6], dtype=np.float64))
+                
+                pcd_frame = pcd_frame.voxel_down_sample(voxel_size=0.05)
+                
+                xyzrgb_down = np.concatenate([np.asarray(pcd_frame.points), np.asarray(pcd_frame.colors)], axis=1)
+                accumulated_all_pts.append(xyzrgb_down)
+                
+        t_infer_end = time.time()
 
-            # 3. 强制对齐 Mask (保持 bool 类型)
-            wall_mask = cv2.resize(wall_mask_raw.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST).astype(bool)
-            floor_mask = cv2.resize(floor_mask_raw.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST).astype(bool)
-            ceil_mask = cv2.resize(ceil_mask_raw.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST).astype(bool)
-            door_mask = cv2.resize(door_mask_raw.astype(np.uint8), (target_w, target_h), interpolation=cv2.INTER_NEAREST).astype(bool)
+        # ---------------------------------------------------------
+        # 阶段 3: 房间拓扑分割 (Room Segmentation)
+        # ---------------------------------------------------------
+        t_seg_start = time.time()
+        
+        # 将分割触发逻辑提出来，只要是 100 的整数倍帧就会检查，不再受 gap 限制
+        if count % 100 == 0:
+            print(f"\n[调试信息] 当前帧: {count}, 缓存的点云片段数: {len(accumulated_all_pts)}")
+            
+            if len(accumulated_all_pts) > 0:
+                print(f"[{count}] 正在执行动态 2D 栅格生成与房间拓扑分割...")
+                
+                # --- 全局二次降采样与缓存清理 ---
+                all_pts_merged = np.concatenate(accumulated_all_pts, axis=0)
+                
+                pcd_global = o3d.geometry.PointCloud()
+                # 【关键修复】：同样做类型保护
+                pcd_global.points = o3d.utility.Vector3dVector(np.ascontiguousarray(all_pts_merged[:, :3], dtype=np.float64))
+                pcd_global.colors = o3d.utility.Vector3dVector(np.ascontiguousarray(all_pts_merged[:, 3:6], dtype=np.float64))
+                pcd_global = pcd_global.voxel_down_sample(voxel_size=0.05)
+                
+                downsampled_merged_pts = np.concatenate([np.asarray(pcd_global.points), np.asarray(pcd_global.colors)], axis=1)
+                
+                # 用精简后的全局点云覆盖列表
+                accumulated_all_pts = [downsampled_merged_pts]
+                
+                # 提取 xyz 传给分割器
+                xyz_only = np.ascontiguousarray(downsampled_merged_pts[:, :3], dtype=np.float64)
+    
+                markers = room_segmenter.perform_segmentation(
+                    xyz_only, 
+                    all_pred_box, 
+                    debug_path="./debug_room/", 
+                    count=count
+                )
 
-            # 4. 提取点云 (传入 door_mask)
-            wall_pts_torch, door_pts_torch, ceil_pts_torch = extract_architecture_points(
-                xyz, valid, wall_mask, ceil_mask, floor_mask, door_mask, step=4
-            )
-
-            # 5. 更新房间分割器
-            if wall_pts_torch.shape[0] > 0:
-                room_segmenter.update_wall_map(wall_pts_torch.cpu().numpy())
-                accumulated_walls.append(wall_pts_torch.cpu().numpy())
-
-            if door_pts_torch.shape[0] > 0:
-                room_segmenter.update_door_map(door_pts_torch.cpu().numpy()) # 门也是墙
-                accumulated_doors.append(door_pts_torch.cpu().numpy())
-
-            if ceil_pts_torch.shape[0] > 0:
-                room_segmenter.update_ceil_map(ceil_pts_torch.cpu().numpy())
-
-            # 提取地面点
-            floor_valid = valid & torch.from_numpy(floor_mask).to(valid.device)
-            floor_pts_all = xyz[floor_valid].cpu().numpy()
-            if len(floor_pts_all) > 0:
-                # 【修复 2】高度阈值改为 0.2m，只取真正的地面
-                room_segmenter.update_floor_map(floor_pts_all[floor_pts_all[:, 2] < 0.2])
-
-            # 6. 执行分割
-            if count % 100 == 0:
-                markers = room_segmenter.perform_segmentation(debug_path="./debug_room/")
                 if markers is not None:
-                    # 1. 保存房间-物体映射 (现有逻辑)
-                    if all_pred_box is not None:
-                        yaml_name = f"./debug_room/room_objects_{count}.yaml"
-                        save_room_mapping_to_yaml(all_pred_box, room_segmenter, output_path=yaml_name)
-                    
-                    # 2. [新增] 保存轻量化 Vector Map
-                    vector_map = room_segmenter.get_vector_map_data()
-                    
-                    # 如果有物体，也可以把物体以 Box 的形式加进去
-                    if all_pred_box is not None:
-                        # 将物体 3D box 简化为 2D 带方向的矩形
-                        obj_vectors = []
-                        box_tensors = all_pred_box.pred_boxes_3d.tensor.cpu().numpy()
-                        cats = all_pred_box.categories
-                        ids = all_pred_box.init_id.cpu().numpy()
-                        
-                        for i in range(len(box_tensors)):
-                            # box_tensors[i] = x, y, z, w, h, l, yaw
-                            # 这里做个简单的转换，实际可以用 box_corners 的投影
-                            # obj_vectors.append({
-                            #     "id": int(ids[i]),
-                            #     "category": str(cats[i]),
-                            #     "pose": [float(x) for x in box_tensors[i, :2]], # x, y
-                            #     "size": [float(x) for x in box_tensors[i, 3:6]], # w, h, l
-                            #     "yaw": float(box_tensors[i, 6])
-                            # })
-                            obj_vectors.append({
-                                "id": int(ids[i]),
-                                "category": str(cats[i]),
-                                "pose": [float(x) for x in box_tensors[i, :2]], # x, y
-                                "size": [float(x) for x in box_tensors[i, 3:6]] # w, h, l
-                            })
-                        vector_map["objects"] = obj_vectors
-
-                    # 保存为 JSON
+                    # yaml_name = f"./debug_room/room_objects_{count}.yaml"
+                    # room_segmenter.save_room_mapping_to_yaml(all_pred_box, output_path=yaml_name)
+                    vector_map = room_segmenter.get_vector_map_data(all_pred_box)
                     with open(f"./debug_room/vector_map_{count}.json", 'w') as f:
                         json.dump(vector_map, f, indent=2)
-                        
-                    print(f"Vector Map 已生成: ./debug_room/vector_map_{count}.json")
-            
-            # # 将 Mask 转换为 2D 可视化
-            # seg_vis = np.zeros((*wall_mask.shape, 3), dtype=np.uint8)
-            # seg_vis[wall_mask] = [255, 0, 0]   # 墙：红色
-            # seg_vis[floor_mask] = [0, 255, 0]  # 地：绿色
-            
-            # # 推送到 Rerun
-            # if re_vis:
-            #     rerun.log("/device/wide/semantic_mask", rerun.Image(seg_vis).compress())
+                    print(f"[{count}] Vector Map 及拓扑数据已更新！")
+            else:
+                print(f"[{count}] 警告: 没有收集到有效点云，无法执行房间分割！")
+                
+        t_seg_end = time.time()
 
+        # ---------------------------------------------------------
+        # 阶段 4: Rerun 可视化发送 (Visualization)
+        # ---------------------------------------------------------
+        t_rerun_start = time.time()
+        
         # Hold off on logging anything until now, since the delay might confuse the user in the visualizer.
         RT = sample["sensor_info"].gt.RT[-1].numpy()
         if re_vis:
@@ -381,7 +274,14 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
         # visualize the trajectory
         if cfg["vis"]["trajectory"] and re_vis:
             rerun.log("/world/trajectory", rerun.LineStrips3D([np.array(traj_xyz)[:count]], colors=[84,255,159]))
+            
+        t_rerun_end = time.time()
 
+        # ---------------------------------------------------------
+        # 阶段 5: BoxFusion 关联与更新 (BoxFusion & Feature Extraction)
+        # ---------------------------------------------------------
+        t_fusion_start = time.time()
+        
         # only process keyframes
         if count % gap ==0 or count == len(dataset)-1:
             
@@ -420,6 +320,23 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
 
                 class_results, box_features = text_prompt(boxes, tokenized_text, text_features, image, clip_model, preprocess) #[N_box]
                 pred_instances.categories = class_results
+
+                # --- [修改点 1：将特征挂载到实例上] ---
+                # box_features 是 torch.Tensor，将其保留在 pred_instances 中
+                pred_instances.embeddings = box_features.cpu() 
+                # ------------------------------------
+
+                # 在 demo.py 中寻找后续增量更新调用 text_prompt 的地方 (大约在第 303 行附近)
+                class_results, box_features = text_prompt(boxes, tokenized_text, text_features, image, clip_model, preprocess) #[N_box]
+                all_pred_box.categories[cur_keep_idx_in_all] = class_results
+
+                # --- [修改点 2：同步更新增量特征] ---
+                if not hasattr(all_pred_box, 'embeddings'):
+                    # 如果是早期的 BoxFusion 代码，可能需要初始化一个空的 embedding tensor
+                    dim = box_features.shape[-1]
+                    all_pred_box.embeddings = torch.zeros((len(all_pred_box), dim))
+                all_pred_box.embeddings[cur_keep_idx_in_all] = box_features.cpu()
+                # ------------------------------------
 
                 all_pred_box = pred_instances
                 all_poses = pose_np
@@ -510,14 +427,30 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
 
             if re_vis:
                 visualize_online_boxes(all_pred_box, prefix="/device/wide", boxes_3d_name="pred_boxes_3d", log_instances_name="pred_instances",count=count,save=False,show_class=cfg["vis"]["show_class"],show_label=cfg["vis"]["show_label"]) 
+                
+        t_fusion_end = time.time()
+        
+        # --- 打印本帧耗时统计（仅在关键帧打印） ---
+        if count % gap == 0:
+            print(f"\n=== 关键帧 [{count}] 耗时分析 (单位: 秒) ===")
+            print(f"数据加载与预处理: {t_data_end - t_loop_start:.4f}")
+            print(f"主模型与边界框推理: {t_infer_end - t_infer_start:.4f}")
+            print(f"拓扑生成与房间分割: {t_seg_end - t_seg_start:.4f}")
+            print(f"Rerun 可视化发送: {t_rerun_end - t_rerun_start:.4f}")
+            print(f"特征提取与 BoxFusion: {t_fusion_end - t_fusion_start:.4f}")
+            print("=========================================\n")
 
         count+=1
         
-        # save the results
+        # 为下一次循环重置起点
+        t_loop_start = time.time()
+        
+        # ... (保留你原来的 save global boxes for evaluation 等代码直至结束)
         if count == len(dataset)-1 or (count+gap)>len(dataset)-1:
             end_time = time.time()
             duration = end_time - start_time  
             fps = count / duration
+            print(f"count: {count:.2f} frames")
             print(f"Cost: {duration:.2f} s", f"Average FPS: {fps:.2f}")
             
             # save global boxes for evaluation
@@ -537,28 +470,28 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
             print("正在保存点云文件...")
             save_path = "./exported_pc/"
             os.makedirs(save_path, exist_ok=True)
+            # --- 新增开始：将收集到的点云列表合并并保存为 PLY ---
+            if len(accumulated_all_pts) > 0:
+                all_pts_merged = np.concatenate(accumulated_all_pts, axis=0)
+                
+                pcd = o3d.geometry.PointCloud()
+                pcd.points = o3d.utility.Vector3dVector(all_pts_merged[:, :3])
+                
+                # 如果包含了颜色信息 (xyzrgb 维度为 6)
+                if all_pts_merged.shape[1] == 6:
+                    pcd.colors = o3d.utility.Vector3dVector(all_pts_merged[:, 3:6])
+                
+                # 进行体素降采样以减小文件体积，0.02 表示 2cm 的体素大小
+                pcd = pcd.voxel_down_sample(voxel_size=0.02)
+                
+                # 兼容 video_id 是列表或字符串的情况
+                vid_str = video_id[0] if isinstance(video_id, list) else video_id
+                pc_save_name = os.path.join(save_path, f"{vid_str}_global_map.ply")
+                
+                o3d.io.write_point_cloud(pc_save_name, pcd)
+                print(f"全局点云已成功保存至: {pc_save_name}，共 {len(pcd.points)} 个点。")
+            # --- 新增结束 ---
             
-            if accumulated_walls:
-                all_walls = np.concatenate(accumulated_walls, axis=0)
-                pcd_wall = o3d.geometry.PointCloud()
-                pcd_wall.points = o3d.utility.Vector3dVector(all_walls)
-                pcd_wall.paint_uniform_color([1, 0, 0]) # 红色
-                o3d.io.write_point_cloud(f"{save_path}/only_walls.ply", pcd_wall)
-                print(f"墙壁点云已保存至: {save_path}/only_walls.ply")
-
-            if accumulated_doors:
-                all_doors = np.concatenate(accumulated_doors, axis=0)
-                pcd_door = o3d.geometry.PointCloud()
-                pcd_door.points = o3d.utility.Vector3dVector(all_doors)
-                pcd_door.paint_uniform_color([0, 1, 0]) # 绿色
-                o3d.io.write_point_cloud(f"{save_path}/only_doors.ply", pcd_door)
-                print(f"门点云已保存至: {save_path}/only_doors.ply")   
-            # 制作合并点云 (墙+门)
-            if accumulated_walls or accumulated_doors:
-                combined_pcd = pcd_wall + pcd_door
-                o3d.io.write_point_cloud(f"{save_path}/walls_and_doors_combined.ply", combined_pcd)
-                print(f"合并点云已保存至: {save_path}/walls_and_doors_combined.ply") 
-
             exit(0)
             break
 
@@ -582,7 +515,7 @@ if __name__ == "__main__":
     dataset_path = args.dataset_path
     use_cache = False
     
-    if dataset_path.lower() in ["scannet", "ca1m", 'online']:
+    if dataset_path.lower() in ["scannet", "ca1m", 'online', 'hm3d']:
         if not os.path.exists(args.config):
             raise ValueError("Missing config path")
         else:
@@ -599,7 +532,13 @@ if __name__ == "__main__":
                 else:
                     new_datadir = os.path.join(os.path.dirname(os.path.dirname(cfg['data']['datadir'])),  args.seq+'/')
                     cfg['data']['datadir'] = new_datadir
-
+            
+            # 修改 2：专门为 hm3d 增加路径拼接逻辑
+            elif dataset_path.lower() == 'hm3d':
+                # 因为你的 HM3D 结构是 .../val/00824-Dd4bFSTQ8gi，没有 frames 子目录
+                # 所以我们只需拿到上级目录 (.../val)，然后拼上 seq 名称
+                new_datadir = os.path.join(os.path.dirname(cfg['data']['datadir']), args.seq)
+                cfg['data']['datadir'] = new_datadir
                 
             else:
                 new_datadir = os.path.join(os.path.dirname(os.path.dirname(cfg['data']['datadir'])),  args.seq+'/frames/')

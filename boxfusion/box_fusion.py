@@ -33,7 +33,7 @@ class BoxFusion(object):
         
         self.basedir = cfg['data']['datadir']
 
-        if 'scannet' in self.basedir.lower() or cfg["dataset"] == 'online':
+        if 'scannet' in self.basedir.lower() or cfg["dataset"] == 'online' or cfg["dataset"] == 'hm3d':
             self.K = np.array([[cfg['cam']['fx'], 0.0, cfg['cam']['cx'],0.0],
                             [0.0, cfg['cam']['fy'], cfg['cam']['cy'],0.0],
                             [0.0,0.0,1.0,0.0],
