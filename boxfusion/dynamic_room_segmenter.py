@@ -303,7 +303,10 @@ class DynamicRoomSegmenter:
         unique_labels = np.unique(markers)
         unique_labels = unique_labels[(unique_labels > 0) & (unique_labels != wall_label)] 
         
-        kernel_gw = cv2.getStructuringElement(cv2.MORPH_RECT, (19, 19))
+        # --- [核心修改 1：将 19x19 (0.95米) 缩小为 5x5 (0.25米)] ---
+        # 0.25 米足以跨越 Watershed 算法留下的 1 像素分界线或薄门，但绝对无法穿透标准的承重墙
+        kernel_gw = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+        # --------------------------------------------------------
         
         door_boxes_2d = []
         if all_pred_box is not None:
@@ -322,33 +325,70 @@ class DynamicRoomSegmenter:
                 mask1 = (markers == id1).astype(np.uint8)
                 mask2 = (markers == id2).astype(np.uint8)
                 
+                # 轻微膨胀寻找真实相邻边界
                 dilated_1 = cv2.dilate(mask1, kernel_gw)
                 intersection = cv2.bitwise_and(dilated_1, mask2)
                 
                 if cv2.countNonZero(intersection) > 0:
-                    points = cv2.findNonZero(intersection)
-                    center_grid = np.mean(points, axis=0)[0] 
-                    pos_world = self._grid_to_world(center_grid[0], center_grid[1])
+                    # --- [核心修改 2：提取交集的连通块 (处理两个房间有多个门的情况)] ---
+                    num_labels, labels_im, stats, centroids = cv2.connectedComponentsWithStats(intersection, connectivity=8)
                     
-                    is_door_visually = False
-                    for door_pts in door_boxes_2d:
-                        # --- [修复解包与过滤] ---
-                        door_u, door_v, valid_mask = self._world_to_grid(door_pts)
-                        door_u = door_u[valid_mask]
-                        door_v = door_v[valid_mask]
+                    # 遍历每一个独立的相交区域 (跳过背景 0)
+                    for k in range(1, num_labels):
+                        # 过滤掉太小的噪点交集 (面积小于 3 个像素的偶然触碰)
+                        if stats[k, cv2.CC_STAT_AREA] < 3:
+                            continue
+                            
+                        # 提取该通道的所有像素点
+                        y_coords, x_coords = np.where(labels_im == k)
+                        points_grid = np.column_stack((x_coords, y_coords))
                         
-                        if len(door_u) >= 3:
-                            door_poly = np.column_stack((door_u, door_v)).astype(np.float32)
-                            if cv2.pointPolygonTest(door_poly, (center_grid[0], center_grid[1]), False) >= 0:
+                        # 1. 计算中心点
+                        center_grid = centroids[k]
+                        pos_world = self._grid_to_world(center_grid[0], center_grid[1])
+                        
+                        # 2. 估算物理宽度 (Width) 和 法向朝向 (Yaw)
+                        # 利用最小外接矩形 (minAreaRect) 来拟合这个交集线段
+                        if len(points_grid) >= 5:
+                            rect = cv2.minAreaRect(points_grid.astype(np.float32))
+                            (cx, cy), (w, h), angle = rect
+                            # Gateway 通常是一条狭长地带，较长的边代表通行宽度
+                            length_pixels = max(w, h)
+                            width_m = length_pixels * self.resolution
+                            # 法向垂直于门洞走向
+                            yaw = np.deg2rad(angle) if w > h else np.deg2rad(angle + 90)
+                        else:
+                            # 像素太少，给个保守默认值
+                            width_m = 3 * self.resolution
+                            yaw = 0.0
+
+                        # 3. 门洞类型研判 (视觉 Door Check)
+                        is_door_visually = False
+                        for door_pts in door_boxes_2d:
+                            # 注意：这里调用了我们在 P0 修改过的带有 valid_mask 返回值的 _world_to_grid
+                            door_u, door_v, valid_mask = self._world_to_grid(door_pts)
+                            if not np.any(valid_mask): continue
+                            
+                            door_poly = np.column_stack((door_u[valid_mask], door_v[valid_mask])).astype(np.float32)
+                            if len(door_poly) < 3: continue
+                            
+                            # 检查交集中心是否落在检测到的门框内，允许 3 像素的外扩容错率
+                            if cv2.pointPolygonTest(door_poly, (float(center_grid[0]), float(center_grid[1])), True) >= -3.0:
                                 is_door_visually = True
                                 break
-                    
-                    self.last_gateways.append({
-                        "type": "door" if is_door_visually else "open_passage",
-                        "pos_world": pos_world.tolist(),
-                        "connects": [int(id1), int(id2)],
-                        "grid_pos": [int(center_grid[0]), int(center_grid[1])]
-                    })
+                        
+                        # 4. 获取我们在 P0 建立的全局持久化 ID
+                        global_id1 = self.label_to_global.get(id1, int(id1)) if hasattr(self, 'label_to_global') else int(id1)
+                        global_id2 = self.label_to_global.get(id2, int(id2)) if hasattr(self, 'label_to_global') else int(id2)
+
+                        self.last_gateways.append({
+                            "type": "door" if is_door_visually else "open_passage",
+                            "pos_world": [round(float(pos_world[0]), 3), round(float(pos_world[1]), 3)],
+                            "connects": [int(global_id1), int(global_id2)],
+                            "grid_pos": [int(center_grid[0]), int(center_grid[1])],
+                            "width_m": round(float(width_m), 3),
+                            "yaw": round(float(yaw), 3)
+                        })
 
     def get_vector_map_data(self, all_pred_box=None):
         if self.last_room_markers is None: return {}

@@ -299,6 +299,7 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
             
             # add new properties for Instance3D predictions
             pred_instances.categories = np.array(['None'] * len(pred_instances)) # Initialize category labels as 'None' for all predicted instances
+            pred_instances.embeddings = torch.zeros((len(pred_instances), 512))
             pred_instances.cam_pose = torch.from_numpy(pose_np) # Convert camera pose from numpy to tensor and assign to instances
             pred_instances.frame_id = torch.tensor([count]).repeat(pose_np.shape[0]) # Assign current frame ID to all instances in this frame
             pred_instances.init_id = box_count+torch.arange(len(pred_instances)) # Create unique initial IDs for each instance based on global box count
@@ -324,18 +325,6 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
                 # --- [修改点 1：将特征挂载到实例上] ---
                 # box_features 是 torch.Tensor，将其保留在 pred_instances 中
                 pred_instances.embeddings = box_features.cpu() 
-                # ------------------------------------
-
-                # 在 demo.py 中寻找后续增量更新调用 text_prompt 的地方 (大约在第 303 行附近)
-                class_results, box_features = text_prompt(boxes, tokenized_text, text_features, image, clip_model, preprocess) #[N_box]
-                all_pred_box.categories[cur_keep_idx_in_all] = class_results
-
-                # --- [修改点 2：同步更新增量特征] ---
-                if not hasattr(all_pred_box, 'embeddings'):
-                    # 如果是早期的 BoxFusion 代码，可能需要初始化一个空的 embedding tensor
-                    dim = box_features.shape[-1]
-                    all_pred_box.embeddings = torch.zeros((len(all_pred_box), dim))
-                all_pred_box.embeddings[cur_keep_idx_in_all] = box_features.cpu()
                 # ------------------------------------
 
                 all_pred_box = pred_instances
@@ -418,6 +407,11 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
                         # if len(pred_instances)>0:
                         class_results, box_features = text_prompt(boxes, tokenized_text, text_features, image, clip_model, preprocess) #[N_box]
                         all_pred_box.categories[cur_keep_idx_in_all] = class_results
+                        # --- [修改点 2：同步更新增量特征] ---
+                        if not hasattr(all_pred_box, 'embeddings'):
+                            dim = box_features.shape[-1]
+                            all_pred_box.embeddings = torch.zeros((len(all_pred_box), dim))
+                        all_pred_box.embeddings[cur_keep_idx_in_all] = box_features.cpu()
 
                 else: # no new box
                     all_pred_box = all_pred_box[mask]
