@@ -177,5 +177,5 @@ free_thresh: 0.196
 
 if __name__ == "__main__":
     # 请确保路径正确指向你的 json 文件
-    builder = NavigationMapBuilder("./debug_room/vector_map_2400.json") 
+    builder = NavigationMapBuilder("./debug_room/vector_map_2200.json") 
     builder.save_all("./output_maps")

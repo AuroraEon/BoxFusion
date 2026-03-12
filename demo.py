@@ -235,7 +235,7 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
                 if markers is not None:
                     # yaml_name = f"./debug_room/room_objects_{count}.yaml"
                     # room_segmenter.save_room_mapping_to_yaml(all_pred_box, output_path=yaml_name)
-                    vector_map = room_segmenter.get_vector_map_data(all_pred_box)
+                    vector_map = room_segmenter.get_vector_map_data(all_pred_box, count=count)
                     with open(f"./debug_room/vector_map_{count}.json", 'w') as f:
                         json.dump(vector_map, f, indent=2)
                     print(f"[{count}] Vector Map 及拓扑数据已更新！")

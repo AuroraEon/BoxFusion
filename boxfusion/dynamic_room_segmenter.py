@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import os
 import yaml
+from boxfusion.scene_graph_builder import SemanticSceneGraph, RoomNode, ObjectNode
 
 class DynamicRoomSegmenter:
     """
@@ -390,8 +391,9 @@ class DynamicRoomSegmenter:
                             "yaw": round(float(yaw), 3)
                         })
 
-    def get_vector_map_data(self, all_pred_box=None):
+    def get_vector_map_data(self, all_pred_box=None, count=None):
         if self.last_room_markers is None: return {}
+        
         vector_data = {
             "map_info": {
                 "resolution": self.resolution,
@@ -405,15 +407,15 @@ class DynamicRoomSegmenter:
             "gateways": [], 
             "objects": []
         }
+        
         unique_labels = np.unique(self.last_room_markers)
         wall_label = np.max(unique_labels)
         
         for label in unique_labels:
             if label <= 0 or label == wall_label: continue
-            # --- [修改：替换为 global_id] ---
             if label not in self.label_to_global: continue
             global_id = self.label_to_global[label]
-            # -----------------------------
+            
             mask = (self.last_room_markers == label).astype(np.uint8) * 255
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             for cnt in contours:
@@ -433,31 +435,23 @@ class DynamicRoomSegmenter:
             categories = all_pred_box.categories
             instance_ids = all_pred_box.init_id.cpu().numpy()
             
-            # --- [新增：提取置信度和特征向量] ---
-            # 确保你的 BoxFusion 实例里有 scores 属性 (通常都有)
             scores = all_pred_box.scores.cpu().numpy() if hasattr(all_pred_box, 'scores') else np.ones(len(box_tensors))
             has_embeddings = hasattr(all_pred_box, 'embeddings')
-            # ---------------------------------
 
             for i in range(len(box_tensors)):
                 cx, cy = float(box_tensors[i, 0]), float(box_tensors[i, 1])
                 dx, dy, dz = float(box_tensors[i, 3]), float(box_tensors[i, 4]), float(box_tensors[i, 5])
                 yaw = float(box_tensors[i, 6]) if box_tensors.shape[1] > 6 else 0.0
 
-                # --- [新增：1. 房间归属判定 (Room Assignment)] ---
-                # 使用 P0 改造过的 _world_to_grid (带 valid_mask)
                 u_arr, v_arr, valid_mask = self._world_to_grid(np.array([[cx, cy]]))
                 u, v, is_valid = u_arr[0], v_arr[0], valid_mask[0]
                 
-                room_uuid = -1 # 默认值：不在任何房间内 (-1 或 null)
+                room_uuid = -1 
                 if is_valid:
                     label = self.last_room_markers[v, u]
                     if label in self.label_to_global:
                         room_uuid = self.label_to_global[label]
-                # ------------------------------------------------
 
-                # --- [新增：2. 生成 2D Footprint (带旋转的矩形足迹)] ---
-                # 根据 cx, cy, dx, dy, yaw 生成四个角的坐标，用于下游的局部避障和碰撞检测
                 cos_y, sin_y = np.cos(yaw), np.sin(yaw)
                 R = np.array([[cos_y, -sin_y], [sin_y, cos_y]])
                 corners_local = np.array([
@@ -468,35 +462,74 @@ class DynamicRoomSegmenter:
                 ])
                 corners_global = (R @ corners_local.T).T + np.array([cx, cy])
                 footprint_2d = np.round(corners_global, 3).tolist()
-                # --------------------------------------------------
 
                 obj_data = {
                     "id": int(instance_ids[i]),
                     "category": str(categories[i]),
                     "score": round(float(scores[i]), 3),
-                    "room_uuid": int(room_uuid),          # <-- 核心 KG 关系：LOCATED_IN
+                    "room_uuid": int(room_uuid),
                     "pose": [round(cx, 3), round(cy, 3)],
                     "size": [round(dx, 3), round(dy, 3), round(dz, 3)],
                     "yaw": round(yaw, 3),
                     "footprint_2d": footprint_2d
                 }
                 
-                # 如果存在特征，不要直接写进 JSON (文件会爆掉)，而是保存为外挂字典/文件引用
                 if has_embeddings:
                     obj_data["embedding_ref"] = f"embedding_{int(instance_ids[i])}"
                 
                 vector_data["objects"].append(obj_data)
                 
-            # --- [新增：统一保存当前帧的 Embedding 字典] ---
             if has_embeddings:
                 emb_dict = {}
                 for i, inst_id in enumerate(instance_ids):
                     emb_dict[f"embedding_{int(inst_id)}"] = all_pred_box.embeddings[i].numpy().tolist()
-                # 这里可以选择不把 emb_dict 放在 vector_data 里，而是存成一个配套的 .npz 或 .json 文件
-                # 为了保持单一出口，我暂时把它放在 vector_data["embeddings"] 中
                 vector_data["embeddings"] = emb_dict
-            # ---------------------------------------------
+
+        # ==========================================================
+        # --- [新增：Scene Graph 构建、关系推理与可视化] ---
+        # ==========================================================
+        if all_pred_box is not None and len(vector_data["objects"]) > 0:
+            sg = SemanticSceneGraph()
+
+            # 1. 注入 Room 节点
+            for room_info in vector_data["rooms"]:
+                r_node = RoomNode(room_id=room_info["id"], polygon_2d=room_info["polygon"])
+                sg.add_room(r_node)
+
+            # 2. 注入 Object 节点
+            for obj_info in vector_data["objects"]:
+                pos_3d = (obj_info["pose"][0], obj_info["pose"][1], obj_info["size"][2] / 2.0)
+                bbox_3d = (obj_info["size"][0], obj_info["size"][1], obj_info["size"][2])
+                
+                o_node = ObjectNode(
+                    obj_id=obj_info["id"],
+                    pos=pos_3d,
+                    bbox=bbox_3d,
+                    label=obj_info["category"],
+                    clip_feature=None,  
+                    room_id=obj_info["room_uuid"]
+                )
+                sg.add_object(o_node)
+
+            # 3. 执行空间关系推理 (阈值可根据你的实际室内尺度微调)
+            sg.compute_spatial_relations(dist_threshold=1.0, z_tolerance=0.2)
+
+            # 4. 将推理出的边导出到 JSON 数据中
+            vector_data["relationships"] = []
+            for source, target, data in sg.graph.edges(data=True):
+                vector_data["relationships"].append({
+                    "source": source,
+                    "target": target,
+                    "relation": data["relation"]
+                })
             
+            # 5. 生成并保存 2D 拓扑可视化
+            vis_path = f"./debug_room/scene_graph_{count if count is not None else 'latest'}.png"
+            try:
+                sg.visualize_2d_graph(save_path=vis_path)
+            except Exception as e:
+                print(f"[警告] 场景图可视化失败: {e}")
+
         return vector_data
 
     # def save_room_mapping_to_yaml(self, all_pred_box, output_path="room_objects.yaml"):
