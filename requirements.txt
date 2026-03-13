@@ -1,6 +1,7 @@
 cyclonedds==0.10.5
 kornia==0.8.1
 matplotlib==3.10.5
+networkx==3.4.2
 numpy==1.26.4
 open3d==0.19.0
 opencv_python==4.11.0.86

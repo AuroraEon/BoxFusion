@@ -405,7 +405,9 @@ class DynamicRoomSegmenter:
             },
             "rooms": [], 
             "gateways": [], 
-            "objects": []
+            "objects": [],
+            "anchors": [],
+            "relationships": [],
         }
         
         unique_labels = np.unique(self.last_room_markers)
@@ -437,6 +439,10 @@ class DynamicRoomSegmenter:
             
             scores = all_pred_box.scores.cpu().numpy() if hasattr(all_pred_box, 'scores') else np.ones(len(box_tensors))
             has_embeddings = hasattr(all_pred_box, 'embeddings')
+            semantic_confidences = all_pred_box.semantic_confidences.cpu().numpy() if hasattr(all_pred_box, 'semantic_confidences') else scores
+            association_confidences = all_pred_box.association_confidences.cpu().numpy() if hasattr(all_pred_box, 'association_confidences') else np.ones(len(box_tensors))
+            semantic_gaps = all_pred_box.semantic_gaps.cpu().numpy() if hasattr(all_pred_box, 'semantic_gaps') else np.zeros(len(box_tensors))
+            view_qualities = all_pred_box.view_qualities.cpu().numpy() if hasattr(all_pred_box, 'view_qualities') else np.ones(len(box_tensors))
 
             for i in range(len(box_tensors)):
                 cx, cy = float(box_tensors[i, 0]), float(box_tensors[i, 1])
@@ -465,13 +471,30 @@ class DynamicRoomSegmenter:
 
                 obj_data = {
                     "id": int(instance_ids[i]),
+                    "label": str(categories[i]),
                     "category": str(categories[i]),
                     "score": round(float(scores[i]), 3),
+                    "detection_confidence": round(float(scores[i]), 3),
+                    "semantic_confidence": round(float(semantic_confidences[i]), 3),
+                    "association_confidence": round(float(association_confidences[i]), 3),
+                    "semantic_gap": round(float(semantic_gaps[i]), 3),
+                    "view_quality": round(float(view_qualities[i]), 3),
                     "room_uuid": int(room_uuid),
                     "pose": [round(cx, 3), round(cy, 3)],
                     "size": [round(dx, 3), round(dy, 3), round(dz, 3)],
                     "yaw": round(yaw, 3),
-                    "footprint_2d": footprint_2d
+                    "footprint_2d": footprint_2d,
+                    "semantic_observations": [
+                        {
+                            "label": str(categories[i]),
+                            "category": str(categories[i]),
+                            "detection_confidence": float(scores[i]),
+                            "semantic_confidence": float(semantic_confidences[i]),
+                            "association_confidence": float(association_confidences[i]),
+                            "semantic_gap": float(semantic_gaps[i]),
+                            "view_quality": float(view_qualities[i]),
+                        }
+                    ],
                 }
                 
                 if has_embeddings:
@@ -490,43 +513,85 @@ class DynamicRoomSegmenter:
         # ==========================================================
         if all_pred_box is not None and len(vector_data["objects"]) > 0:
             sg = SemanticSceneGraph()
+            embedding_lookup = vector_data.get("embeddings", {})
 
             # 1. 注入 Room 节点
             for room_info in vector_data["rooms"]:
-                r_node = RoomNode(room_id=room_info["id"], polygon_2d=room_info["polygon"])
-                sg.add_room(r_node)
+                room_id = f"room_{room_info['id']}"
+                r_node = RoomNode(
+                    id=room_id,
+                    room_type="unknown",
+                    polygon=room_info["polygon"]
+                )
+                sg.add_room_node(r_node)
 
             # 2. 注入 Object 节点
             for obj_info in vector_data["objects"]:
                 pos_3d = (obj_info["pose"][0], obj_info["pose"][1], obj_info["size"][2] / 2.0)
                 bbox_3d = (obj_info["size"][0], obj_info["size"][1], obj_info["size"][2])
-                
+                room_uuid = obj_info.get("room_uuid", -1)
+                if room_uuid is None or int(room_uuid) < 0:
+                    room_id = "room_unknown"
+                    if room_id not in sg.graph.nodes:
+                        unknown_room = RoomNode(
+                            id=room_id,
+                            room_type="unknown",
+                            polygon=[]
+                        )
+                        sg.add_room_node(unknown_room)
+                else:
+                    room_id = f"room_{int(room_uuid)}"
+                    if room_id not in sg.graph.nodes:
+                        missing_room = RoomNode(
+                            id=room_id,
+                            room_type="unknown",
+                            polygon=[]
+                        )
+                        sg.add_room_node(missing_room)
+
+                clip_feature = None
+                embedding_ref = obj_info.get("embedding_ref")
+                if embedding_ref is not None and embedding_ref in embedding_lookup:
+                    clip_feature = embedding_lookup[embedding_ref]
+
                 o_node = ObjectNode(
-                    obj_id=obj_info["id"],
-                    pos=pos_3d,
+                    id=f"obj_{obj_info['id']}",
+                    center=pos_3d,
                     bbox=bbox_3d,
-                    label=obj_info["category"],
-                    clip_feature=None,  
-                    room_id=obj_info["room_uuid"]
+                    label=obj_info.get("label", obj_info["category"]),
+                    category=obj_info["category"],
+                    clip_feature=clip_feature,
+                    confidence=float(obj_info.get("score", 1.0)),
+                    room_id=room_id,
+                    yaw=float(obj_info.get("yaw", 0.0)),
+                    footprint=obj_info.get("footprint_2d"),
+                    semantic_observations=obj_info.get("semantic_observations"),
+                    detection_confidence=float(obj_info.get("detection_confidence", obj_info.get("score", 1.0))),
+                    semantic_confidence=float(obj_info.get("semantic_confidence", obj_info.get("score", 1.0))),
+                    association_confidence=float(obj_info.get("association_confidence", 1.0)),
+                    semantic_gap=float(obj_info.get("semantic_gap", 0.0)),
+                    view_quality=float(obj_info.get("view_quality", 1.0)),
                 )
-                sg.add_object(o_node)
+                sg.add_object_node(o_node)
+                sg.add_inside_relation(o_node.id, room_id)
 
             # 3. 执行空间关系推理 (阈值可根据你的实际室内尺度微调)
             sg.compute_spatial_relations(dist_threshold=1.0, z_tolerance=0.2)
+            sg.build_anchor_layer(debug=False)
 
             # 4. 将推理出的边导出到 JSON 数据中
-            vector_data["relationships"] = []
             for source, target, data in sg.graph.edges(data=True):
                 vector_data["relationships"].append({
                     "source": source,
                     "target": target,
                     "relation": data["relation"]
                 })
+            vector_data["anchors"] = sg.export_anchor_data()
             
             # 5. 生成并保存 2D 拓扑可视化
             vis_path = f"./debug_room/scene_graph_{count if count is not None else 'latest'}.png"
             try:
-                sg.visualize_2d_graph(save_path=vis_path)
+                sg.visualize_bev_graph(save_path=vis_path)
             except Exception as e:
                 print(f"[警告] 场景图可视化失败: {e}")
 

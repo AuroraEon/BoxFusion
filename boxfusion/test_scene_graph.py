@@ -1,89 +1,165 @@
-import numpy as np
 import os
-from scene_graph_builder import SemanticSceneGraph, RoomNode, ObjectNode
+import sys
+from typing import List
 
-def run_mock_test():
-    print("🚀 开始运行 Scene Graph 独立测试...\n")
+import numpy as np
+
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/mpl-boxfusion")
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from boxfusion.scene_graph_builder import ObjectNode, RoomNode, SemanticObservation, SemanticSceneGraph
+
+
+def _build_mock_scene_graph() -> SemanticSceneGraph:
     sg = SemanticSceneGraph()
 
-    # ==========================================
-    # 1. 模拟构建房间 (Rooms)
-    # ==========================================
-    # 房间 1：一个 5x5 的方形房间，左下角在 (0,0)
-    room1 = RoomNode(room_id=1, polygon_2d=[(0, 0), (5, 0), (5, 5), (0, 5)])
-    
-    # 房间 2：紧挨着房间 1 的另一个 5x5 的房间，左下角在 (5,0)
-    room2 = RoomNode(room_id=2, polygon_2d=[(5, 0), (10, 0), (10, 5), (5, 5)])
-    
-    sg.add_room(room1)
-    sg.add_room(room2)
-    print("✅ 房间模拟加载完成 (Room 1, Room 2)")
+    room1 = RoomNode(
+        id="room_1",
+        room_type="living_room",
+        polygon=[(0, 0), (5, 0), (5, 5), (0, 5)],
+    )
+    room2 = RoomNode(
+        id="room_2",
+        room_type="bedroom",
+        polygon=[(5, 0), (10, 0), (10, 5), (5, 5)],
+    )
+    sg.add_room_node(room1)
+    sg.add_room_node(room2)
 
-    # ==========================================
-    # 2. 模拟构建物体 (Objects)
-    # 参数解释：pos=(x, y, z), bbox=(dx, dy, dz)
-    # ==========================================
-    
-    # --- 场景 A：房间 1 中的物品 ---
-    # 1. 桌子 (放在房间 1 中央)
-    # 桌子中心点在 z=0.4，高度 dz=0.8，所以它的顶部在 z = 0.4 + 0.4 = 0.8，底部在 z=0
     table = ObjectNode(
-        obj_id=101, pos=(2.5, 2.5, 0.4), bbox=(1.2, 0.8, 0.8),
-        label="table", clip_feature=None, room_id=1
+        id="obj_101",
+        center=(2.5, 2.5, 0.4),
+        bbox=(1.2, 0.8, 0.8),
+        label="desk",
+        category="furniture",
+        clip_feature=np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float32),
+        confidence=0.62,
+        room_id="room_1",
     )
-    
-    # 2. 苹果 (放在桌子上)
-    # 桌子顶部在 0.8。苹果中心点设在 0.85，高度 0.1，所以苹果底部在 0.85 - 0.05 = 0.8。正好贴合桌子！
     apple = ObjectNode(
-        obj_id=102, pos=(2.5, 2.5, 0.85), bbox=(0.1, 0.1, 0.1),
-        label="apple", clip_feature=None, room_id=1
+        id="obj_102",
+        center=(2.5, 2.5, 0.85),
+        bbox=(0.1, 0.1, 0.1),
+        label="apple",
+        category="food",
+        clip_feature=np.array([0.0, 1.0, 0.0, 0.0], dtype=np.float32),
+        confidence=0.88,
+        room_id="room_1",
     )
-    
-    # 3. 椅子 (在桌子旁边)
-    # x 坐标离桌子 1.0 米，y 坐标一样，高度比较矮
     chair = ObjectNode(
-        obj_id=103, pos=(1.5, 2.5, 0.25), bbox=(0.5, 0.5, 0.5),
-        label="chair", clip_feature=None, room_id=1
+        id="obj_103",
+        center=(1.4, 2.4, 0.25),
+        bbox=(0.5, 0.5, 0.5),
+        label="chair",
+        category="furniture",
+        clip_feature=np.array([0.0, 0.0, 1.0, 0.0], dtype=np.float32),
+        confidence=0.91,
+        room_id="room_1",
     )
-
-    # 4. 垃圾桶 (在桌子下方)
-    # 垃圾桶放在桌子坐标系内，高度比较矮，顶部 z=0.3（在桌板 0.8 之下）
-    trash_can = ObjectNode(
-        obj_id=104, pos=(2.5, 2.5, 0.15), bbox=(0.3, 0.3, 0.3),
-        label="trash_can", clip_feature=None, room_id=1
-    )
-
-    # --- 场景 B：房间 2 中的物品 ---
-    # 5. 沙发
     sofa = ObjectNode(
-        obj_id=201, pos=(7.5, 2.5, 0.3), bbox=(2.0, 1.0, 0.6),
-        label="sofa", clip_feature=None, room_id=2
+        id="obj_201",
+        center=(7.5, 2.5, 0.3),
+        bbox=(2.0, 1.0, 0.6),
+        label="couch",
+        category="furniture",
+        clip_feature=np.array([0.0, 0.0, 0.0, 1.0], dtype=np.float32),
+        confidence=0.81,
+        room_id="room_2",
     )
 
-    # 依次加入图中
-    for obj in [table, apple, chair, trash_can, sofa]:
-        sg.add_object(obj)
-    print("✅ 物体模拟加载完成 (table, apple, chair, trash_can, sofa)\n")
+    for obj in [table, apple, chair, sofa]:
+        sg.add_object_node(obj)
+        sg.add_inside_relation(obj.id, obj.room_id)
 
-    # ==========================================
-    # 3. 执行空间推理
-    # ==========================================
-    print("⚙️  正在执行空间关系推导...")
-    # dist_threshold=1.5米用于判定NEXT_TO，z_tolerance=0.15用于判定贴合误差
+    sg.fuse_object_observation(
+        "obj_101",
+        SemanticObservation(
+            label="table",
+            category="furniture",
+            clip_feature=np.array([0.7, 0.3, 0.0, 0.0], dtype=np.float32),
+            detection_confidence=0.94,
+            semantic_confidence=0.93,
+            semantic_gap=0.22,
+            association_confidence=0.95,
+        ),
+    )
+    sg.fuse_object_observation(
+        "obj_201",
+        SemanticObservation(
+            label="sofa",
+            category="furniture",
+            clip_feature=np.array([0.0, 0.0, 0.2, 0.8], dtype=np.float32),
+            detection_confidence=0.92,
+            semantic_confidence=0.89,
+            semantic_gap=0.18,
+            association_confidence=0.98,
+        ),
+    )
+
     sg.compute_spatial_relations(dist_threshold=1.5, z_tolerance=0.15)
-    
-    # ==========================================
-    # 4. 打印并在本地生成图
-    # ==========================================
-    sg.print_graph()
-    
-    # 检查能否顺利生成二维拓扑图
+    return sg
+
+
+def _validate_semantic_fusion(sg: SemanticSceneGraph) -> None:
+    table = sg.object_index["obj_101"]
+    sofa = sg.object_index["obj_201"]
+    apple = sg.object_index["obj_102"]
+
+    assert table.obs_count == 2, "table should have two fused observations"
+    assert table.canonical_label == "table", "desk/table fusion should normalize toward table"
+    assert table.canonical_category == "furniture"
+    assert table.label_scores["table"] > table.label_scores["desk"], "weighted fusion should beat the weaker observation"
+    assert table.semantic_stability > 0.0
+    assert table.clip_feature_fused is not None and table.clip_feature_fused.shape == (4,)
+
+    assert sofa.obs_count == 2, "sofa should have two fused observations"
+    assert sofa.canonical_label == "sofa", "couch should normalize to sofa"
+    assert sofa.semantic_stability > 0.0
+
+    assert apple.canonical_label == "apple"
+    assert apple.obs_count == 1
+
+
+def _validate_anchor_layer(sg: SemanticSceneGraph) -> List[str]:
+    anchors = sg.build_anchor_layer(debug=True)
+    anchor_ids = sorted(anchor.id for anchor in anchors)
+
+    assert "anchor_room_1" in anchor_ids
+    assert "anchor_room_2" in anchor_ids
+    assert "anchor_obj_101" in anchor_ids, "table should be anchor-worthy"
+    assert "anchor_obj_201" in anchor_ids, "sofa should be anchor-worthy"
+    assert "anchor_obj_102" not in anchor_ids, "apple should be excluded from object anchors"
+
+    for anchor in anchors:
+        valid, _ = sg.validate_anchor(anchor.position, anchor.room_id, anchor.target_id, anchor.anchor_type)
+        assert valid, f"{anchor.id} must pass anchor validation"
+        assert sg.graph.has_edge(anchor.id, anchor.room_id)
+        assert "IN_ROOM" in sg.get_relations_between(anchor.id, anchor.room_id)
+        assert sg.graph.has_edge(anchor.id, anchor.target_id)
+        assert "FOR" in sg.get_relations_between(anchor.id, anchor.target_id)
+
+    return anchor_ids
+
+
+def run_mock_test() -> None:
+    print("Running scene graph validation...")
+    sg = _build_mock_scene_graph()
+
+    _validate_semantic_fusion(sg)
+    anchor_ids = _validate_anchor_layer(sg)
+
     os.makedirs("./debug_mock", exist_ok=True)
-    vis_path = "./debug_mock/mock_scene_graph.png"
-    sg.visualize_2d_graph(save_path=vis_path)
-    
-    print("\n🎉 测试完成！")
-    print(f"👉 请打开 {vis_path} 查看生成的拓扑可视化图片。")
+    vis_path = "./debug_mock/mock_scene_graph_bev.png"
+    sg.visualize_bev_graph(save_path=vis_path, show_anchor_candidates=True)
+
+    print("Semantic fusion validated.")
+    print(f"Anchors: {anchor_ids}")
+    print(f"BEV visualization: {vis_path}")
+
 
 if __name__ == "__main__":
     run_mock_test()
