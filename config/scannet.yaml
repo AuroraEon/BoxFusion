@@ -28,6 +28,23 @@ association:
   rotation_gap: 30
   translation_gap: 0.8 
 
+room_segmentation:
+  tracking_iou_threshold: 0.3
+  tracking_missed_cycles: 2
+  tier2_enablement_mode: off
+  tier2_manual_enable: false
+  tier2_central_roi: [919, 889, 1227, 1106]
+  tier2_small_region_area_ratio_thresh: 0.2
+  tier2_newborn_age_thresh: 2
+  tier2_cut_support_thresh: 0.25
+  tier2_dominant_neighbor_ratio_thresh: 0.6
+  tier2_cooldown_ttl: 300
+  tier2_cooldown_seed_strength_thresh: 0.65
+  tier2_cooldown_bbox_margin_px: 12
+  tier2_cooldown_persistent_seed_frames: 2
+  tier2_region_match_coverage_thresh: 0.6
+  tier2_region_match_area_ratio_max: 2.5
+
 
 box_fusion:
   use: True 

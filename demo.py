@@ -86,7 +86,7 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
     box_count = 0
     start_time = time.time()
     
-    room_segmenter = DynamicRoomSegmenter(resolution=0.05)
+    room_segmenter = DynamicRoomSegmenter(resolution=0.05, config=cfg)
     accumulated_all_pts = []
     
     # 在循环外初始化起点

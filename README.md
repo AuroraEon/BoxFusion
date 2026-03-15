@@ -135,6 +135,24 @@ python demo.py scannet --model-path ./models/cutr_rgbd.pth  --config ./config/sc
 ### Others
 We recommend to prepare the data like ScanNetV2. Once you have prepared the data, you can instantiate a dataset object in this [file](./cubifyanything/capture_stream.py), and use the similar command to try on your data.
 
+## Tier 2A enablement
+
+Tier 2A is now treated as a scene-specific policy-gated feature instead of a global on/off default. The room-segmentation config supports three modes:
+
+```yaml
+room_segmentation:
+  tier2_enablement_mode: off      # off | manual | auto
+  tier2_manual_enable: false      # only used by manual mode
+  tier2_policy_artifact: ./analysis/tier2_cross_scene_eval/output/summary.json
+  tier2_central_roi: [919, 889, 1227, 1106]
+```
+
+- `off`: Tier 2A stays disabled.
+- `manual`: Tier 2A only runs when `tier2_manual_enable: true` and `tier2_central_roi` is valid.
+- `auto`: Tier 2A only runs when a conservative policy check passes against `tier2_policy_artifact`.
+
+When room-segmentation debug output is enabled, each run now writes `debug_room/tier2a_enablement_decision.json` so you can see why Tier 2A was enabled or kept off.
+
 ## 5. ROS2 demo guideline
 We update the basic code for the ROS2 version for BoxFusion. If you use `online` dataset, the dataloader will automatically listen the topic `/rgb/image_raw` for RGB, `/depth/image_raw` for depth and `/trajectory` for camera pose. You can try any method to obtain the posed RGB-D data, given the raw RGB-D images (We recommend the sparse method [ORB-SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3)).
 
