@@ -1,0 +1,2454 @@
+import csv
+import json
+import math
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+import cv2
+import numpy as np
+
+
+def _stable_color(token: str, low: int = 80, high: int = 220) -> Tuple[int, int, int]:
+    seed = abs(hash(token)) % (2 ** 32)
+    rng = np.random.default_rng(seed)
+    color = rng.integers(low, high, size=3)
+    return int(color[0]), int(color[1]), int(color[2])
+
+
+def _to_uint8_rgb(image: np.ndarray) -> np.ndarray:
+    image_np = np.asarray(image)
+    if image_np.dtype != np.uint8:
+        image_np = np.clip(image_np, 0, 255).astype(np.uint8)
+    return image_np
+
+
+def _round_float(value: Any, digits: int = 3) -> Optional[float]:
+    if value is None:
+        return None
+    return round(float(value), digits)
+
+
+def _join_ints(values: Sequence[int]) -> str:
+    return ",".join(str(int(v)) for v in values)
+
+
+def _safe_norm(point_a: Sequence[float], point_b: Sequence[float]) -> float:
+    return float(np.linalg.norm(np.asarray(point_a, dtype=np.float32) - np.asarray(point_b, dtype=np.float32)))
+
+
+def _polygon_contains(point_xy: Sequence[float], polygon: Sequence[Sequence[float]]) -> bool:
+    if len(polygon) < 3:
+        return False
+    contour = np.asarray(polygon, dtype=np.float32)
+    return cv2.pointPolygonTest(contour, (float(point_xy[0]), float(point_xy[1])), False) >= 0
+
+
+def _polygon_area(polygon: Sequence[Sequence[float]]) -> float:
+    if len(polygon) < 3:
+        return 0.0
+    pts = np.asarray(polygon, dtype=np.float32)
+    x = pts[:, 0]
+    y = pts[:, 1]
+    return abs(0.5 * float(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1))))
+
+
+def _polygon_centroid(polygon: Sequence[Sequence[float]]) -> Tuple[float, float]:
+    pts = np.asarray(polygon, dtype=np.float32)
+    if len(pts) == 0:
+        return (0.0, 0.0)
+    if len(pts) < 3:
+        return float(np.mean(pts[:, 0])), float(np.mean(pts[:, 1]))
+    area = _polygon_area(polygon)
+    if area < 1e-6:
+        return float(np.mean(pts[:, 0])), float(np.mean(pts[:, 1]))
+    cross = pts[:, 0] * np.roll(pts[:, 1], -1) - np.roll(pts[:, 0], -1) * pts[:, 1]
+    scale = 1.0 / (6.0 * max(area, 1e-6))
+    cx = scale * np.sum((pts[:, 0] + np.roll(pts[:, 0], -1)) * cross)
+    cy = scale * np.sum((pts[:, 1] + np.roll(pts[:, 1], -1)) * cross)
+    return float(cx), float(cy)
+
+
+def _polygon_iou(
+    polygon_a: Sequence[Sequence[float]],
+    polygon_b: Sequence[Sequence[float]],
+    pixels_per_meter: float = 45.0,
+) -> Optional[float]:
+    if len(polygon_a) < 3 or len(polygon_b) < 3:
+        return None
+
+    pts_a = np.asarray(polygon_a, dtype=np.float32)
+    pts_b = np.asarray(polygon_b, dtype=np.float32)
+    min_xy = np.minimum(pts_a.min(axis=0), pts_b.min(axis=0))
+    max_xy = np.maximum(pts_a.max(axis=0), pts_b.max(axis=0))
+
+    span = np.maximum(max_xy - min_xy, 0.2)
+    scale = float(pixels_per_meter)
+    width = int(math.ceil(span[0] * scale)) + 8
+    height = int(math.ceil(span[1] * scale)) + 8
+    pixel_budget = 2_000_000
+    if width * height > pixel_budget:
+        scale *= math.sqrt(pixel_budget / float(width * height))
+        width = int(math.ceil(span[0] * scale)) + 8
+        height = int(math.ceil(span[1] * scale)) + 8
+
+    width = max(width, 16)
+    height = max(height, 16)
+
+    def _to_pixels(points: np.ndarray) -> np.ndarray:
+        shifted = (points - min_xy) * scale + 4.0
+        return np.round(shifted).astype(np.int32)
+
+    mask_a = np.zeros((height, width), dtype=np.uint8)
+    mask_b = np.zeros((height, width), dtype=np.uint8)
+    cv2.fillPoly(mask_a, [_to_pixels(pts_a)], 255)
+    cv2.fillPoly(mask_b, [_to_pixels(pts_b)], 255)
+
+    intersection = int(np.logical_and(mask_a > 0, mask_b > 0).sum())
+    union = int(np.logical_or(mask_a > 0, mask_b > 0).sum())
+    if union <= 0:
+        return None
+    return float(intersection / union)
+
+
+def _best_room_for_pose(position_xy: Sequence[float], rooms: Sequence[Dict[str, Any]]) -> Optional[int]:
+    if not rooms:
+        return None
+    point_xy = (float(position_xy[0]), float(position_xy[1]))
+    for room in rooms:
+        if _polygon_contains(point_xy, room.get("polygon", [])):
+            return int(room["id"])
+
+    best_room = None
+    best_distance = float("inf")
+    for room in rooms:
+        polygon = room.get("polygon", [])
+        if not polygon:
+            continue
+        centroid = _polygon_centroid(polygon)
+        distance = _safe_norm(point_xy, centroid)
+        if distance < best_distance:
+            best_distance = distance
+            best_room = int(room["id"])
+    if best_distance <= 2.0:
+        return best_room
+    return None
+
+
+def _collect_map_bounds(snapshots: Sequence["SnapshotRecord"]) -> Tuple[float, float, float, float]:
+    xs: List[float] = []
+    ys: List[float] = []
+    for snapshot in snapshots:
+        pose = snapshot.pose
+        xs.append(float(pose[0, 3]))
+        ys.append(float(pose[1, 3]))
+        for x, y in snapshot.trajectory_xy:
+            xs.append(float(x))
+            ys.append(float(y))
+        vector_map = snapshot.vector_map or {}
+        for room in vector_map.get("rooms", []):
+            for pt in room.get("polygon", []):
+                xs.append(float(pt[0]))
+                ys.append(float(pt[1]))
+        for obj in vector_map.get("objects", []):
+            for pt in obj.get("footprint_2d", []):
+                xs.append(float(pt[0]))
+                ys.append(float(pt[1]))
+            pose_xy = obj.get("pose", [])
+            if len(pose_xy) >= 2:
+                xs.append(float(pose_xy[0]))
+                ys.append(float(pose_xy[1]))
+        for anchor in vector_map.get("anchors", []):
+            position = anchor.get("position", [])
+            if len(position) >= 2:
+                xs.append(float(position[0]))
+                ys.append(float(position[1]))
+        for gateway in vector_map.get("gateways", []):
+            pos_world = gateway.get("pos_world", [])
+            if len(pos_world) >= 2:
+                xs.append(float(pos_world[0]))
+                ys.append(float(pos_world[1]))
+
+    if not xs or not ys:
+        return (-1.0, 1.0, -1.0, 1.0)
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    pad = max(1.0, 0.1 * max(max_x - min_x, max_y - min_y, 1.0))
+    return min_x - pad, max_x + pad, min_y - pad, max_y + pad
+
+
+def _world_to_canvas(
+    point_xy: Sequence[float],
+    bounds: Tuple[float, float, float, float],
+    width: int,
+    height: int,
+    pad: int = 36,
+) -> Tuple[int, int]:
+    min_x, max_x, min_y, max_y = bounds
+    usable_w = max(1, width - 2 * pad)
+    usable_h = max(1, height - 2 * pad)
+    x = (float(point_xy[0]) - min_x) / max(max_x - min_x, 1e-6)
+    y = (float(point_xy[1]) - min_y) / max(max_y - min_y, 1e-6)
+    canvas_x = int(round(pad + x * usable_w))
+    canvas_y = int(round(height - pad - y * usable_h))
+    return canvas_x, canvas_y
+
+
+def _draw_text_block(
+    canvas: np.ndarray,
+    lines: Sequence[str],
+    origin: Tuple[int, int],
+    font_scale: float = 0.55,
+    color: Tuple[int, int, int] = (30, 30, 30),
+    bg_color: Tuple[int, int, int] = (255, 255, 255),
+) -> None:
+    if not lines:
+        return
+    x0, y0 = origin
+    line_height = max(18, int(round(24 * font_scale / 0.55)))
+    widths = []
+    for line in lines:
+        (width, _), _ = cv2.getTextSize(line, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 1)
+        widths.append(width)
+    box_w = max(widths) + 18
+    box_h = line_height * len(lines) + 14
+    x0 = max(0, min(x0, canvas.shape[1] - box_w - 4))
+    y_top = max(0, min(y0 - 18, canvas.shape[0] - box_h - 4))
+    overlay = canvas.copy()
+    cv2.rectangle(overlay, (x0, y_top), (x0 + box_w, y_top + box_h), bg_color, -1)
+    cv2.addWeighted(overlay, 0.84, canvas, 0.16, 0, canvas)
+    for idx, line in enumerate(lines):
+        y = y_top + 22 + idx * line_height
+        cv2.putText(canvas, line, (x0 + 8, y), cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, 1, cv2.LINE_AA)
+
+
+def _draw_badge(
+    canvas: np.ndarray,
+    text: str,
+    origin: Tuple[int, int],
+    fg: Tuple[int, int, int],
+    bg: Tuple[int, int, int],
+    font_scale: float = 0.58,
+) -> None:
+    (width, height), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 2)
+    x0 = max(0, min(origin[0], canvas.shape[1] - width - 18))
+    y0 = max(0, min(origin[1], canvas.shape[0] - height - 16))
+    overlay = canvas.copy()
+    cv2.rectangle(overlay, (x0, y0), (x0 + width + 18, y0 + height + 16), bg, -1)
+    cv2.addWeighted(overlay, 0.92, canvas, 0.08, 0, canvas)
+    cv2.putText(canvas, text, (x0 + 9, y0 + height + 4), cv2.FONT_HERSHEY_SIMPLEX, font_scale, fg, 2, cv2.LINE_AA)
+
+
+def _pose_heading_xy(pose: np.ndarray) -> np.ndarray:
+    rotation = pose[:3, :3]
+    heading = rotation[:2, 2]
+    if float(np.linalg.norm(heading)) < 1e-6:
+        heading = rotation[:2, 0]
+    norm = float(np.linalg.norm(heading))
+    if norm < 1e-6:
+        return np.array([1.0, 0.0], dtype=np.float32)
+    return (heading / norm).astype(np.float32)
+
+
+def _room_lookup(vector_map: Optional[Dict[str, Any]]) -> Dict[int, Dict[str, Any]]:
+    if not vector_map:
+        return {}
+    return {int(room["id"]): room for room in vector_map.get("rooms", []) if "id" in room}
+
+
+def _objects_by_room(vector_map: Optional[Dict[str, Any]]) -> Dict[int, List[Dict[str, Any]]]:
+    grouped: Dict[int, List[Dict[str, Any]]] = {}
+    if not vector_map:
+        return grouped
+    for obj in vector_map.get("objects", []):
+        room_uuid = obj.get("room_uuid")
+        if room_uuid is None:
+            continue
+        room_id = int(room_uuid)
+        if room_id < 0:
+            continue
+        grouped.setdefault(room_id, []).append(obj)
+    return grouped
+
+
+def _parse_room_token(room_token: Any) -> Optional[int]:
+    if room_token is None:
+        return None
+    if isinstance(room_token, (int, np.integer)):
+        return int(room_token)
+    text = str(room_token).strip()
+    if not text:
+        return None
+    if text.startswith("room_"):
+        text = text.split("_", 1)[1]
+    if text.startswith("R") and text[1:].isdigit():
+        text = text[1:]
+    try:
+        return int(text)
+    except ValueError:
+        return None
+
+
+def _anchors_by_room(vector_map: Optional[Dict[str, Any]]) -> Dict[int, List[Dict[str, Any]]]:
+    grouped: Dict[int, List[Dict[str, Any]]] = {}
+    if not vector_map:
+        return grouped
+    for anchor in vector_map.get("anchors", []):
+        room_id = _parse_room_token(anchor.get("room_id"))
+        if room_id is None:
+            room_id = _parse_room_token(anchor.get("target_id"))
+        if room_id is None or room_id < 0:
+            continue
+        grouped.setdefault(room_id, []).append(anchor)
+    return grouped
+
+
+def _object_label(obj: Dict[str, Any]) -> str:
+    return str(obj.get("label", obj.get("category", "obj")))
+
+
+def _object_centroid(obj: Dict[str, Any]) -> Optional[Tuple[float, float]]:
+    pose_xy = obj.get("pose", [])
+    if len(pose_xy) >= 2:
+        return float(pose_xy[0]), float(pose_xy[1])
+    footprint = obj.get("footprint_2d", [])
+    if len(footprint) >= 3:
+        return _polygon_centroid(footprint)
+    return None
+
+
+def _topology_summary(vector_map: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    edges: Dict[Tuple[int, int], Dict[str, Any]] = {}
+    door_count = 0
+    open_passage_count = 0
+    gateways = (vector_map or {}).get("gateways", [])
+    for gateway in gateways:
+        connects = gateway.get("connects", [])
+        if len(connects) != 2:
+            continue
+        room_a, room_b = sorted((int(connects[0]), int(connects[1])))
+        if room_a == room_b:
+            continue
+        edge = edges.setdefault(
+            (room_a, room_b),
+            {
+                "rooms": [room_a, room_b],
+                "gateway_count": 0,
+                "doorway_count": 0,
+                "open_passage_count": 0,
+                "primary_type": "open_passage",
+                "positions": [],
+            },
+        )
+        edge["gateway_count"] += 1
+        gate_type = str(gateway.get("type", "open_passage"))
+        if gate_type == "door":
+            door_count += 1
+            edge["doorway_count"] += 1
+            edge["primary_type"] = "door"
+        else:
+            open_passage_count += 1
+            edge["open_passage_count"] += 1
+        pos_world = gateway.get("pos_world", [])
+        if len(pos_world) >= 2:
+            edge["positions"].append([float(pos_world[0]), float(pos_world[1])])
+
+    return {
+        "gateway_count": int(len(gateways)),
+        "doorway_count": int(door_count),
+        "open_passage_count": int(open_passage_count),
+        "adjacency_edge_count": int(len(edges)),
+        "adjacency_edges": [edges[key] for key in sorted(edges)],
+    }
+
+
+def _tracking_counts(tracking_report: Dict[str, Any]) -> Tuple[int, int]:
+    return len(tracking_report.get("matched", [])), len(tracking_report.get("new_rooms", []))
+
+
+def _summarize_raw_event(event: Dict[str, Any]) -> str:
+    event_type = event.get("type", "revisit")
+    if event_type == "pose_loop_closure":
+        return (
+            f"Pose proximity to frame {event.get('matched_frame_idx')} "
+            f"({event.get('distance_m', 0.0):.2f}m)"
+        )
+    room_id = event.get("room_id")
+    if room_id is None:
+        return "Room revisit detected"
+    return f"Room re-entry into R{int(room_id)}"
+
+
+def _update_mode(snapshot: "SnapshotRecord", diagnostic: Optional[Dict[str, Any]]) -> str:
+    if diagnostic is not None:
+        return "revisit / reuse"
+    if snapshot.segmentation_updated:
+        return "room geometry refresh"
+    return "incremental update"
+
+
+def _event_badge_text(diagnostic: Dict[str, Any]) -> str:
+    label = f"Revisit #{int(diagnostic['event_id']):02d}"
+    if diagnostic.get("trigger_reason") == "pose_proximity + room_reentry":
+        return f"{label} | pose + room"
+    if diagnostic.get("trigger_reason") == "room_reentry":
+        return f"{label} | room re-entry"
+    return f"{label} | pose proximity"
+
+
+@dataclass
+class SnapshotRecord:
+    index: int
+    frame_idx: int
+    timestamp: float
+    pose: np.ndarray
+    rgb_path: str
+    trajectory_xy: List[Tuple[float, float]]
+    vector_map: Optional[Dict[str, Any]]
+    vector_map_path: Optional[str]
+    current_room_id: Optional[int]
+    revisit_events: List[Dict[str, Any]]
+    tracking_report: Dict[str, Any]
+    segmentation_updated: bool
+    segmentation_cycle_idx: int
+    last_segmentation_frame_idx: Optional[int]
+
+
+@dataclass
+class ReplayFrameRecord:
+    index: int
+    frame_idx: int
+    timestamp: float
+    pose: np.ndarray
+    rgb_path: str
+    trajectory_xy: List[Tuple[float, float]]
+    segmentation_cycle_idx: int
+    last_segmentation_frame_idx: Optional[int]
+    map_snapshot_index: Optional[int]
+    current_room_id: Optional[int]
+
+
+class RevisitDetector:
+    def __init__(self, pose_distance_m: float = 0.9, min_frame_gap: int = 80):
+        self.pose_distance_m = float(pose_distance_m)
+        self.min_frame_gap = int(min_frame_gap)
+        self.pose_history: List[Dict[str, Any]] = []
+        self.room_state: Dict[int, Dict[str, Any]] = {}
+        self.last_room_id: Optional[int] = None
+        self.next_event_id = 1
+
+    def update(
+        self,
+        frame_idx: int,
+        timestamp: float,
+        position_xy: Sequence[float],
+        current_room_id: Optional[int],
+    ) -> List[Dict[str, Any]]:
+        events: List[Dict[str, Any]] = []
+        position = np.asarray(position_xy, dtype=np.float32)
+
+        best_pose_match = None
+        best_pose_dist = float("inf")
+        for item in self.pose_history:
+            if frame_idx - int(item["frame_idx"]) < self.min_frame_gap:
+                continue
+            distance = float(np.linalg.norm(position - item["position_xy"]))
+            if distance < self.pose_distance_m and distance < best_pose_dist:
+                best_pose_dist = distance
+                best_pose_match = item
+
+        if best_pose_match is not None:
+            events.append(
+                {
+                    "id": int(self.next_event_id),
+                    "type": "pose_loop_closure",
+                    "frame_idx": int(frame_idx),
+                    "timestamp": float(timestamp),
+                    "matched_frame_idx": int(best_pose_match["frame_idx"]),
+                    "matched_room_id": best_pose_match.get("room_id"),
+                    "position_xy": [float(position[0]), float(position[1])],
+                    "distance_m": round(float(best_pose_dist), 3),
+                }
+            )
+            self.next_event_id += 1
+
+        if current_room_id is not None:
+            state = self.room_state.get(int(current_room_id))
+            if state is None:
+                self.room_state[int(current_room_id)] = {
+                    "first_frame_idx": int(frame_idx),
+                    "last_frame_idx": int(frame_idx),
+                    "departed": False,
+                }
+            else:
+                if self.last_room_id is not None and self.last_room_id != current_room_id:
+                    state["departed"] = True
+                if state.get("departed") and frame_idx - int(state["last_frame_idx"]) >= self.min_frame_gap:
+                    events.append(
+                        {
+                            "id": int(self.next_event_id),
+                            "type": "room_revisit",
+                            "frame_idx": int(frame_idx),
+                            "timestamp": float(timestamp),
+                            "room_id": int(current_room_id),
+                            "last_seen_frame_idx": int(state["last_frame_idx"]),
+                            "position_xy": [float(position[0]), float(position[1])],
+                        }
+                    )
+                    self.next_event_id += 1
+                    state["departed"] = False
+                state["last_frame_idx"] = int(frame_idx)
+
+        if self.last_room_id is not None and current_room_id is not None and self.last_room_id != current_room_id:
+            prev_state = self.room_state.setdefault(
+                int(self.last_room_id),
+                {
+                    "first_frame_idx": int(frame_idx),
+                    "last_frame_idx": int(frame_idx),
+                    "departed": False,
+                },
+            )
+            prev_state["departed"] = True
+            prev_state["last_frame_idx"] = int(frame_idx)
+
+        self.pose_history.append(
+            {
+                "frame_idx": int(frame_idx),
+                "timestamp": float(timestamp),
+                "position_xy": position,
+                "room_id": None if current_room_id is None else int(current_room_id),
+            }
+        )
+        self.last_room_id = None if current_room_id is None else int(current_room_id)
+        return events
+
+
+class ClosedLoopDemoRecorder:
+    def __init__(
+        self,
+        output_root: str,
+        sequence_id: str,
+        capture_stride_frames: int = 20,
+        video_fps: int = 12,
+        canvas_size: Tuple[int, int] = (1600, 900),
+        save_scene_graph_vis: bool = False,
+        spotlight_count: int = 4,
+        room_seg_interval: Optional[int] = None,
+        max_frames: Optional[int] = None,
+        full_rgb_replay: bool = False,
+        per_frame_pose_overlay: bool = True,
+    ):
+        self.output_root = Path(output_root) / str(sequence_id)
+        self.sequence_id = str(sequence_id)
+        self.capture_stride_frames = max(1, int(capture_stride_frames))
+        self.video_fps = int(video_fps)
+        self.canvas_size = canvas_size
+        self.save_scene_graph_vis = bool(save_scene_graph_vis)
+        self.spotlight_count = max(0, int(spotlight_count))
+        self.room_seg_interval = None if room_seg_interval is None else int(room_seg_interval)
+        self.max_frames = None if max_frames is None else int(max_frames)
+        self.full_rgb_replay = bool(full_rgb_replay)
+        self.per_frame_pose_overlay = bool(per_frame_pose_overlay)
+
+        self.rgb_dir = self.output_root / "rgb_frames"
+        self.render_dir = self.output_root / "rendered_frames"
+        self.snapshot_dir = self.output_root / "snapshots"
+        self.final_dir = self.output_root / "final"
+        self.log_dir = self.output_root / "logs"
+        self.spotlight_dir = self.output_root / "event_spotlights"
+        self.scene_graph_dir = self.output_root / "scene_graph"
+        for directory in (
+            self.output_root,
+            self.rgb_dir,
+            self.render_dir,
+            self.snapshot_dir,
+            self.final_dir,
+            self.log_dir,
+            self.spotlight_dir,
+            self.scene_graph_dir,
+        ):
+            directory.mkdir(parents=True, exist_ok=True)
+
+        self.revisit_detector = RevisitDetector()
+        self.snapshots: List[SnapshotRecord] = []
+        self.replay_frames: List[ReplayFrameRecord] = []
+        self.revisit_events: List[Dict[str, Any]] = []
+        self.last_captured_frame: Optional[int] = None
+        self.latest_vector_map_path: Optional[str] = None
+        self.latest_vector_map: Optional[Dict[str, Any]] = None
+
+    def _write_rgb_frame(self, frame_idx: int, image_rgb: np.ndarray) -> str:
+        image_rgb = _to_uint8_rgb(image_rgb)
+        rgb_path = self.rgb_dir / f"frame_{int(frame_idx):06d}.jpg"
+        cv2.imwrite(str(rgb_path), cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
+        return str(rgb_path)
+
+    def _current_map_snapshot(self) -> Optional[SnapshotRecord]:
+        if not self.snapshots:
+            return None
+        return self.snapshots[-1]
+
+    def should_capture(self, frame_idx: int, segmentation_updated: bool = False) -> bool:
+        if segmentation_updated:
+            return True
+        if self.last_captured_frame is None:
+            return True
+        return (frame_idx - self.last_captured_frame) >= self.capture_stride_frames
+
+    def record_snapshot(
+        self,
+        frame_idx: int,
+        timestamp: float,
+        image_rgb: np.ndarray,
+        pose: np.ndarray,
+        trajectory_xy: Sequence[Tuple[float, float]],
+        vector_map: Optional[Dict[str, Any]],
+        tracking_report: Optional[Dict[str, Any]] = None,
+        segmentation_updated: bool = False,
+        segmentation_cycle_idx: int = 0,
+        last_segmentation_frame_idx: Optional[int] = None,
+    ) -> None:
+        rgb_path = self._write_rgb_frame(frame_idx, image_rgb)
+
+        vector_map_path = None
+        if vector_map:
+            vector_map_path = self.snapshot_dir / f"vector_map_{int(frame_idx):06d}.json"
+            with open(vector_map_path, "w", encoding="utf-8") as f:
+                json.dump(vector_map, f, indent=2)
+            self.latest_vector_map_path = str(vector_map_path)
+            self.latest_vector_map = vector_map
+        else:
+            vector_map = self.latest_vector_map
+            vector_map_path = self.latest_vector_map_path
+
+        current_room_id = None
+        if vector_map:
+            current_room_id = _best_room_for_pose((pose[0, 3], pose[1, 3]), vector_map.get("rooms", []))
+
+        revisit_events = self.revisit_detector.update(
+            frame_idx=int(frame_idx),
+            timestamp=float(timestamp),
+            position_xy=(float(pose[0, 3]), float(pose[1, 3])),
+            current_room_id=current_room_id,
+        )
+        self.revisit_events.extend(revisit_events)
+
+        snapshot = SnapshotRecord(
+            index=len(self.snapshots),
+            frame_idx=int(frame_idx),
+            timestamp=float(timestamp),
+            pose=np.asarray(pose, dtype=np.float32).copy(),
+            rgb_path=str(rgb_path),
+            trajectory_xy=[(float(x), float(y)) for x, y in trajectory_xy],
+            vector_map=vector_map,
+            vector_map_path=None if vector_map_path is None else str(vector_map_path),
+            current_room_id=current_room_id,
+            revisit_events=revisit_events,
+            tracking_report=dict(tracking_report or {}),
+            segmentation_updated=bool(segmentation_updated),
+            segmentation_cycle_idx=int(segmentation_cycle_idx),
+            last_segmentation_frame_idx=None if last_segmentation_frame_idx is None else int(last_segmentation_frame_idx),
+        )
+        self.snapshots.append(snapshot)
+        self.last_captured_frame = int(frame_idx)
+
+    def record_frame(
+        self,
+        frame_idx: int,
+        timestamp: float,
+        image_rgb: np.ndarray,
+        pose: np.ndarray,
+        trajectory_xy: Sequence[Tuple[float, float]],
+        segmentation_cycle_idx: int = 0,
+        last_segmentation_frame_idx: Optional[int] = None,
+    ) -> None:
+        if not self.full_rgb_replay:
+            return
+
+        rgb_path = self._write_rgb_frame(frame_idx, image_rgb)
+        map_snapshot = self._current_map_snapshot()
+        vector_map = None if map_snapshot is None else map_snapshot.vector_map
+        current_room_id = None
+        if vector_map:
+            current_room_id = _best_room_for_pose((pose[0, 3], pose[1, 3]), vector_map.get("rooms", []))
+
+        self.replay_frames.append(
+            ReplayFrameRecord(
+                index=len(self.replay_frames),
+                frame_idx=int(frame_idx),
+                timestamp=float(timestamp),
+                pose=np.asarray(pose, dtype=np.float32).copy(),
+                rgb_path=rgb_path,
+                trajectory_xy=[(float(x), float(y)) for x, y in trajectory_xy],
+                segmentation_cycle_idx=int(segmentation_cycle_idx),
+                last_segmentation_frame_idx=None if last_segmentation_frame_idx is None else int(last_segmentation_frame_idx),
+                map_snapshot_index=None if map_snapshot is None else int(map_snapshot.index),
+                current_room_id=current_room_id,
+            )
+        )
+
+    def _map_snapshot_for_replay_frame(self, frame: ReplayFrameRecord) -> Optional[SnapshotRecord]:
+        if frame.map_snapshot_index is None:
+            return None
+        if frame.map_snapshot_index < 0 or frame.map_snapshot_index >= len(self.snapshots):
+            return None
+        return self.snapshots[frame.map_snapshot_index]
+
+    def _map_display_context(
+        self,
+        frame_idx: int,
+        map_snapshot: Optional[SnapshotRecord],
+        diagnostics_by_frame: Dict[int, Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        if map_snapshot is None:
+            return {
+                "display_state": "map unavailable",
+                "map_held": False,
+                "refresh_frame_idx": None,
+                "refresh_type": None,
+                "refresh_diagnostic": None,
+            }
+
+        refresh_diagnostic = diagnostics_by_frame.get(int(map_snapshot.frame_idx))
+        refresh_type = _update_mode(map_snapshot, refresh_diagnostic)
+        map_held = int(map_snapshot.frame_idx) != int(frame_idx)
+        return {
+            "display_state": "map held" if map_held else refresh_type,
+            "map_held": bool(map_held),
+            "refresh_frame_idx": int(map_snapshot.frame_idx),
+            "refresh_type": refresh_type,
+            "refresh_diagnostic": refresh_diagnostic,
+        }
+
+    def finalize(
+        self,
+        run_summary: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        if not self.snapshots:
+            summary_path = self.log_dir / "summary.json"
+            with open(summary_path, "w", encoding="utf-8") as f:
+                json.dump(run_summary, f, indent=2)
+            return {
+                "output_root": str(self.output_root),
+                "summary_json": str(summary_path),
+                "video_path": None,
+                "final_map_png": None,
+                "final_split_png": None,
+                "report_path": None,
+            }
+
+        bounds = _collect_map_bounds(self.snapshots)
+        revisit_diagnostics = self._build_revisit_diagnostics()
+        diagnostics_by_frame = {int(item["frame_idx"]): item for item in revisit_diagnostics}
+
+        video_path = self.final_dir / f"{self.sequence_id}_closed_loop_demo.mp4"
+        final_map_png = self.final_dir / f"{self.sequence_id}_final_bev.png"
+        final_split_png = self.final_dir / f"{self.sequence_id}_final_split.png"
+
+        width, height = self.canvas_size
+        writer = cv2.VideoWriter(
+            str(video_path),
+            cv2.VideoWriter_fourcc(*"mp4v"),
+            float(self.video_fps),
+            (width, height),
+        )
+
+        render_records: Sequence[Any] = self.replay_frames if self.full_rgb_replay and self.replay_frames else self.snapshots
+
+        for record in render_records:
+            if isinstance(record, ReplayFrameRecord):
+                map_snapshot = self._map_snapshot_for_replay_frame(record)
+            else:
+                map_snapshot = record
+            map_context = self._map_display_context(record.frame_idx, map_snapshot, diagnostics_by_frame)
+            frame = self._render_split_frame(
+                record,
+                bounds,
+                diagnostics_by_frame.get(record.frame_idx),
+                map_snapshot=map_snapshot,
+                map_context=map_context,
+            )
+            cv2.imwrite(str(self.render_dir / f"render_{record.frame_idx:06d}.jpg"), frame)
+            writer.write(frame)
+            if int(record.index) == len(render_records) - 1:
+                cv2.imwrite(str(final_split_png), frame)
+                bev = self._render_bev(
+                    record,
+                    bounds,
+                    width=width // 2,
+                    height=height,
+                    diagnostic=diagnostics_by_frame.get(record.frame_idx) or map_context.get("refresh_diagnostic"),
+                    map_snapshot=map_snapshot,
+                )
+                cv2.imwrite(str(final_map_png), bev)
+
+        writer.release()
+
+        spotlight_paths = self._export_spotlights(bounds, revisit_diagnostics, diagnostics_by_frame)
+
+        timeline_json = self.log_dir / "timeline.json"
+        timeline_csv = self.log_dir / "timeline.csv"
+        revisit_json = self.log_dir / "revisit_events.json"
+        revisit_diagnostics_json = self.log_dir / "revisit_diagnostics.json"
+        revisit_diagnostics_csv = self.log_dir / "revisit_diagnostics.csv"
+        revisit_summary_md = self.log_dir / "revisit_summary.md"
+        presentation_note_md = self.log_dir / "presentation_note.md"
+        summary_json = self.log_dir / "summary.json"
+        report_md = self.output_root / "report.md"
+
+        for diagnostic in revisit_diagnostics:
+            diagnostic["spotlight_paths"] = spotlight_paths.get(int(diagnostic["event_id"]), {})
+
+        timeline_rows = self._build_timeline_rows(diagnostics_by_frame)
+        with open(timeline_json, "w", encoding="utf-8") as f:
+            json.dump(timeline_rows, f, indent=2)
+        with open(timeline_csv, "w", encoding="utf-8", newline="") as f:
+            writer_csv = csv.DictWriter(f, fieldnames=list(timeline_rows[0].keys()))
+            writer_csv.writeheader()
+            writer_csv.writerows(timeline_rows)
+        with open(revisit_json, "w", encoding="utf-8") as f:
+            json.dump(self.revisit_events, f, indent=2)
+        with open(revisit_diagnostics_json, "w", encoding="utf-8") as f:
+            json.dump(revisit_diagnostics, f, indent=2)
+        with open(revisit_diagnostics_csv, "w", encoding="utf-8", newline="") as f:
+            rows = self._flatten_revisit_diagnostics_for_csv(revisit_diagnostics)
+            writer_csv = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+            writer_csv.writeheader()
+            writer_csv.writerows(rows)
+        with open(revisit_summary_md, "w", encoding="utf-8") as f:
+            f.write(self._build_revisit_summary_markdown(revisit_diagnostics))
+        with open(presentation_note_md, "w", encoding="utf-8") as f:
+            params = self._presentation_parameters()
+            quality = self._presentation_quality_note()
+            f.write("# Presentation Note\n\n")
+            f.write(f"- room_seg_interval: {params.get('room_seg_interval')}\n")
+            f.write(f"- capture_stride_frames: {params.get('capture_stride_frames')}\n")
+            f.write(f"- replay_mode: {params.get('replay_mode')}\n")
+            f.write(f"- full_rgb_replay: {params.get('full_rgb_replay')}\n")
+            f.write(f"- per_frame_pose_overlay: {params.get('per_frame_pose_overlay')}\n")
+            f.write(f"- map_refresh_frame_count: {len(self.snapshots)}\n")
+            f.write(f"- video_fps: {params.get('video_fps')}\n")
+            f.write(f"- spotlight_count_requested: {params.get('spotlight_count_requested')}\n")
+            f.write(f"- max_frames: {params.get('max_frames')}\n")
+            f.write(f"- assessment: {quality.get('assessment')}\n")
+            f.write(f"- note: {quality.get('note')}\n")
+
+        final_snapshot = self.snapshots[-1]
+        final_vector_map = final_snapshot.vector_map or {}
+        final_topology = _topology_summary(final_vector_map)
+        presentation_parameters = self._presentation_parameters()
+        presentation_quality_note = self._presentation_quality_note()
+        summary_payload = dict(run_summary)
+        summary_payload.update(
+            {
+                "sequence_id": self.sequence_id,
+                "snapshot_count": int(len(self.snapshots)),
+                "replay_frame_count": int(len(render_records)),
+                "segmentation_cycle_count": int(max(snapshot.segmentation_cycle_idx for snapshot in self.snapshots)),
+                "revisit_event_count": int(len(self.revisit_events)),
+                "revisit_diagnostic_count": int(len(revisit_diagnostics)),
+                "final_room_count": int(len(final_vector_map.get("rooms", []))),
+                "final_object_count": int(len(final_vector_map.get("objects", []))),
+                "final_anchor_count": int(len(final_vector_map.get("anchors", []))),
+                "final_gateway_count": int(final_topology["gateway_count"]),
+                "final_adjacency_edge_count": int(final_topology["adjacency_edge_count"]),
+                "video_path": str(video_path),
+                "final_map_png": str(final_map_png),
+                "final_split_png": str(final_split_png),
+                "timeline_json": str(timeline_json),
+                "timeline_csv": str(timeline_csv),
+                "revisit_events_json": str(revisit_json),
+                "revisit_diagnostics_json": str(revisit_diagnostics_json),
+                "revisit_diagnostics_csv": str(revisit_diagnostics_csv),
+                "revisit_summary_md": str(revisit_summary_md),
+                "presentation_note_md": str(presentation_note_md),
+                "spotlight_dir": str(self.spotlight_dir),
+                "spotlight_count": int(len(spotlight_paths)),
+                "presentation_parameters": presentation_parameters,
+                "presentation_quality_note": presentation_quality_note,
+                "replay_mode": presentation_parameters.get("replay_mode"),
+                "rgb_replay_frame_continuous": bool(self.full_rgb_replay),
+                "semantic_map_hold_enabled": bool(self.full_rgb_replay),
+                "per_frame_pose_overlay_enabled": bool(self.full_rgb_replay and self.per_frame_pose_overlay),
+                "map_refresh_count": int(len(self.snapshots)),
+                "map_refresh_frame_indices": [int(snapshot.frame_idx) for snapshot in self.snapshots],
+            }
+        )
+        with open(summary_json, "w", encoding="utf-8") as f:
+            json.dump(summary_payload, f, indent=2)
+        with open(report_md, "w", encoding="utf-8") as f:
+            f.write(self._build_report(summary_payload, final_snapshot, revisit_diagnostics, spotlight_paths))
+
+        return {
+            "output_root": str(self.output_root),
+            "summary_json": str(summary_json),
+            "video_path": str(video_path),
+            "final_map_png": str(final_map_png),
+            "final_split_png": str(final_split_png),
+            "report_path": str(report_md),
+            "timeline_json": str(timeline_json),
+            "timeline_csv": str(timeline_csv),
+            "revisit_events_json": str(revisit_json),
+            "revisit_diagnostics_json": str(revisit_diagnostics_json),
+            "revisit_diagnostics_csv": str(revisit_diagnostics_csv),
+            "revisit_summary_md": str(revisit_summary_md),
+            "spotlight_dir": str(self.spotlight_dir),
+        }
+
+    def _snapshot_metric_summary(self, snapshot: SnapshotRecord) -> Dict[str, Any]:
+        vector_map = snapshot.vector_map or {}
+        topology = _topology_summary(vector_map)
+        room_ids = sorted(int(room["id"]) for room in vector_map.get("rooms", []) if "id" in room)
+        object_ids = sorted(int(obj["id"]) for obj in vector_map.get("objects", []) if "id" in obj)
+        anchor_ids = sorted(str(anchor.get("id", f"anchor_{idx}")) for idx, anchor in enumerate(vector_map.get("anchors", [])))
+        return {
+            "frame_idx": int(snapshot.frame_idx),
+            "room_count": int(len(room_ids)),
+            "object_count": int(len(object_ids)),
+            "anchor_count": int(len(anchor_ids)),
+            "room_ids": room_ids,
+            "object_ids": object_ids,
+            "anchor_ids": anchor_ids,
+            "topology": topology,
+        }
+
+    def _find_effect_snapshot(self, snapshot_index: int) -> SnapshotRecord:
+        origin = self.snapshots[snapshot_index]
+        if origin.segmentation_updated:
+            return origin
+        for candidate in self.snapshots[snapshot_index + 1:]:
+            if candidate.segmentation_updated:
+                return candidate
+        return origin
+
+    def _find_after_snapshot(self, effect_snapshot: SnapshotRecord) -> SnapshotRecord:
+        for candidate in self.snapshots[effect_snapshot.index + 1:]:
+            return candidate
+        return effect_snapshot
+
+    def _room_change_details(
+        self,
+        before_vector_map: Optional[Dict[str, Any]],
+        after_vector_map: Optional[Dict[str, Any]],
+        matched_room_ids: Sequence[int],
+    ) -> List[Dict[str, Any]]:
+        before_rooms = _room_lookup(before_vector_map)
+        after_rooms = _room_lookup(after_vector_map)
+        details: List[Dict[str, Any]] = []
+        for room_id in matched_room_ids:
+            before_room = before_rooms.get(int(room_id))
+            after_room = after_rooms.get(int(room_id))
+            if before_room is None or after_room is None:
+                continue
+            area_before = _polygon_area(before_room.get("polygon", []))
+            area_after = _polygon_area(after_room.get("polygon", []))
+            centroid_before = _polygon_centroid(before_room.get("polygon", []))
+            centroid_after = _polygon_centroid(after_room.get("polygon", []))
+            details.append(
+                {
+                    "room_id": int(room_id),
+                    "area_before_m2": _round_float(area_before),
+                    "area_after_m2": _round_float(area_after),
+                    "area_delta_m2": _round_float(area_after - area_before),
+                    "polygon_iou": _round_float(_polygon_iou(before_room.get("polygon", []), after_room.get("polygon", []))),
+                    "centroid_before_xy": [_round_float(centroid_before[0]), _round_float(centroid_before[1])],
+                    "centroid_after_xy": [_round_float(centroid_after[0]), _round_float(centroid_after[1])],
+                    "centroid_shift_m": _round_float(_safe_norm(centroid_before, centroid_after)),
+                }
+            )
+        return details
+
+    def _room_polygon_update_summary(self, room_changes: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
+        updated_room_ids = []
+        expanded_room_ids = []
+        contracted_room_ids = []
+        unchanged_room_ids = []
+        for change in room_changes:
+            room_id = int(change["room_id"])
+            area_delta = float(change.get("area_delta_m2") or 0.0)
+            polygon_iou = change.get("polygon_iou")
+            centroid_shift = float(change.get("centroid_shift_m") or 0.0)
+            changed = abs(area_delta) > 0.12 or centroid_shift > 0.08 or (
+                polygon_iou is not None and float(polygon_iou) < 0.985
+            )
+            if changed:
+                updated_room_ids.append(room_id)
+                if area_delta > 0.12:
+                    expanded_room_ids.append(room_id)
+                elif area_delta < -0.12:
+                    contracted_room_ids.append(room_id)
+            else:
+                unchanged_room_ids.append(room_id)
+        return {
+            "updated_room_ids": sorted(updated_room_ids),
+            "expanded_room_ids": sorted(expanded_room_ids),
+            "contracted_room_ids": sorted(contracted_room_ids),
+            "unchanged_room_ids": sorted(unchanged_room_ids),
+            "updated_room_count": int(len(updated_room_ids)),
+            "expanded_room_count": int(len(expanded_room_ids)),
+            "contracted_room_count": int(len(contracted_room_ids)),
+        }
+
+    def _duplicate_room_warning(
+        self,
+        vector_map: Optional[Dict[str, Any]],
+        focus_room_ids: Sequence[int],
+    ) -> Dict[str, Any]:
+        room_lookup = _room_lookup(vector_map)
+        if not room_lookup:
+            return {"flag": False, "candidate_pairs": []}
+        room_ids = sorted(room_lookup)
+        focus_set = {int(room_id) for room_id in focus_room_ids}
+        candidate_pairs = []
+        for idx, room_id in enumerate(room_ids):
+            for other_id in room_ids[idx + 1:]:
+                if focus_set and room_id not in focus_set and other_id not in focus_set:
+                    continue
+                room_a = room_lookup[room_id]
+                room_b = room_lookup[other_id]
+                iou = _polygon_iou(room_a.get("polygon", []), room_b.get("polygon", []))
+                if iou is None or iou < 0.22:
+                    continue
+                centroid_dist = _safe_norm(
+                    _polygon_centroid(room_a.get("polygon", [])),
+                    _polygon_centroid(room_b.get("polygon", [])),
+                )
+                candidate_pairs.append(
+                    {
+                        "room_ids": [int(room_id), int(other_id)],
+                        "polygon_iou": _round_float(iou),
+                        "centroid_distance_m": _round_float(centroid_dist),
+                    }
+                )
+        candidate_pairs.sort(key=lambda item: (-float(item["polygon_iou"]), float(item["centroid_distance_m"])))
+        return {
+            "flag": bool(candidate_pairs),
+            "candidate_pairs": candidate_pairs[:3],
+        }
+
+    def _duplicate_object_warning(
+        self,
+        vector_map: Optional[Dict[str, Any]],
+        focus_room_ids: Sequence[int],
+    ) -> Dict[str, Any]:
+        if not vector_map:
+            return {"flag": False, "candidate_pairs": []}
+        focus_set = {int(room_id) for room_id in focus_room_ids}
+        ignored_labels = {"ceiling", "floor", "sky", "wall", "window"}
+        objects = []
+        for obj in vector_map.get("objects", []):
+            room_uuid = int(obj.get("room_uuid", -1))
+            if focus_set and room_uuid not in focus_set:
+                continue
+            centroid = _object_centroid(obj)
+            if centroid is None:
+                continue
+            label = str(obj.get("label", obj.get("category", "obj")))
+            if label.strip().lower() in ignored_labels:
+                continue
+            objects.append(
+                {
+                    "id": int(obj["id"]),
+                    "label": label,
+                    "room_uuid": room_uuid,
+                    "centroid": centroid,
+                }
+            )
+
+        candidate_pairs = []
+        for idx, obj_a in enumerate(objects):
+            for obj_b in objects[idx + 1:]:
+                if obj_a["room_uuid"] != obj_b["room_uuid"]:
+                    continue
+                if obj_a["label"] != obj_b["label"]:
+                    continue
+                distance = _safe_norm(obj_a["centroid"], obj_b["centroid"])
+                if distance > 0.45:
+                    continue
+                candidate_pairs.append(
+                    {
+                        "object_ids": [int(obj_a["id"]), int(obj_b["id"])],
+                        "label": obj_a["label"],
+                        "room_id": int(obj_a["room_uuid"]),
+                        "centroid_distance_m": _round_float(distance),
+                    }
+                )
+        candidate_pairs.sort(key=lambda item: float(item["centroid_distance_m"]))
+        return {
+            "flag": bool(candidate_pairs),
+            "candidate_pairs": candidate_pairs[:4],
+        }
+
+    def _object_fusion_summary(
+        self,
+        before_vector_map: Optional[Dict[str, Any]],
+        after_vector_map: Optional[Dict[str, Any]],
+        focus_room_ids: Sequence[int],
+    ) -> Dict[str, Any]:
+        before_grouped = _objects_by_room(before_vector_map)
+        after_grouped = _objects_by_room(after_vector_map)
+        before_objects = []
+        after_objects = []
+        per_room = []
+        overall_retained_ids = set()
+        overall_raw_added_ids = set()
+        overall_raw_removed_ids = set()
+        overall_added_ids = set()
+        overall_removed_ids = set()
+        overall_merged_ids = set()
+        overall_merged_into_ids = set()
+        overall_merge_pairs: List[Dict[str, Any]] = []
+
+        for room_id in focus_room_ids:
+            room_id = int(room_id)
+            room_before = [obj for obj in before_grouped.get(room_id, []) if "id" in obj]
+            room_after = [obj for obj in after_grouped.get(room_id, []) if "id" in obj]
+            before_objects.extend(room_before)
+            after_objects.extend(room_after)
+
+            before_lookup = {int(obj["id"]): obj for obj in room_before}
+            after_lookup = {int(obj["id"]): obj for obj in room_after}
+            before_ids = set(before_lookup)
+            after_ids = set(after_lookup)
+            retained_ids = sorted(before_ids & after_ids)
+            raw_added_ids = sorted(after_ids - before_ids)
+            raw_removed_ids = sorted(before_ids - after_ids)
+
+            merge_pairs = []
+            merged_removed_ids = set()
+            merged_into_ids = set()
+            for removed_id in raw_removed_ids:
+                removed_obj = before_lookup[removed_id]
+                removed_label = _object_label(removed_obj)
+                removed_centroid = _object_centroid(removed_obj)
+                if removed_centroid is None:
+                    continue
+                best_target = None
+                best_distance = float("inf")
+                for target_id in sorted(after_ids):
+                    target_obj = after_lookup[target_id]
+                    if _object_label(target_obj) != removed_label:
+                        continue
+                    target_centroid = _object_centroid(target_obj)
+                    if target_centroid is None:
+                        continue
+                    distance = _safe_norm(removed_centroid, target_centroid)
+                    if distance <= 0.65 and distance < best_distance:
+                        best_distance = distance
+                        best_target = target_id
+                if best_target is None:
+                    continue
+                merged_removed_ids.add(int(removed_id))
+                merged_into_ids.add(int(best_target))
+                merge_pairs.append(
+                    {
+                        "room_id": int(room_id),
+                        "from_object_id": int(removed_id),
+                        "into_object_id": int(best_target),
+                        "label": removed_label,
+                        "into_status": "retained" if int(best_target) in retained_ids else "added",
+                        "centroid_distance_m": _round_float(best_distance),
+                    }
+                )
+
+            added_ids = sorted(set(raw_added_ids) - merged_into_ids)
+            removed_ids = sorted(set(raw_removed_ids) - merged_removed_ids)
+            per_room.append(
+                {
+                    "room_id": int(room_id),
+                    "object_count_before": int(len(before_lookup)),
+                    "object_count_after": int(len(after_lookup)),
+                    "object_ids_before": sorted(int(obj_id) for obj_id in before_ids),
+                    "object_ids_after": sorted(int(obj_id) for obj_id in after_ids),
+                    "retained_object_ids": [int(obj_id) for obj_id in retained_ids],
+                    "merged_object_ids": sorted(int(obj_id) for obj_id in merged_removed_ids),
+                    "merged_into_object_ids": sorted(int(obj_id) for obj_id in merged_into_ids),
+                    "added_object_ids": [int(obj_id) for obj_id in added_ids],
+                    "removed_object_ids": [int(obj_id) for obj_id in removed_ids],
+                    "merge_pairs": merge_pairs,
+                }
+            )
+
+            overall_retained_ids.update(int(obj_id) for obj_id in retained_ids)
+            overall_raw_added_ids.update(int(obj_id) for obj_id in raw_added_ids)
+            overall_raw_removed_ids.update(int(obj_id) for obj_id in raw_removed_ids)
+            overall_added_ids.update(int(obj_id) for obj_id in added_ids)
+            overall_removed_ids.update(int(obj_id) for obj_id in removed_ids)
+            overall_merged_ids.update(int(obj_id) for obj_id in merged_removed_ids)
+            overall_merged_into_ids.update(int(obj_id) for obj_id in merged_into_ids)
+            overall_merge_pairs.extend(merge_pairs)
+
+        before_lookup = {int(obj["id"]): obj for obj in before_objects if "id" in obj}
+        after_lookup = {int(obj["id"]): obj for obj in after_objects if "id" in obj}
+        return {
+            "room_ids": [int(room_id) for room_id in focus_room_ids],
+            "object_count_before": int(len(before_lookup)),
+            "object_count_after": int(len(after_lookup)),
+            "retained_object_count": int(len(overall_retained_ids)),
+            "raw_added_object_count": int(len(overall_raw_added_ids)),
+            "raw_removed_object_count": int(len(overall_raw_removed_ids)),
+            "merged_object_count": int(len(overall_merged_ids)),
+            "added_object_count": int(len(overall_added_ids)),
+            "removed_object_count": int(len(overall_removed_ids)),
+            "retained_object_ids": sorted(int(obj_id) for obj_id in overall_retained_ids),
+            "merged_object_ids": sorted(int(obj_id) for obj_id in overall_merged_ids),
+            "merged_into_object_ids": sorted(int(obj_id) for obj_id in overall_merged_into_ids),
+            "added_object_ids": sorted(int(obj_id) for obj_id in overall_added_ids),
+            "removed_object_ids": sorted(int(obj_id) for obj_id in overall_removed_ids),
+            "merge_pairs": overall_merge_pairs,
+            "added_object_labels": [
+                _object_label(after_lookup[obj_id]) for obj_id in sorted(overall_added_ids)[:6] if obj_id in after_lookup
+            ],
+            "removed_object_labels": [
+                _object_label(before_lookup[obj_id]) for obj_id in sorted(overall_removed_ids)[:6] if obj_id in before_lookup
+            ],
+            "per_room": per_room,
+        }
+
+    def _local_global_attribution(
+        self,
+        before_vector_map: Optional[Dict[str, Any]],
+        after_vector_map: Optional[Dict[str, Any]],
+        focus_room_ids: Sequence[int],
+        room_polygon_summary: Dict[str, Any],
+        object_fusion_summary: Dict[str, Any],
+        tracking_reused_room_ids: Sequence[int],
+        tracking_new_room_ids: Sequence[int],
+    ) -> Dict[str, Any]:
+        focus_set = {int(room_id) for room_id in focus_room_ids}
+
+        before_room_ids = set(_room_lookup(before_vector_map))
+        after_room_ids = set(_room_lookup(after_vector_map))
+        local_room_ids_before = sorted(int(room_id) for room_id in (before_room_ids & focus_set))
+        local_room_ids_after = sorted(int(room_id) for room_id in (after_room_ids & focus_set))
+        other_room_ids_before = before_room_ids - focus_set
+        other_room_ids_after = after_room_ids - focus_set
+
+        before_objects_by_room = _objects_by_room(before_vector_map)
+        after_objects_by_room = _objects_by_room(after_vector_map)
+        local_object_ids_before = sorted(
+            int(obj["id"])
+            for room_id in focus_set
+            for obj in before_objects_by_room.get(int(room_id), [])
+            if "id" in obj
+        )
+        local_object_ids_after = sorted(
+            int(obj["id"])
+            for room_id in focus_set
+            for obj in after_objects_by_room.get(int(room_id), [])
+            if "id" in obj
+        )
+        other_object_ids_before = sorted(
+            int(obj["id"])
+            for room_id, objs in before_objects_by_room.items()
+            if int(room_id) not in focus_set
+            for obj in objs
+            if "id" in obj
+        )
+        other_object_ids_after = sorted(
+            int(obj["id"])
+            for room_id, objs in after_objects_by_room.items()
+            if int(room_id) not in focus_set
+            for obj in objs
+            if "id" in obj
+        )
+
+        before_anchors_by_room = _anchors_by_room(before_vector_map)
+        after_anchors_by_room = _anchors_by_room(after_vector_map)
+        local_anchor_ids_before = sorted(
+            str(anchor.get("id", f"anchor_{idx}"))
+            for room_id in focus_set
+            for idx, anchor in enumerate(before_anchors_by_room.get(int(room_id), []))
+        )
+        local_anchor_ids_after = sorted(
+            str(anchor.get("id", f"anchor_{idx}"))
+            for room_id in focus_set
+            for idx, anchor in enumerate(after_anchors_by_room.get(int(room_id), []))
+        )
+        other_anchor_ids_before = sorted(
+            str(anchor.get("id", f"anchor_{room_id}_{idx}"))
+            for room_id, anchors in before_anchors_by_room.items()
+            if int(room_id) not in focus_set
+            for idx, anchor in enumerate(anchors)
+        )
+        other_anchor_ids_after = sorted(
+            str(anchor.get("id", f"anchor_{room_id}_{idx}"))
+            for room_id, anchors in after_anchors_by_room.items()
+            if int(room_id) not in focus_set
+            for idx, anchor in enumerate(anchors)
+        )
+
+        tracking_reused = sorted(int(room_id) for room_id in set(int(v) for v in tracking_reused_room_ids) & focus_set)
+        tracking_new_local = sorted(int(room_id) for room_id in set(int(v) for v in tracking_new_room_ids) & focus_set)
+        if focus_set and local_room_ids_before and local_room_ids_after and not tracking_new_local:
+            room_reuse_assessment = "avoided"
+        elif tracking_new_local:
+            room_reuse_assessment = "not_avoided"
+        else:
+            room_reuse_assessment = "unclear"
+
+        unrelated_room_delta = int(len(other_room_ids_after) - len(other_room_ids_before))
+        unrelated_object_delta = int(len(other_object_ids_after) - len(other_object_ids_before))
+        unrelated_anchor_delta = int(len(other_anchor_ids_after) - len(other_anchor_ids_before))
+        if unrelated_room_delta == 0 and unrelated_object_delta == 0 and unrelated_anchor_delta == 0:
+            attribution_label = "isolated_local_reuse"
+        elif unrelated_room_delta >= 0 and unrelated_object_delta >= 0 and unrelated_anchor_delta >= 0:
+            attribution_label = "local_reuse_plus_global_growth"
+        else:
+            attribution_label = "local_reuse_plus_global_churn"
+
+        return {
+            "focus_room_ids": sorted(int(room_id) for room_id in focus_set),
+            "local_room_ids_before": local_room_ids_before,
+            "local_room_ids_after": local_room_ids_after,
+            "local_room_count_before": int(len(local_room_ids_before)),
+            "local_room_count_after": int(len(local_room_ids_after)),
+            "local_object_count_before": int(len(local_object_ids_before)),
+            "local_object_count_after": int(len(local_object_ids_after)),
+            "local_anchor_count_before": int(len(local_anchor_ids_before)),
+            "local_anchor_count_after": int(len(local_anchor_ids_after)),
+            "room_reuse_assessment": room_reuse_assessment,
+            "tracking_reused_room_ids": tracking_reused,
+            "tracking_new_room_ids_in_focus": tracking_new_local,
+            "local_changes_due_to_revisit": {
+                "room_identity_reused": bool(room_reuse_assessment == "avoided"),
+                "room_polygon_updated_room_ids": room_polygon_summary.get("updated_room_ids", []),
+                "room_polygon_expanded_room_ids": room_polygon_summary.get("expanded_room_ids", []),
+                "room_polygon_contracted_room_ids": room_polygon_summary.get("contracted_room_ids", []),
+                "object_ids_retained": object_fusion_summary.get("retained_object_ids", []),
+                "object_ids_merged": object_fusion_summary.get("merged_object_ids", []),
+                "object_ids_added": object_fusion_summary.get("added_object_ids", []),
+                "object_ids_removed": object_fusion_summary.get("removed_object_ids", []),
+                "anchor_ids_added": sorted(set(local_anchor_ids_after) - set(local_anchor_ids_before)),
+                "anchor_ids_removed": sorted(set(local_anchor_ids_before) - set(local_anchor_ids_after)),
+            },
+            "unrelated_global_changes": {
+                "room_count_delta": unrelated_room_delta,
+                "room_ids_added": sorted(int(room_id) for room_id in (other_room_ids_after - other_room_ids_before)),
+                "room_ids_removed": sorted(int(room_id) for room_id in (other_room_ids_before - other_room_ids_after)),
+                "object_count_delta": unrelated_object_delta,
+                "object_ids_added": sorted(int(obj_id) for obj_id in (set(other_object_ids_after) - set(other_object_ids_before))),
+                "object_ids_removed": sorted(int(obj_id) for obj_id in (set(other_object_ids_before) - set(other_object_ids_after))),
+                "anchor_count_delta": unrelated_anchor_delta,
+                "anchor_ids_added": sorted(set(other_anchor_ids_after) - set(other_anchor_ids_before)),
+                "anchor_ids_removed": sorted(set(other_anchor_ids_before) - set(other_anchor_ids_after)),
+            },
+            "attribution_label": attribution_label,
+        }
+
+    def _duplicate_room_evidence(
+        self,
+        duplicate_room_warning: Dict[str, Any],
+        local_global_attribution: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        if duplicate_room_warning.get("flag"):
+            return {
+                "likelihood": "likely",
+                "reason": "Overlapping room polygons remain around the revisited room set after the effect frame.",
+            }
+        if local_global_attribution.get("room_reuse_assessment") == "avoided":
+            return {
+                "likelihood": "unlikely",
+                "reason": "The revisited room ids were reused and no duplicate-room heuristic was triggered.",
+            }
+        return {
+            "likelihood": "unresolved",
+            "reason": "Stage A tracking suggests reuse, but the export cannot fully prove duplicate-room avoidance here.",
+        }
+
+    def _duplicate_object_evidence(
+        self,
+        duplicate_object_warning: Dict[str, Any],
+        object_fusion_summary: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        if duplicate_object_warning.get("flag"):
+            return {
+                "likelihood": "likely",
+                "reason": "Nearby same-label objects remain inside the revisited room set after fusion.",
+            }
+        if object_fusion_summary.get("merged_object_count", 0) > 0 or object_fusion_summary.get("retained_object_count", 0) > 0:
+            return {
+                "likelihood": "unlikely",
+                "reason": "Object ids were mostly retained or explicitly merged without duplicate-object warnings.",
+            }
+        return {
+            "likelihood": "unresolved",
+            "reason": "Object additions/removals occurred, but this Stage A export cannot prove whether they are new evidence or unresolved duplicates.",
+        }
+
+    def _build_revisit_diagnostics(self) -> List[Dict[str, Any]]:
+        grouped_events: Dict[int, List[Dict[str, Any]]] = {}
+        for event in self.revisit_events:
+            grouped_events.setdefault(int(event["frame_idx"]), []).append(event)
+
+        diagnostics: List[Dict[str, Any]] = []
+        for snapshot in self.snapshots:
+            raw_events = grouped_events.get(int(snapshot.frame_idx))
+            if not raw_events:
+                continue
+
+            before_snapshot = self.snapshots[max(snapshot.index - 1, 0)]
+            effect_snapshot = self._find_effect_snapshot(snapshot.index)
+            after_snapshot = self._find_after_snapshot(effect_snapshot)
+            trigger_types = {str(event.get("type", "")) for event in raw_events}
+            has_pose = "pose_loop_closure" in trigger_types
+            has_room = "room_revisit" in trigger_types
+            if has_pose and has_room:
+                trigger_reason = "pose_proximity + room_reentry"
+            elif has_room:
+                trigger_reason = "room_reentry"
+            else:
+                trigger_reason = "pose_proximity"
+
+            matched_room_ids = set()
+            matched_frame_indices = []
+            pose_distances = []
+            last_seen_room_frames = []
+            for event in raw_events:
+                matched_room_id = event.get("matched_room_id")
+                if matched_room_id is not None:
+                    matched_room_ids.add(int(matched_room_id))
+                room_id = event.get("room_id")
+                if room_id is not None:
+                    matched_room_ids.add(int(room_id))
+                if event.get("matched_frame_idx") is not None:
+                    matched_frame_indices.append(int(event["matched_frame_idx"]))
+                if event.get("distance_m") is not None:
+                    pose_distances.append(float(event["distance_m"]))
+                if event.get("last_seen_frame_idx") is not None:
+                    last_seen_room_frames.append(int(event["last_seen_frame_idx"]))
+            if snapshot.current_room_id is not None:
+                matched_room_ids.add(int(snapshot.current_room_id))
+
+            matched_room_id_list = sorted(matched_room_ids)
+            before_metrics = self._snapshot_metric_summary(before_snapshot)
+            effect_metrics = self._snapshot_metric_summary(effect_snapshot)
+            room_changes = self._room_change_details(before_snapshot.vector_map, effect_snapshot.vector_map, matched_room_id_list)
+            room_polygon_summary = self._room_polygon_update_summary(room_changes)
+            duplicate_room_warning = self._duplicate_room_warning(effect_snapshot.vector_map, matched_room_id_list)
+            duplicate_object_warning = self._duplicate_object_warning(effect_snapshot.vector_map, matched_room_id_list)
+            object_fusion_summary = self._object_fusion_summary(
+                before_snapshot.vector_map,
+                effect_snapshot.vector_map,
+                matched_room_id_list,
+            )
+
+            matched_existing_ids = [int(item["global_id"]) for item in effect_snapshot.tracking_report.get("matched", [])]
+            new_room_ids = [int(item["global_id"]) for item in effect_snapshot.tracking_report.get("new_rooms", [])]
+            local_global_attribution = self._local_global_attribution(
+                before_snapshot.vector_map,
+                effect_snapshot.vector_map,
+                matched_room_id_list,
+                room_polygon_summary,
+                object_fusion_summary,
+                matched_existing_ids,
+                new_room_ids,
+            )
+            new_room_avoided = bool(local_global_attribution.get("room_reuse_assessment") == "avoided")
+            duplicate_room_evidence = self._duplicate_room_evidence(duplicate_room_warning, local_global_attribution)
+            duplicate_object_evidence = self._duplicate_object_evidence(duplicate_object_warning, object_fusion_summary)
+
+            diagnostics.append(
+                {
+                    "event_id": int(len(diagnostics) + 1),
+                    "raw_event_ids": [int(event["id"]) for event in raw_events],
+                    "frame_idx": int(snapshot.frame_idx),
+                    "timestamp": float(snapshot.timestamp),
+                    "trigger_reason": trigger_reason,
+                    "trigger_types": sorted(trigger_types),
+                    "matched_room_ids": matched_room_id_list,
+                    "matched_frame_indices": sorted(set(matched_frame_indices)),
+                    "room_reentry_last_seen_frames": sorted(set(last_seen_room_frames)),
+                    "pose_distance_m_min": _round_float(min(pose_distances)) if pose_distances else None,
+                    "pose_distance_m_max": _round_float(max(pose_distances)) if pose_distances else None,
+                    "current_room_id": None if snapshot.current_room_id is None else int(snapshot.current_room_id),
+                    "comparison_frames": {
+                        "before_frame_idx": int(before_snapshot.frame_idx),
+                        "trigger_frame_idx": int(snapshot.frame_idx),
+                        "effect_frame_idx": int(effect_snapshot.frame_idx),
+                        "after_frame_idx": int(after_snapshot.frame_idx),
+                    },
+                    "effect_frame_idx": int(effect_snapshot.frame_idx),
+                    "effect_timestamp": float(effect_snapshot.timestamp),
+                    "effect_uses_geometry_refresh": bool(effect_snapshot.segmentation_updated),
+                    "effect_segmentation_cycle_idx": int(effect_snapshot.segmentation_cycle_idx),
+                    "new_room_avoided": bool(new_room_avoided),
+                    "new_room_creation_avoided_for_matched_rooms": bool(new_room_avoided),
+                    "room_count_before": int(before_metrics["room_count"]),
+                    "room_count_after": int(effect_metrics["room_count"]),
+                    "room_count_delta": int(effect_metrics["room_count"] - before_metrics["room_count"]),
+                    "object_count_before": int(before_metrics["object_count"]),
+                    "object_count_after": int(effect_metrics["object_count"]),
+                    "object_count_delta": int(effect_metrics["object_count"] - before_metrics["object_count"]),
+                    "anchor_count_before": int(before_metrics["anchor_count"]),
+                    "anchor_count_after": int(effect_metrics["anchor_count"]),
+                    "anchor_count_delta": int(effect_metrics["anchor_count"] - before_metrics["anchor_count"]),
+                    "gateway_count_before": int(before_metrics["topology"]["gateway_count"]),
+                    "gateway_count_after": int(effect_metrics["topology"]["gateway_count"]),
+                    "adjacency_edges_before": int(before_metrics["topology"]["adjacency_edge_count"]),
+                    "adjacency_edges_after": int(effect_metrics["topology"]["adjacency_edge_count"]),
+                    "geometry_refresh_frame_idx": int(effect_snapshot.frame_idx) if effect_snapshot.segmentation_updated else None,
+                    "tracking_matched_room_ids": matched_existing_ids,
+                    "tracking_new_room_ids": new_room_ids,
+                    "tracking_matched_count": int(len(effect_snapshot.tracking_report.get("matched", []))),
+                    "tracking_new_room_count": int(len(effect_snapshot.tracking_report.get("new_rooms", []))),
+                    "room_polygon_changes": room_changes,
+                    "room_polygon_update_summary": room_polygon_summary,
+                    "duplicate_room_warning": duplicate_room_warning,
+                    "duplicate_object_warning": duplicate_object_warning,
+                    "duplicate_room_evidence": duplicate_room_evidence,
+                    "duplicate_object_evidence": duplicate_object_evidence,
+                    "object_fusion_updates": object_fusion_summary,
+                    "local_merge_audit": local_global_attribution,
+                    "raw_event_summaries": [_summarize_raw_event(event) for event in raw_events],
+                }
+            )
+
+        for item in diagnostics:
+            item["impact_score"] = self._diagnostic_score(item)
+            item["teacher_evidence_score"] = self._teacher_evidence_score(item)
+        return diagnostics
+
+    def _diagnostic_score(self, diagnostic: Dict[str, Any]) -> float:
+        score = 0.0
+        reason = diagnostic.get("trigger_reason")
+        if reason == "pose_proximity + room_reentry":
+            score += 4.0
+        elif reason == "room_reentry":
+            score += 2.5
+        else:
+            score += 1.5
+        if diagnostic.get("new_room_avoided"):
+            score += 3.0
+        if diagnostic.get("effect_uses_geometry_refresh"):
+            score += 2.0
+        score += min(abs(float(diagnostic.get("room_count_delta", 0))), 3.0) * 1.2
+        score += min(abs(float(diagnostic.get("anchor_count_delta", 0))), 3.0) * 0.6
+        object_updates = diagnostic.get("object_fusion_updates", {})
+        score += min(float(object_updates.get("added_object_count", 0)) + float(object_updates.get("removed_object_count", 0)), 6.0) * 0.35
+        room_changes = diagnostic.get("room_polygon_changes", [])
+        if room_changes:
+            score += min(sum(abs(float(change.get("area_delta_m2") or 0.0)) for change in room_changes), 6.0) * 0.25
+        return round(score, 3)
+
+    def _teacher_evidence_score(self, diagnostic: Dict[str, Any]) -> float:
+        score = 0.0
+        local_merge_audit = diagnostic.get("local_merge_audit", {})
+        attribution_label = local_merge_audit.get("attribution_label")
+        if diagnostic.get("trigger_reason") == "pose_proximity + room_reentry":
+            score += 2.0
+        elif diagnostic.get("trigger_reason") == "room_reentry":
+            score += 1.3
+        else:
+            score += 0.9
+
+        if diagnostic.get("new_room_creation_avoided_for_matched_rooms"):
+            score += 4.0
+
+        if attribution_label == "isolated_local_reuse":
+            score += 4.0
+        elif attribution_label == "local_reuse_plus_global_growth":
+            score += 1.8
+        else:
+            score += 1.0
+
+        room_polygon_summary = diagnostic.get("room_polygon_update_summary", {})
+        score += min(float(room_polygon_summary.get("updated_room_count", 0)), 3.0) * 0.6
+        score += min(float(room_polygon_summary.get("expanded_room_count", 0)), 2.0) * 0.7
+
+        object_updates = diagnostic.get("object_fusion_updates", {})
+        score += min(float(object_updates.get("retained_object_count", 0)), 12.0) * 0.08
+        score += min(float(object_updates.get("merged_object_count", 0)), 4.0) * 0.6
+        score += min(float(object_updates.get("added_object_count", 0)), 4.0) * 0.35
+
+        if diagnostic.get("duplicate_room_evidence", {}).get("likelihood") == "likely":
+            score -= 2.5
+        if diagnostic.get("duplicate_object_evidence", {}).get("likelihood") == "likely":
+            score -= 1.5
+
+        unrelated_global_changes = local_merge_audit.get("unrelated_global_changes", {})
+        score -= min(abs(float(unrelated_global_changes.get("room_count_delta", 0))), 2.0) * 0.6
+        score -= min(abs(float(unrelated_global_changes.get("object_count_delta", 0))), 6.0) * 0.12
+        score -= min(abs(float(unrelated_global_changes.get("anchor_count_delta", 0))), 4.0) * 0.08
+        return round(max(score, 0.0), 3)
+
+    def _build_timeline_rows(self, diagnostics_by_frame: Dict[int, Dict[str, Any]]) -> List[Dict[str, Any]]:
+        rows = []
+        cumulative_revisit_events = 0
+        sorted_events = sorted(self.revisit_events, key=lambda item: int(item["frame_idx"]))
+        event_cursor = 0
+
+        if self.full_rgb_replay and self.replay_frames:
+            for frame in self.replay_frames:
+                while event_cursor < len(sorted_events) and int(sorted_events[event_cursor]["frame_idx"]) <= int(frame.frame_idx):
+                    cumulative_revisit_events += 1
+                    event_cursor += 1
+
+                map_snapshot = self._map_snapshot_for_replay_frame(frame)
+                map_context = self._map_display_context(frame.frame_idx, map_snapshot, diagnostics_by_frame)
+                vector_map = {} if map_snapshot is None else (map_snapshot.vector_map or {})
+                topology = _topology_summary(vector_map)
+                tracking_report = {} if map_snapshot is None else map_snapshot.tracking_report
+                tracking_matched_count, tracking_new_count = _tracking_counts(tracking_report)
+                diagnostic = diagnostics_by_frame.get(frame.frame_idx)
+                rows.append(
+                    {
+                        "row_type": "replay_frame",
+                        "replay_frame_idx": int(frame.index),
+                        "snapshot_idx": None if map_snapshot is None else int(map_snapshot.index),
+                        "frame_idx": int(frame.frame_idx),
+                        "timestamp": float(frame.timestamp),
+                        "segmentation_cycle_idx": int(frame.segmentation_cycle_idx),
+                        "last_segmentation_frame_idx": frame.last_segmentation_frame_idx,
+                        "segmentation_updated": bool(map_snapshot is not None and map_snapshot.frame_idx == frame.frame_idx and map_snapshot.segmentation_updated),
+                        "replay_mode": "full_rgb_held_bev",
+                        "rgb_frame_continuous": True,
+                        "map_display_state": map_context["display_state"],
+                        "semantic_map_held": bool(map_context["map_held"]),
+                        "map_refresh_triggered_here": bool(map_snapshot is not None and map_snapshot.frame_idx == frame.frame_idx),
+                        "map_refresh_frame_idx": map_context["refresh_frame_idx"],
+                        "map_refresh_type": map_context["refresh_type"],
+                        "current_room_id": frame.current_room_id,
+                        "room_count": int(len(vector_map.get("rooms", []))),
+                        "object_count": int(len(vector_map.get("objects", []))),
+                        "anchor_count": int(len(vector_map.get("anchors", []))),
+                        "gateway_count": int(topology["gateway_count"]),
+                        "adjacency_edge_count": int(topology["adjacency_edge_count"]),
+                        "doorway_count": int(topology["doorway_count"]),
+                        "open_passage_count": int(topology["open_passage_count"]),
+                        "tracking_matched_room_count": int(tracking_matched_count),
+                        "tracking_new_room_count": int(tracking_new_count),
+                        "revisit_event_count": 0 if map_snapshot is None or map_snapshot.frame_idx != frame.frame_idx else int(len(map_snapshot.revisit_events)),
+                        "cumulative_revisit_event_count": int(cumulative_revisit_events),
+                        "revisit_diagnostic_id": None if diagnostic is None else int(diagnostic["event_id"]),
+                        "revisit_trigger_reason": None if diagnostic is None else diagnostic["trigger_reason"],
+                        "matched_room_ids": "" if diagnostic is None else _join_ints(diagnostic["matched_room_ids"]),
+                        "map_reuse_happened": False if diagnostic is None else bool(diagnostic["new_room_avoided"]),
+                        "effect_frame_idx": None if diagnostic is None else int(diagnostic["effect_frame_idx"]),
+                        "pose_overlay_enabled": bool(self.per_frame_pose_overlay),
+                        "rgb_path": frame.rgb_path,
+                        "vector_map_path": None if map_snapshot is None else map_snapshot.vector_map_path,
+                    }
+                )
+            return rows
+
+        for snapshot in self.snapshots:
+            vector_map = snapshot.vector_map or {}
+            topology = _topology_summary(vector_map)
+            tracking_matched_count, tracking_new_count = _tracking_counts(snapshot.tracking_report)
+            diagnostic = diagnostics_by_frame.get(snapshot.frame_idx)
+            cumulative_revisit_events += len(snapshot.revisit_events)
+            rows.append(
+                {
+                    "row_type": "snapshot",
+                    "replay_frame_idx": int(snapshot.index),
+                    "snapshot_idx": int(snapshot.index),
+                    "frame_idx": int(snapshot.frame_idx),
+                    "timestamp": float(snapshot.timestamp),
+                    "segmentation_cycle_idx": int(snapshot.segmentation_cycle_idx),
+                    "last_segmentation_frame_idx": snapshot.last_segmentation_frame_idx,
+                    "segmentation_updated": bool(snapshot.segmentation_updated),
+                    "replay_mode": "snapshot_only",
+                    "rgb_frame_continuous": False,
+                    "map_display_state": _update_mode(snapshot, diagnostic),
+                    "semantic_map_held": False,
+                    "map_refresh_triggered_here": True,
+                    "map_refresh_frame_idx": int(snapshot.frame_idx),
+                    "map_refresh_type": _update_mode(snapshot, diagnostic),
+                    "current_room_id": snapshot.current_room_id,
+                    "room_count": int(len(vector_map.get("rooms", []))),
+                    "object_count": int(len(vector_map.get("objects", []))),
+                    "anchor_count": int(len(vector_map.get("anchors", []))),
+                    "gateway_count": int(topology["gateway_count"]),
+                    "adjacency_edge_count": int(topology["adjacency_edge_count"]),
+                    "doorway_count": int(topology["doorway_count"]),
+                    "open_passage_count": int(topology["open_passage_count"]),
+                    "tracking_matched_room_count": int(tracking_matched_count),
+                    "tracking_new_room_count": int(tracking_new_count),
+                    "revisit_event_count": int(len(snapshot.revisit_events)),
+                    "cumulative_revisit_event_count": int(cumulative_revisit_events),
+                    "revisit_diagnostic_id": None if diagnostic is None else int(diagnostic["event_id"]),
+                    "revisit_trigger_reason": None if diagnostic is None else diagnostic["trigger_reason"],
+                    "matched_room_ids": "" if diagnostic is None else _join_ints(diagnostic["matched_room_ids"]),
+                    "map_reuse_happened": False if diagnostic is None else bool(diagnostic["new_room_avoided"]),
+                    "effect_frame_idx": None if diagnostic is None else int(diagnostic["effect_frame_idx"]),
+                    "pose_overlay_enabled": False,
+                    "rgb_path": snapshot.rgb_path,
+                    "vector_map_path": snapshot.vector_map_path,
+                }
+            )
+        return rows
+
+    def _flatten_revisit_diagnostics_for_csv(self, diagnostics: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        rows = []
+        for diagnostic in diagnostics:
+            room_changes = diagnostic.get("room_polygon_changes", [])
+            first_room_change = room_changes[0] if room_changes else {}
+            object_updates = diagnostic.get("object_fusion_updates", {})
+            duplicate_room_warning = diagnostic.get("duplicate_room_warning", {})
+            duplicate_object_warning = diagnostic.get("duplicate_object_warning", {})
+            local_merge_audit = diagnostic.get("local_merge_audit", {})
+            unrelated_global_changes = local_merge_audit.get("unrelated_global_changes", {})
+            rows.append(
+                {
+                    "event_id": int(diagnostic["event_id"]),
+                    "raw_event_ids": _join_ints(diagnostic.get("raw_event_ids", [])),
+                    "frame_idx": int(diagnostic["frame_idx"]),
+                    "timestamp": float(diagnostic["timestamp"]),
+                    "trigger_reason": diagnostic.get("trigger_reason"),
+                    "matched_room_ids": _join_ints(diagnostic.get("matched_room_ids", [])),
+                    "matched_frame_indices": _join_ints(diagnostic.get("matched_frame_indices", [])),
+                    "new_room_avoided": bool(diagnostic.get("new_room_avoided")),
+                    "effect_frame_idx": int(diagnostic["effect_frame_idx"]),
+                    "effect_uses_geometry_refresh": bool(diagnostic.get("effect_uses_geometry_refresh")),
+                    "room_count_before": int(diagnostic["room_count_before"]),
+                    "room_count_after": int(diagnostic["room_count_after"]),
+                    "room_count_delta": int(diagnostic["room_count_delta"]),
+                    "object_count_before": int(diagnostic["object_count_before"]),
+                    "object_count_after": int(diagnostic["object_count_after"]),
+                    "object_count_delta": int(diagnostic["object_count_delta"]),
+                    "anchor_count_before": int(diagnostic["anchor_count_before"]),
+                    "anchor_count_after": int(diagnostic["anchor_count_after"]),
+                    "anchor_count_delta": int(diagnostic["anchor_count_delta"]),
+                    "adjacency_edges_before": int(diagnostic["adjacency_edges_before"]),
+                    "adjacency_edges_after": int(diagnostic["adjacency_edges_after"]),
+                    "tracking_matched_room_ids": _join_ints(diagnostic.get("tracking_matched_room_ids", [])),
+                    "tracking_new_room_ids": _join_ints(diagnostic.get("tracking_new_room_ids", [])),
+                    "duplicate_room_warning": bool(duplicate_room_warning.get("flag", False)),
+                    "duplicate_object_warning": bool(duplicate_object_warning.get("flag", False)),
+                    "duplicate_room_evidence": diagnostic.get("duplicate_room_evidence", {}).get("likelihood"),
+                    "duplicate_object_evidence": diagnostic.get("duplicate_object_evidence", {}).get("likelihood"),
+                    "local_reuse_assessment": local_merge_audit.get("room_reuse_assessment"),
+                    "local_vs_global_label": local_merge_audit.get("attribution_label"),
+                    "local_room_count_before": int(local_merge_audit.get("local_room_count_before", 0)),
+                    "local_room_count_after": int(local_merge_audit.get("local_room_count_after", 0)),
+                    "local_object_count_before": int(local_merge_audit.get("local_object_count_before", 0)),
+                    "local_object_count_after": int(local_merge_audit.get("local_object_count_after", 0)),
+                    "local_anchor_count_before": int(local_merge_audit.get("local_anchor_count_before", 0)),
+                    "local_anchor_count_after": int(local_merge_audit.get("local_anchor_count_after", 0)),
+                    "unrelated_room_count_delta": int(unrelated_global_changes.get("room_count_delta", 0)),
+                    "unrelated_object_count_delta": int(unrelated_global_changes.get("object_count_delta", 0)),
+                    "unrelated_anchor_count_delta": int(unrelated_global_changes.get("anchor_count_delta", 0)),
+                    "room_area_delta_m2": first_room_change.get("area_delta_m2"),
+                    "room_polygon_iou": first_room_change.get("polygon_iou"),
+                    "room_centroid_shift_m": first_room_change.get("centroid_shift_m"),
+                    "object_retained_count": int(object_updates.get("retained_object_count", 0)),
+                    "object_merged_count": int(object_updates.get("merged_object_count", 0)),
+                    "object_added_count": int(object_updates.get("added_object_count", 0)),
+                    "object_removed_count": int(object_updates.get("removed_object_count", 0)),
+                    "impact_score": float(diagnostic.get("impact_score", 0.0)),
+                    "teacher_evidence_score": float(diagnostic.get("teacher_evidence_score", 0.0)),
+                }
+            )
+        return rows or [
+            {
+                "event_id": 0,
+                "raw_event_ids": "",
+                "frame_idx": 0,
+                "timestamp": 0.0,
+                "trigger_reason": "",
+                "matched_room_ids": "",
+                "matched_frame_indices": "",
+                "new_room_avoided": False,
+                "effect_frame_idx": 0,
+                "effect_uses_geometry_refresh": False,
+                "room_count_before": 0,
+                "room_count_after": 0,
+                "room_count_delta": 0,
+                "object_count_before": 0,
+                "object_count_after": 0,
+                "object_count_delta": 0,
+                "anchor_count_before": 0,
+                "anchor_count_after": 0,
+                "anchor_count_delta": 0,
+                "adjacency_edges_before": 0,
+                "adjacency_edges_after": 0,
+                "tracking_matched_room_ids": "",
+                "tracking_new_room_ids": "",
+                "duplicate_room_warning": False,
+                "duplicate_object_warning": False,
+                "duplicate_room_evidence": "",
+                "duplicate_object_evidence": "",
+                "local_reuse_assessment": "",
+                "local_vs_global_label": "",
+                "local_room_count_before": 0,
+                "local_room_count_after": 0,
+                "local_object_count_before": 0,
+                "local_object_count_after": 0,
+                "local_anchor_count_before": 0,
+                "local_anchor_count_after": 0,
+                "unrelated_room_count_delta": 0,
+                "unrelated_object_count_delta": 0,
+                "unrelated_anchor_count_delta": 0,
+                "room_area_delta_m2": None,
+                "room_polygon_iou": None,
+                "room_centroid_shift_m": None,
+                "object_retained_count": 0,
+                "object_merged_count": 0,
+                "object_added_count": 0,
+                "object_removed_count": 0,
+                "impact_score": 0.0,
+                "teacher_evidence_score": 0.0,
+            }
+        ]
+
+    def _diagnostic_sort_key(self, diagnostic: Dict[str, Any]) -> Tuple[float, float, int]:
+        return (
+            -float(diagnostic.get("teacher_evidence_score", 0.0)),
+            -float(diagnostic.get("impact_score", 0.0)),
+            int(diagnostic["frame_idx"]),
+        )
+
+    def _presentation_parameters(self) -> Dict[str, Any]:
+        return {
+            "room_seg_interval": None if getattr(self, "room_seg_interval", None) is None else int(self.room_seg_interval),
+            "capture_stride_frames": int(self.capture_stride_frames),
+            "replay_mode": "full_rgb_held_bev" if self.full_rgb_replay else "snapshot_only",
+            "full_rgb_replay": bool(self.full_rgb_replay),
+            "per_frame_pose_overlay": bool(self.full_rgb_replay and self.per_frame_pose_overlay),
+            "video_fps": int(self.video_fps),
+            "spotlight_count_requested": int(self.spotlight_count),
+            "max_frames": None if getattr(self, "max_frames", None) is None else int(self.max_frames),
+        }
+
+    def _presentation_quality_note(self) -> Dict[str, str]:
+        params = self._presentation_parameters()
+        room_seg_interval = params.get("room_seg_interval") or 0
+        capture_stride = params.get("capture_stride_frames") or 1
+        if params.get("full_rgb_replay"):
+            if room_seg_interval >= 150 or capture_stride >= 60:
+                assessment = "continuous_rgb_stepwise_map"
+                note = (
+                    "RGB replay stays frame-continuous, while the semantic BEV honestly holds between relatively sparse real refresh events."
+                )
+            else:
+                assessment = "continuous_rgb_honest_bev"
+                note = "RGB replay is frame-continuous and the BEV only refreshes on real exported map updates."
+        elif room_seg_interval >= 150 or capture_stride >= 60:
+            assessment = "may_look_sparse"
+            note = (
+                "Room growth may look sparse because segmentation refreshes and/or captured snapshots are widely spaced."
+            )
+        elif room_seg_interval <= 75 and capture_stride <= 30:
+            assessment = "reasonably_progressive"
+            note = "Chosen capture and segmentation settings should make room growth look reasonably progressive."
+        else:
+            assessment = "moderately_stepwise"
+            note = "The replay should look stepwise but still readable for presentation."
+        return {"assessment": assessment, "note": note}
+
+    def _local_evidence_summary_lines(self, diagnostic: Dict[str, Any]) -> List[str]:
+        local_merge_audit = diagnostic.get("local_merge_audit", {})
+        object_updates = diagnostic.get("object_fusion_updates", {})
+        room_polygon_summary = diagnostic.get("room_polygon_update_summary", {})
+        unrelated = local_merge_audit.get("unrelated_global_changes", {})
+        room_ids = diagnostic.get("matched_room_ids", [])
+        return [
+            f"Rooms revisited: {(_join_ints(room_ids) if room_ids else 'unknown')}",
+            f"Reuse assessment: {local_merge_audit.get('room_reuse_assessment', 'unclear')}",
+            f"Room polygons updated/expanded: {room_polygon_summary.get('updated_room_count', 0)}/{room_polygon_summary.get('expanded_room_count', 0)}",
+            f"Objects retained/merged/added/removed: {object_updates.get('retained_object_count', 0)}/{object_updates.get('merged_object_count', 0)}/{object_updates.get('added_object_count', 0)}/{object_updates.get('removed_object_count', 0)}",
+            f"Elsewhere room/object/anchor delta: {unrelated.get('room_count_delta', 0)}/{unrelated.get('object_count_delta', 0)}/{unrelated.get('anchor_count_delta', 0)}",
+            f"Duplicate room/object evidence: {diagnostic.get('duplicate_room_evidence', {}).get('likelihood', 'unresolved')}/{diagnostic.get('duplicate_object_evidence', {}).get('likelihood', 'unresolved')}",
+        ]
+
+    def _build_revisit_summary_markdown(self, diagnostics: Sequence[Dict[str, Any]]) -> str:
+        lines = [
+            "# Revisit Diagnostics Summary",
+            "",
+            f"- Grouped revisit events: {len(diagnostics)}",
+            f"- Raw revisit triggers: {len(self.revisit_events)}",
+            "",
+            "## Strongest Events",
+            "",
+        ]
+        if not diagnostics:
+            lines.append("- No revisit events were captured in this run.")
+            lines.append("")
+            return "\n".join(lines)
+
+        top_events = sorted(diagnostics, key=self._diagnostic_sort_key)[:5]
+        for item in top_events:
+            room_ids = item.get("matched_room_ids", [])
+            object_updates = item.get("object_fusion_updates", {})
+            local_merge_audit = item.get("local_merge_audit", {})
+            unrelated = local_merge_audit.get("unrelated_global_changes", {})
+            lines.append(
+                "- "
+                f"Revisit #{int(item['event_id'])} at frame {int(item['frame_idx'])}: "
+                f"{item['trigger_reason']}; "
+                f"rooms={_join_ints(room_ids) if room_ids else 'unknown'}; "
+                f"reuse={'yes' if item.get('new_room_avoided') else 'no/unclear'}; "
+                f"local objects r/m/a/r={int(object_updates.get('retained_object_count', 0))}/{int(object_updates.get('merged_object_count', 0))}/{int(object_updates.get('added_object_count', 0))}/{int(object_updates.get('removed_object_count', 0))}; "
+                f"elsewhere room/object/anchor delta={int(unrelated.get('room_count_delta', 0))}/{int(unrelated.get('object_count_delta', 0))}/{int(unrelated.get('anchor_count_delta', 0))}; "
+                f"teacher_score={float(item.get('teacher_evidence_score', 0.0)):.2f}."
+            )
+        lines.extend(
+            [
+                "",
+                "## Notes",
+                "",
+                "- `new_room_avoided=true` means the revisited region mapped onto an already-known room id instead of needing a fresh room id in the current Stage A representation.",
+                "- `effect_frame_idx` may be later than the trigger frame because room geometry only refreshes on segmentation-update cycles.",
+                "- `local_merge_audit` separates changes inside the revisited room set from unrelated room/object/anchor churn elsewhere in the same window.",
+                "- Duplicate warnings are heuristic presentation diagnostics, not hard backend merge assertions.",
+                "",
+            ]
+        )
+        return "\n".join(lines)
+
+    def _build_report(
+        self,
+        summary: Dict[str, Any],
+        final_snapshot: SnapshotRecord,
+        diagnostics: Sequence[Dict[str, Any]],
+        spotlight_paths: Dict[int, Dict[str, str]],
+    ) -> str:
+        vector_map = final_snapshot.vector_map or {}
+        topology = _topology_summary(vector_map)
+        matched_count, new_room_count = _tracking_counts(final_snapshot.tracking_report)
+        strongest = sorted(diagnostics, key=self._diagnostic_sort_key)[:3]
+        presentation_parameters = summary.get("presentation_parameters", {})
+        presentation_quality_note = summary.get("presentation_quality_note", {})
+        full_rgb_replay = bool(summary.get("rgb_replay_frame_continuous", False))
+        pose_overlay_enabled = bool(summary.get("per_frame_pose_overlay_enabled", False))
+        map_refresh_frames = summary.get("map_refresh_frame_indices", [])
+
+        lines = [
+            "# Stage A Closed-Loop Demo Report",
+            "",
+            "## Teacher-Facing Summary",
+            "",
+            (
+                "This Stage A refinement keeps the existing BoxFusion mapping pipeline but makes the replay much easier to teach from: "
+                "the video now advances RGB continuously while the semantic BEV only refreshes on real exported map-update frames."
+                if full_rgb_replay
+                else "This Stage A refinement keeps the existing BoxFusion mapping pipeline but makes the replay much easier to teach from: "
+                "the video now calls out segmentation refreshes, revisit/reuse moments, cumulative room-object-anchor growth, and lightweight room connectivity hints."
+            ),
+            "",
+            "The evidence is still honest about scope. The demo shows incremental semantic map building and revisit-aware reuse of existing room structure, but it does not claim live SLAM pose estimation or full loop-closure optimization.",
+            "",
+            "## Key Numbers",
+            "",
+            f"- Snapshots exported: {int(summary.get('snapshot_count', 0))}",
+            f"- Replay frames exported: {int(summary.get('replay_frame_count', 0))}",
+            f"- Segmentation refresh cycles: {int(summary.get('segmentation_cycle_count', 0))}",
+            f"- Final rooms / objects / anchors: {len(vector_map.get('rooms', []))} / {len(vector_map.get('objects', []))} / {len(vector_map.get('anchors', []))}",
+            f"- Final gateways / adjacency edges: {int(topology['gateway_count'])} / {int(topology['adjacency_edge_count'])}",
+            f"- Raw revisit triggers / grouped revisit diagnostics: {int(summary.get('revisit_event_count', 0))} / {int(summary.get('revisit_diagnostic_count', 0))}",
+            f"- Latest room-tracking cycle: matched existing rooms={matched_count}, new rooms={new_room_count}",
+            f"- Replay mode / pose overlay: {presentation_parameters.get('replay_mode')} / {'enabled' if pose_overlay_enabled else 'disabled'}",
+            f"- Map refresh frames tracked: {len(map_refresh_frames)}",
+            "",
+            "## What The Refined Video Shows",
+            "",
+            (
+                "- Left panel advances one frame for every processed dataset frame, with frame index, timestamp, segmentation cycle, and current room overlayed for presentation."
+                if full_rgb_replay
+                else "- Left panel still shows the RGB stream, but the overlay now exposes frame index, segmentation cycle, current room id, cumulative room/object/anchor counts, and whether the step is a normal incremental update, a room-geometry refresh, or a revisit/reuse moment."
+            ),
+            (
+                "- Right panel uses the latest real semantic-map snapshot and holds that BEV state until the next exported map refresh, instead of fabricating intermediate semantic states."
+                if full_rgb_replay
+                else "- Right panel still shows the BEV map, and now also shows room ids, room-to-room adjacency edges inferred from exported gateways, doorway/open-passage markers, and revisit labels when reuse is triggered."
+            ),
+            (
+                "- A per-frame pose, heading, and trajectory overlay keeps motion continuous even while the semantic map is being held between refreshes."
+                if pose_overlay_enabled
+                else "- Segmentation refreshes are explicitly labeled so room growth is presented as stepwise-but-incremental, instead of looking falsely frame-perfect."
+            ),
+            (
+                "- The overlay explicitly marks whether the semantic map refreshed on the current frame or is being held from the latest refresh frame."
+                if full_rgb_replay
+                else "- Revisit / reuse callouts stay attached to the real trigger and effect frames instead of implying frame-perfect semantic updates."
+            ),
+            "",
+            "## Presentation Parameters",
+            "",
+            f"- Room segmentation interval: {presentation_parameters.get('room_seg_interval')}",
+            f"- Capture stride: {presentation_parameters.get('capture_stride_frames')}",
+            f"- Replay mode: {presentation_parameters.get('replay_mode')}",
+            f"- Full RGB replay: {presentation_parameters.get('full_rgb_replay')}",
+            f"- Per-frame pose overlay: {presentation_parameters.get('per_frame_pose_overlay')}",
+            f"- Video fps: {presentation_parameters.get('video_fps')}",
+            f"- Spotlight count requested / exported: {presentation_parameters.get('spotlight_count_requested')} / {summary.get('spotlight_count', 0)}",
+            f"- Max frames: {presentation_parameters.get('max_frames')}",
+            f"- Presentation quality note: {presentation_quality_note.get('assessment')} | {presentation_quality_note.get('note')}",
+            "",
+            "## Strongest Revisit Examples",
+            "",
+        ]
+
+        if strongest:
+            for item in strongest:
+                room_ids = item.get("matched_room_ids", [])
+                object_updates = item.get("object_fusion_updates", {})
+                spotlights = spotlight_paths.get(int(item["event_id"]), {})
+                local_merge_audit = item.get("local_merge_audit", {})
+                unrelated = local_merge_audit.get("unrelated_global_changes", {})
+                room_polygon_summary = item.get("room_polygon_update_summary", {})
+                lines.append(
+                    "- "
+                    f"Revisit #{int(item['event_id'])} at frame {int(item['frame_idx'])}: "
+                    f"trigger={item['trigger_reason']}; "
+                    f"matched rooms={_join_ints(room_ids) if room_ids else 'unknown'}; "
+                    f"reuse={'yes' if item.get('new_room_avoided') else 'no/unclear'}; "
+                    f"local objects retained/merged/added/removed={int(object_updates.get('retained_object_count', 0))}/{int(object_updates.get('merged_object_count', 0))}/{int(object_updates.get('added_object_count', 0))}/{int(object_updates.get('removed_object_count', 0))}; "
+                    f"room polygons updated/expanded={int(room_polygon_summary.get('updated_room_count', 0))}/{int(room_polygon_summary.get('expanded_room_count', 0))}; "
+                    f"elsewhere room/object/anchor delta={int(unrelated.get('room_count_delta', 0))}/{int(unrelated.get('object_count_delta', 0))}/{int(unrelated.get('anchor_count_delta', 0))}; "
+                    f"duplicate room/object evidence={item.get('duplicate_room_evidence', {}).get('likelihood', 'unresolved')}/{item.get('duplicate_object_evidence', {}).get('likelihood', 'unresolved')}; "
+                    f"teacher score={float(item.get('teacher_evidence_score', 0.0)):.2f}; "
+                    f"spotlights={'yes' if spotlights else 'no'}."
+                )
+        else:
+            lines.append("- No revisit events were grouped into diagnostics for this run.")
+
+        lines.extend(
+            [
+                "",
+                "## What Is Reused / Merged During Revisit",
+                "",
+                "- Room reuse means a revisited segmented region continues to map to an already-known global room id, which prevents obvious duplicate-room growth in the Stage A map export.",
+                "- Room geometry can still change on later segmentation-refresh frames; that is why each revisit diagnostic records both the trigger frame and the effect frame.",
+                "- Each grouped revisit event now separates room-local evidence from unrelated map growth elsewhere, so the teacher can tell whether reuse happened in isolation or during concurrent exploration.",
+                "- Object-level evidence is reported as retained/merged/added/removed fused object ids within the revisited room set, so teachers can point to map reuse beyond a raw revisit count.",
+                "- Anchors and lightweight topology hints are regenerated from the current fused semantic map, so they benefit from reused room/object structure without claiming a new backend graph optimizer.",
+                "",
+                "## What Is Still Approximate",
+                "",
+                "- Camera poses still come from the dataset stream rather than a live SLAM estimator.",
+                "- Revisit detection still uses explicit heuristics: pose proximity, room re-entry, or both.",
+                "- Room polygons still refresh on segmentation-update cycles and exported snapshot events, so semantic growth remains incremental and visibly stepwise.",
+                "- Duplicate-room and duplicate-object likelihood labels are heuristic diagnostics to support presentation quality; they are not full probabilistic data-association proofs.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "- Keep the refined Stage A packaging and swap only the pose source next: connect the same replay/export interface to a live odometry or SLAM front-end so the teacher can compare dataset poses versus online estimated poses without changing the presentation layer.",
+                "",
+            ]
+        )
+        return "\n".join(lines)
+
+    def _local_focus_bounds(
+        self,
+        snapshots: Sequence[SnapshotRecord],
+        diagnostic: Dict[str, Any],
+    ) -> Tuple[float, float, float, float]:
+        focus_room_ids = {int(room_id) for room_id in diagnostic.get("matched_room_ids", [])}
+        xs: List[float] = []
+        ys: List[float] = []
+        for snapshot in snapshots:
+            vector_map = snapshot.vector_map or {}
+            for room in vector_map.get("rooms", []):
+                room_id = int(room.get("id", -1))
+                if focus_room_ids and room_id not in focus_room_ids:
+                    continue
+                for pt in room.get("polygon", []):
+                    xs.append(float(pt[0]))
+                    ys.append(float(pt[1]))
+            pose_xy = (float(snapshot.pose[0, 3]), float(snapshot.pose[1, 3]))
+            xs.append(pose_xy[0])
+            ys.append(pose_xy[1])
+        if not xs or not ys:
+            center_xy = (0.0, 0.0)
+            if snapshots:
+                center_xy = (float(snapshots[0].pose[0, 3]), float(snapshots[0].pose[1, 3]))
+            return (center_xy[0] - 2.0, center_xy[0] + 2.0, center_xy[1] - 2.0, center_xy[1] + 2.0)
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+        pad = max(1.0, 0.24 * max(max_x - min_x, max_y - min_y, 1.0))
+        return min_x - pad, max_x + pad, min_y - pad, max_y + pad
+
+    def _render_local_storyboard(
+        self,
+        diagnostic: Dict[str, Any],
+        before_snapshot: SnapshotRecord,
+        trigger_snapshot: SnapshotRecord,
+        effect_snapshot: SnapshotRecord,
+        after_snapshot: SnapshotRecord,
+    ) -> np.ndarray:
+        local_bounds = self._local_focus_bounds(
+            [before_snapshot, trigger_snapshot, effect_snapshot, after_snapshot],
+            diagnostic,
+        )
+        panel_w = 560
+        panel_h = 400
+        story_w = panel_w * 2 + 420
+        story_h = panel_h * 2 + 110
+        canvas = np.full((story_h, story_w, 3), 248, dtype=np.uint8)
+        cv2.putText(
+            canvas,
+            f"Stage A Revisit #{int(diagnostic['event_id']):02d} Local Evidence",
+            (24, 36),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.9,
+            (36, 36, 36),
+            2,
+            cv2.LINE_AA,
+        )
+
+        frames = [
+            ("Before", before_snapshot, (24, 60)),
+            ("Trigger", trigger_snapshot, (24 + panel_w, 60)),
+            ("Effect", effect_snapshot, (24, 60 + panel_h)),
+            ("After", after_snapshot, (24 + panel_w, 60 + panel_h)),
+        ]
+        for title, snapshot, (x0, y0) in frames:
+            panel = self._render_bev(snapshot, local_bounds, width=panel_w - 18, height=panel_h - 18, diagnostic=diagnostic)
+            canvas[y0:y0 + panel.shape[0], x0:x0 + panel.shape[1]] = panel
+            _draw_badge(canvas, title, (x0 + 12, y0 + 10), fg=(255, 255, 255), bg=(28, 85, 144), font_scale=0.58)
+
+        summary_lines = self._local_evidence_summary_lines(diagnostic)
+        summary_lines.extend(
+            [
+                f"Effect frame: {int(diagnostic['effect_frame_idx'])}",
+                f"Local/global label: {diagnostic.get('local_merge_audit', {}).get('attribution_label', 'unclear')}",
+                "Scope note: dataset poses + heuristic revisit detection",
+            ]
+        )
+        _draw_text_block(
+            canvas,
+            summary_lines,
+            (panel_w * 2 + 48, 96),
+            font_scale=0.57,
+            color=(28, 46, 72),
+            bg_color=(255, 255, 255),
+        )
+        return canvas
+
+    def _export_spotlights(
+        self,
+        bounds: Tuple[float, float, float, float],
+        diagnostics: Sequence[Dict[str, Any]],
+        diagnostics_by_frame: Dict[int, Dict[str, Any]],
+    ) -> Dict[int, Dict[str, str]]:
+        spotlight_paths: Dict[int, Dict[str, str]] = {}
+        if self.spotlight_count <= 0 or not diagnostics:
+            return spotlight_paths
+
+        top_events = sorted(diagnostics, key=self._diagnostic_sort_key)[: self.spotlight_count]
+        for diagnostic in top_events:
+            event_id = int(diagnostic["event_id"])
+            trigger_snapshot = next((snapshot for snapshot in self.snapshots if snapshot.frame_idx == int(diagnostic["frame_idx"])), None)
+            effect_snapshot = next((snapshot for snapshot in self.snapshots if snapshot.frame_idx == int(diagnostic["effect_frame_idx"])), None)
+            if trigger_snapshot is None:
+                continue
+            before_snapshot = self.snapshots[max(trigger_snapshot.index - 1, 0)]
+            if effect_snapshot is None:
+                effect_snapshot = trigger_snapshot
+            after_snapshot = self._find_after_snapshot(effect_snapshot)
+
+            frame_map = {
+                "before": before_snapshot,
+                "trigger": trigger_snapshot,
+                "effect": effect_snapshot,
+                "after": after_snapshot,
+            }
+            spotlight_paths[event_id] = {}
+            for stage_name, snapshot in frame_map.items():
+                render = self._render_split_frame(snapshot, bounds, diagnostics_by_frame.get(snapshot.frame_idx), focus_diagnostic=diagnostic)
+                banner = {
+                    "before": f"Before Revisit #{event_id:02d}",
+                    "trigger": f"Trigger Revisit #{event_id:02d}",
+                    "effect": f"Effect Revisit #{event_id:02d}",
+                    "after": f"After Revisit #{event_id:02d}",
+                }[stage_name]
+                _draw_badge(render, banner, (20, 18), fg=(255, 255, 255), bg=(36, 52, 88), font_scale=0.68)
+                output_path = self.spotlight_dir / f"revisit_{event_id:02d}_{stage_name}.jpg"
+                cv2.imwrite(str(output_path), render)
+                spotlight_paths[event_id][stage_name] = str(output_path)
+
+            local_bounds = self._local_focus_bounds(
+                [before_snapshot, trigger_snapshot, effect_snapshot, after_snapshot],
+                diagnostic,
+            )
+            for stage_name, snapshot in frame_map.items():
+                local_bev = self._render_bev(snapshot, local_bounds, width=980, height=720, diagnostic=diagnostic)
+                _draw_badge(local_bev, f"Local {stage_name.title()}", (18, 18), fg=(255, 255, 255), bg=(0, 104, 153), font_scale=0.64)
+                _draw_text_block(local_bev, self._local_evidence_summary_lines(diagnostic)[:4], (18, 94), font_scale=0.54, color=(12, 56, 88), bg_color=(255, 255, 255))
+                local_output_path = self.spotlight_dir / f"revisit_{event_id:02d}_local_{stage_name}.jpg"
+                cv2.imwrite(str(local_output_path), local_bev)
+                spotlight_paths[event_id][f"local_{stage_name}"] = str(local_output_path)
+
+            storyboard = self._render_local_storyboard(
+                diagnostic,
+                before_snapshot=before_snapshot,
+                trigger_snapshot=trigger_snapshot,
+                effect_snapshot=effect_snapshot,
+                after_snapshot=after_snapshot,
+            )
+            story_path = self.spotlight_dir / f"revisit_{event_id:02d}_local_story.jpg"
+            cv2.imwrite(str(story_path), storyboard)
+            spotlight_paths[event_id]["local_story"] = str(story_path)
+        return spotlight_paths
+
+    def _render_split_frame(
+        self,
+        frame_record: Any,
+        bounds: Tuple[float, float, float, float],
+        diagnostic: Optional[Dict[str, Any]] = None,
+        focus_diagnostic: Optional[Dict[str, Any]] = None,
+        map_snapshot: Optional[SnapshotRecord] = None,
+        map_context: Optional[Dict[str, Any]] = None,
+    ) -> np.ndarray:
+        width, height = self.canvas_size
+        left_width = width // 2
+        right_width = width - left_width
+
+        rgb_bgr = cv2.imread(frame_record.rgb_path, cv2.IMREAD_COLOR)
+        if rgb_bgr is None:
+            rgb_bgr = np.full((height, left_width, 3), 235, dtype=np.uint8)
+        else:
+            rgb_bgr = cv2.resize(rgb_bgr, (left_width, height), interpolation=cv2.INTER_AREA)
+
+        if map_snapshot is None and isinstance(frame_record, SnapshotRecord):
+            map_snapshot = frame_record
+        map_context = map_context or self._map_display_context(
+            frame_record.frame_idx,
+            map_snapshot,
+            {int(diagnostic["frame_idx"]): diagnostic} if diagnostic is not None else {},
+        )
+        active_diagnostic = focus_diagnostic or diagnostic or map_context.get("refresh_diagnostic")
+        bev = self._render_bev(
+            frame_record,
+            bounds,
+            width=right_width,
+            height=height,
+            diagnostic=active_diagnostic,
+            map_snapshot=map_snapshot,
+        )
+        canvas = np.concatenate([rgb_bgr, bev], axis=1)
+
+        header = [
+            f"Sequence: {self.sequence_id}",
+            f"Frame: {frame_record.frame_idx}",
+            f"Timestamp: {frame_record.timestamp:.3f}",
+            f"Seg cycle: {frame_record.segmentation_cycle_idx}",
+        ]
+        _draw_text_block(canvas, header, (14, 28), font_scale=0.7)
+
+        vector_map = {} if map_snapshot is None else (map_snapshot.vector_map or {})
+        topology = _topology_summary(vector_map)
+        status = [
+            f"Semantic map: {map_context.get('display_state', 'map unavailable')}",
+            f"Last refresh frame: {map_context.get('refresh_frame_idx', 'none')}",
+            f"Current room: {frame_record.current_room_id if frame_record.current_room_id is not None else 'unknown'}",
+            f"Rooms / Objects / Anchors: {len(vector_map.get('rooms', []))} / {len(vector_map.get('objects', []))} / {len(vector_map.get('anchors', []))}",
+            f"Adjacency edges / Gateways: {topology['adjacency_edge_count']} / {topology['gateway_count']}",
+        ]
+        _draw_text_block(canvas, status, (14, height - 132), font_scale=0.6)
+
+        if map_context.get("map_held"):
+            _draw_badge(
+                canvas,
+                f"Map held | last refresh {map_context.get('refresh_frame_idx')}",
+                (14, 124),
+                fg=(255, 255, 255),
+                bg=(121, 94, 45),
+                font_scale=0.58,
+            )
+        elif map_snapshot is not None:
+            tracking_matched, tracking_new = _tracking_counts(map_snapshot.tracking_report)
+            _draw_badge(
+                canvas,
+                f"Map refresh | {map_context.get('refresh_type')} | matched {tracking_matched} | new {tracking_new}",
+                (14, 124),
+                fg=(255, 255, 255),
+                bg=(54, 103, 58),
+                font_scale=0.58,
+            )
+
+        if diagnostic is not None:
+            room_ids = diagnostic.get("matched_room_ids", [])
+            local_merge_audit = diagnostic.get("local_merge_audit", {})
+            room_polygon_summary = diagnostic.get("room_polygon_update_summary", {})
+            object_updates = diagnostic.get("object_fusion_updates", {})
+            event_lines = [
+                _event_badge_text(diagnostic),
+                f"Matched rooms: {(_join_ints(room_ids) if room_ids else 'unknown')}",
+                f"Map reuse: {'yes' if diagnostic.get('new_room_avoided') else 'no / unclear'}",
+                f"Effect frame: {int(diagnostic['effect_frame_idx'])}",
+                f"Local/global: {local_merge_audit.get('attribution_label', 'unclear')}",
+                f"Room updates: {room_polygon_summary.get('updated_room_count', 0)} | Obj r/m/a/r: {object_updates.get('retained_object_count', 0)}/{object_updates.get('merged_object_count', 0)}/{object_updates.get('added_object_count', 0)}/{object_updates.get('removed_object_count', 0)}",
+            ]
+            _draw_text_block(
+                canvas,
+                event_lines,
+                (left_width + 16, 32),
+                font_scale=0.62,
+                color=(0, 60, 150),
+                bg_color=(245, 250, 255),
+            )
+        elif getattr(frame_record, "revisit_events", []):
+            _draw_text_block(
+                canvas,
+                ["Raw revisit trigger"] + [_summarize_raw_event(event) for event in frame_record.revisit_events[:3]],
+                (left_width + 16, 32),
+                font_scale=0.62,
+                color=(0, 60, 150),
+                bg_color=(245, 250, 255),
+            )
+        return canvas
+
+    def _render_bev(
+        self,
+        frame_record: Any,
+        bounds: Tuple[float, float, float, float],
+        width: int,
+        height: int,
+        diagnostic: Optional[Dict[str, Any]] = None,
+        map_snapshot: Optional[SnapshotRecord] = None,
+    ) -> np.ndarray:
+        canvas = np.full((height, width, 3), 250, dtype=np.uint8)
+        cv2.rectangle(canvas, (0, 0), (width - 1, height - 1), (218, 224, 232), 2)
+        cv2.putText(canvas, "Incremental BEV Semantic Map", (18, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (35, 35, 35), 2, cv2.LINE_AA)
+
+        if map_snapshot is None and isinstance(frame_record, SnapshotRecord):
+            map_snapshot = frame_record
+        vector_map = {} if map_snapshot is None else (map_snapshot.vector_map or {})
+        rooms = vector_map.get("rooms", [])
+        objects = vector_map.get("objects", [])
+        anchors = vector_map.get("anchors", [])
+        gateways = vector_map.get("gateways", [])
+        topology = _topology_summary(vector_map)
+        tracking_report = {} if map_snapshot is None else map_snapshot.tracking_report
+
+        matched_room_ids = set(int(room_id) for room_id in (diagnostic or {}).get("matched_room_ids", []))
+        tracking_matched_room_ids = set(int(item["global_id"]) for item in tracking_report.get("matched", []))
+        tracking_new_room_ids = set(int(item["global_id"]) for item in tracking_report.get("new_rooms", []))
+
+        room_centers: Dict[int, Tuple[float, float]] = {}
+        for room in rooms:
+            polygon = room.get("polygon", [])
+            if len(polygon) < 3:
+                continue
+            room_id = int(room["id"])
+            pts = np.array([_world_to_canvas(pt, bounds, width, height) for pt in polygon], dtype=np.int32)
+            fill_color = _stable_color(f"room_{room_id}", low=180, high=235)
+            outline_color = _stable_color(f"room_outline_{room_id}", low=90, high=160)
+            overlay = canvas.copy()
+            cv2.fillPoly(overlay, [pts], fill_color)
+            cv2.addWeighted(overlay, 0.30, canvas, 0.70, 0, canvas)
+
+            outline_thickness = 2
+            if room_id in tracking_new_room_ids:
+                outline_color = (56, 141, 255)
+                outline_thickness = 4
+            elif room_id in tracking_matched_room_ids:
+                outline_color = (43, 111, 68)
+                outline_thickness = 3
+            if room_id in matched_room_ids:
+                outline_color = (0, 120, 220)
+                outline_thickness = 4
+            cv2.polylines(canvas, [pts], True, outline_color, outline_thickness, cv2.LINE_AA)
+
+            centroid = _polygon_centroid(polygon)
+            room_centers[room_id] = centroid
+            cx, cy = _world_to_canvas(centroid, bounds, width, height)
+            cv2.putText(canvas, f"R{room_id}", (cx - 12, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (50, 50, 50), 2, cv2.LINE_AA)
+
+        for edge in topology["adjacency_edges"]:
+            room_a, room_b = edge["rooms"]
+            center_a = room_centers.get(int(room_a))
+            center_b = room_centers.get(int(room_b))
+            if center_a is None or center_b is None:
+                continue
+            color = (40, 40, 220) if edge["primary_type"] == "door" else (90, 90, 255)
+            ax, ay = _world_to_canvas(center_a, bounds, width, height)
+            bx, by = _world_to_canvas(center_b, bounds, width, height)
+            cv2.line(canvas, (ax, ay), (bx, by), color, 1, cv2.LINE_AA)
+
+        pose_source = frame_record
+        if map_snapshot is not None and self.full_rgb_replay and not self.per_frame_pose_overlay:
+            pose_source = map_snapshot
+
+        trajectory_pts = [_world_to_canvas((x, y), bounds, width, height) for x, y in pose_source.trajectory_xy]
+        if len(trajectory_pts) >= 2:
+            cv2.polylines(canvas, [np.asarray(trajectory_pts, dtype=np.int32)], False, (36, 118, 220), 2, cv2.LINE_AA)
+        for point in trajectory_pts[:: max(1, len(trajectory_pts) // 50)]:
+            cv2.circle(canvas, point, 2, (36, 118, 220), -1, cv2.LINE_AA)
+
+        for obj in objects:
+            footprint = obj.get("footprint_2d", [])
+            label = str(obj.get("label", "obj"))
+            if len(footprint) >= 3:
+                pts = np.array([_world_to_canvas(pt, bounds, width, height) for pt in footprint], dtype=np.int32)
+                overlay = canvas.copy()
+                cv2.fillPoly(overlay, [pts], (154, 198, 124))
+                cv2.addWeighted(overlay, 0.20, canvas, 0.80, 0, canvas)
+                cv2.polylines(canvas, [pts], True, (46, 105, 58), 2, cv2.LINE_AA)
+            pose_xy = obj.get("pose", [])
+            if len(pose_xy) >= 2:
+                px, py = _world_to_canvas((pose_xy[0], pose_xy[1]), bounds, width, height)
+                cv2.circle(canvas, (px, py), 3, (32, 96, 42), -1, cv2.LINE_AA)
+                if float(obj.get("score", 1.0)) >= 0.55:
+                    cv2.putText(canvas, label[:18], (px + 4, py - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (28, 62, 35), 1, cv2.LINE_AA)
+
+        room_lookup = {f"room_{room['id']}": room for room in rooms}
+        object_lookup = {f"obj_{obj['id']}": obj for obj in objects}
+        for anchor in anchors:
+            position = anchor.get("position", [])
+            if len(position) < 2:
+                continue
+            ax, ay = _world_to_canvas((position[0], position[1]), bounds, width, height)
+            if anchor.get("anchor_type") == "room":
+                cv2.drawMarker(canvas, (ax, ay), (5, 102, 204), cv2.MARKER_STAR, 18, 2, cv2.LINE_AA)
+            else:
+                cv2.drawMarker(canvas, (ax, ay), (14, 156, 119), cv2.MARKER_DIAMOND, 14, 2, cv2.LINE_AA)
+            target_id = anchor.get("target_id")
+            target_xy = None
+            if target_id in room_lookup:
+                target_xy = _polygon_centroid(room_lookup[target_id].get("polygon", []))
+            elif target_id in object_lookup:
+                pose_xy = object_lookup[target_id].get("pose", [])
+                if len(pose_xy) >= 2:
+                    target_xy = (float(pose_xy[0]), float(pose_xy[1]))
+            if target_xy is not None:
+                tx, ty = _world_to_canvas(target_xy, bounds, width, height)
+                cv2.line(canvas, (ax, ay), (tx, ty), (128, 128, 128), 1, cv2.LINE_AA)
+
+        for gateway in gateways:
+            pos_world = gateway.get("pos_world", [])
+            if len(pos_world) < 2:
+                continue
+            gx, gy = _world_to_canvas(pos_world, bounds, width, height)
+            if gateway.get("type") == "door":
+                cv2.drawMarker(canvas, (gx, gy), (62, 96, 240), cv2.MARKER_TILTED_CROSS, 14, 2, cv2.LINE_AA)
+            else:
+                cv2.circle(canvas, (gx, gy), 4, (118, 118, 118), -1, cv2.LINE_AA)
+
+        current_xy = (float(pose_source.pose[0, 3]), float(pose_source.pose[1, 3]))
+        current_px, current_py = _world_to_canvas(current_xy, bounds, width, height)
+        heading_xy = _pose_heading_xy(pose_source.pose)
+        tip_world = np.asarray(current_xy, dtype=np.float32) + 0.45 * heading_xy
+        tip_px, tip_py = _world_to_canvas(tip_world, bounds, width, height)
+        cv2.circle(canvas, (current_px, current_py), 7, (18, 68, 170), -1, cv2.LINE_AA)
+        cv2.arrowedLine(canvas, (current_px, current_py), (tip_px, tip_py), (18, 68, 170), 2, cv2.LINE_AA, tipLength=0.35)
+
+        for event in self.revisit_events:
+            if int(event["frame_idx"]) > int(frame_record.frame_idx):
+                continue
+            position_xy = event.get("position_xy", [])
+            if len(position_xy) < 2:
+                continue
+            ex, ey = _world_to_canvas((position_xy[0], position_xy[1]), bounds, width, height)
+            color = (20, 140, 255)
+            thickness = 2
+            if diagnostic is not None and int(event["frame_idx"]) == int(diagnostic["frame_idx"]):
+                color = (0, 90, 220)
+                thickness = 3
+            cv2.circle(canvas, (ex, ey), 11, color, thickness, cv2.LINE_AA)
+
+        legend = [
+            "Blue path: trajectory and current pose",
+            "Room ids + red edges: lightweight topology",
+            "Green boxes: fused semantic objects",
+            "Blue/orange markers: anchors and revisit signals",
+            "Door markers: doorway / passage hints from current segmentation",
+        ]
+        if self.full_rgb_replay:
+            legend.append("Semantic layer is held between real map refresh frames")
+        _draw_text_block(canvas, legend, (18, height - 126), font_scale=0.49)
+        return canvas

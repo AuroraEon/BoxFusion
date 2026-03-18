@@ -56,12 +56,20 @@ from scipy.spatial.transform import Rotation
 from torch.utils.data import IterableDataset
 
 # ROS1 相关导入
-import rospy
-import tf
-import message_filters
-from sensor_msgs.msg import Image as ROSImage
-from sensor_msgs.msg import CameraInfo
-import cv_bridge
+try:
+    import rospy
+    import tf
+    import message_filters
+    from sensor_msgs.msg import Image as ROSImage
+    from sensor_msgs.msg import CameraInfo
+    import cv_bridge
+except ImportError:
+    rospy = None
+    tf = None
+    message_filters = None
+    ROSImage = None
+    CameraInfo = None
+    cv_bridge = None
 
 from boxfusion.boxes import DepthInstance3DBoxes
 from boxfusion.measurement import ImageMeasurementInfo, DepthMeasurementInfo
@@ -147,6 +155,8 @@ def get_camera_to_gravity_transform(pose, current, target=ImageOrientation.UPRIG
 
 class MultiSensorFusionROS1:
     def __init__(self, source_frame='map', target_frame='camera_link'):
+        if rospy is None or tf is None or message_filters is None or cv_bridge is None:
+            raise ImportError("ROS1 dependencies are required for online mode.")
         self.bridge = cv_bridge.CvBridge()
         self.result_queue = queue.Queue(maxsize=10)
         
@@ -197,6 +207,8 @@ class MultiSensorFusionROS1:
 class ROSDataset(IterableDataset):
     def __init__(self, cfg, has_depth=True):
         super(ROSDataset, self).__init__()
+        if rospy is None:
+            raise ImportError("ROS1 dependencies are required for the online dataset.")
         # 初始化 ROS1 节点
         rospy.init_node('boxfusion_stream', anonymous=True)
         
@@ -325,7 +337,18 @@ class ScannetDataset(IterableDataset):
         self.depth_paths=self.depth_paths[self.start:]
         self.poses=self.poses[self.start:]
 
-        self.frame_ids = range(0, len(self.img_files))
+        available_frames = min(len(self.img_files), len(self.depth_paths), len(self.poses))
+        if available_frames < len(self.img_files) or available_frames < len(self.depth_paths) or available_frames < len(self.poses):
+            print(
+                f"[ScannetDataset] frame count mismatch detected: "
+                f"rgb={len(self.img_files)}, depth={len(self.depth_paths)}, poses={len(self.poses)}. "
+                f"Using first {available_frames} aligned frames."
+            )
+        self.img_files = self.img_files[:available_frames]
+        self.depth_paths = self.depth_paths[:available_frames]
+        self.poses = self.poses[:available_frames]
+
+        self.frame_ids = range(0, available_frames)
         self.num_frames = len(self.frame_ids)
         self.cfg = cfg
         self.img_height = cfg['cam']['H']
@@ -375,7 +398,7 @@ class ScannetDataset(IterableDataset):
         print("Waiting for frames...")
         video_id = self.video_id
         index = 0
-        while True:
+        while index < self.num_frames:
 
             #Step1: load data
             color_path = self.img_files[index]
@@ -520,7 +543,18 @@ class CA1MDataset(IterableDataset):
         self.depth_paths=self.depth_paths[self.start:]
         self.poses=self.poses[self.start:]
 
-        self.frame_ids = range(0, len(self.img_files))
+        available_frames = min(len(self.img_files), len(self.depth_paths), len(self.poses))
+        if available_frames < len(self.img_files) or available_frames < len(self.depth_paths) or available_frames < len(self.poses):
+            print(
+                f"[CA1MDataset] frame count mismatch detected: "
+                f"rgb={len(self.img_files)}, depth={len(self.depth_paths)}, poses={len(self.poses)}. "
+                f"Using first {available_frames} aligned frames."
+            )
+        self.img_files = self.img_files[:available_frames]
+        self.depth_paths = self.depth_paths[:available_frames]
+        self.poses = self.poses[:available_frames]
+
+        self.frame_ids = range(0, available_frames)
         self.num_frames = len(self.frame_ids)
         self.cfg = cfg
 
@@ -560,7 +594,7 @@ class CA1MDataset(IterableDataset):
         print("Waiting for frames...")
         video_id = self.video_id
         index = 0
-        while True:
+        while index < self.num_frames:
 
             #Step1: load data
             color_path = self.img_files[index]

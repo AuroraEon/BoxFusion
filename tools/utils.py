@@ -1,6 +1,4 @@
 import numpy as np
-import rerun
-import rerun.blueprint as rrb
 import matplotlib.pyplot as plt
 import torch
 import open3d as o3d
@@ -14,6 +12,13 @@ from boxfusion.color import random_color_v2
 from boxfusion.capture_stream import ScannetDataset, CA1MDataset, ROSDataset, HM3DDataset
 import pickle
 import open_clip
+
+try:
+    import rerun
+    import rerun.blueprint as rrb
+except ImportError:
+    rerun = None
+    rrb = None
 
 def move_device_like(src: torch.Tensor, dst: torch.Tensor) -> torch.Tensor:
     try:
@@ -33,6 +38,8 @@ def move_input_to_current_device(batched_input: Sensors, t: torch.Tensor):
 
 
 def visualize_online_boxes(instances, prefix, boxes_3d_name="gt_boxes_3d", log_instances_name="instances", count=0,save=False, show_class=False, show_label=True,**kwargs):
+    if rerun is None:
+        raise ImportError("rerun is required for online box visualization.")
 
     all_centers=[]
     all_sizes=[]
@@ -436,9 +443,14 @@ def text_prompt(boxes, class_prompt, text_features, img_path, clip_model, prepro
         boxes, img_path
     )
 
+    model_device = next(clip_model.parameters()).device
+    if isinstance(model_device, torch.device):
+        device_str = str(model_device)
+    else:
+        device_str = model_device
 
     scores, img_features = retriev(
-        clip_model, preprocess, cropped_images, text_features, device="cuda:0"
+        clip_model, preprocess, cropped_images, text_features, device=device_str
     )
 
     max_values, max_id = torch.max(scores, dim=-1) #

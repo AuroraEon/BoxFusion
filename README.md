@@ -135,6 +135,66 @@ python demo.py scannet --model-path ./models/cutr_rgbd.pth  --config ./config/sc
 ### Others
 We recommend to prepare the data like ScanNetV2. Once you have prepared the data, you can instantiate a dataset object in this [file](./cubifyanything/capture_stream.py), and use the similar command to try on your data.
 
+### Stage A Closed-Loop Demo Package
+To export the incremental mapping demo package for Stage A, run the dedicated script below. It reuses the existing BoxFusion front-end, room segmentation, scene graph, and anchors, then writes a split-screen MP4 plus structured logs under `stage_a_outputs/<sequence_id>/`.
+
+```
+python stage_a_demo.py CA1M \
+  --model-path ./models/cutr_rgbd.pth \
+  --config ./config/ca1m.yaml \
+  --device cuda \
+  --seq 42898867 \
+  --output-root ./stage_a_outputs \
+  --room-seg-interval 100 \
+  --video-fps 12
+```
+
+To export a presentation-friendly replay with frame-continuous RGB on the left and a held semantic BEV on the right, add `--full-rgb-replay`:
+
+```
+python stage_a_demo.py CA1M \
+  --model-path ./models/cutr_rgbd.pth \
+  --config ./config/ca1m.yaml \
+  --device cuda \
+  --seq 42898867 \
+  --output-root ./stage_a_outputs \
+  --room-seg-interval 100 \
+  --video-fps 12 \
+  --full-rgb-replay
+```
+
+Important notes:
+- This Stage A package uses dataset poses as the camera trajectory input unless you wire in a live online source.
+- Revisit / loop-closure-like events are logged explicitly and should be presented as approximations unless a real SLAM backend is added.
+- The package writes `report.md`, `final/*.png`, `final/*.mp4`, `logs/*.json`, local revisit audit summaries, and per-snapshot vector maps for debugging.
+
+The revisit evidence exports now separate room-local reuse from unrelated map growth elsewhere in the same time window. Key additions inside each run folder are:
+- `logs/revisit_diagnostics.json` and `logs/revisit_diagnostics.csv`: grouped revisit events with `local_merge_audit`, room-polygon update summaries, retained/merged/added/removed object ids, duplicate-likelihood labels, and before/trigger/effect/after frame references.
+- `logs/revisit_summary.md`: concise markdown summary of the strongest revisit events using the local-vs-global split.
+- `logs/presentation_note.md`: records `room_seg_interval`, `capture_stride_frames`, `replay_mode`, `full_rgb_replay`, `per_frame_pose_overlay`, `map_refresh_frame_count`, `video_fps`, `spotlight_count_requested`, `max_frames`, plus a short note about how continuous or stepwise the replay will look.
+- `event_spotlights/revisit_*_local_story.jpg`: event-centered local BEV storyboards for the strongest revisit events, alongside the existing split-screen spotlights.
+
+To compare multiple sequences with the same Stage A export path, pass `--seqs` instead of a single `--seq`:
+
+```
+python stage_a_demo.py CA1M \
+  --model-path ./models/cutr_rgbd.pth \
+  --config ./config/ca1m.yaml \
+  --device cuda \
+  --seqs 42898867 42897813 42899042 \
+  --output-root ./stage_a_outputs \
+  --room-seg-interval 100 \
+  --video-fps 12 \
+  --aggregate-name teacher_validation
+```
+
+That multi-sequence mode writes per-sequence exports as usual and also writes:
+- `stage_a_outputs/_multi_sequence/<aggregate-name>/aggregate_summary.json`
+- `stage_a_outputs/_multi_sequence/<aggregate-name>/aggregate_summary.csv`
+- `stage_a_outputs/_multi_sequence/<aggregate-name>/aggregate_summary.md`
+
+The aggregate summary ranks sequences for teacher presentation using the strongest revisit evidence, counts of stronger revisit examples, duplicate warnings, and the presentation-quality note from each run.
+
 ## Tier 2A enablement
 
 Tier 2A is now treated as a scene-specific policy-gated feature instead of a global on/off default. The room-segmentation config supports three modes:

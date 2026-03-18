@@ -1,0 +1,437 @@
+import argparse
+import csv
+import itertools
+import json
+import math
+import os
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import yaml
+
+def _load_config(dataset_name: str, config_path: str, seq: Optional[str]) -> dict:
+    if not os.path.exists(config_path):
+        raise ValueError(f"Missing config path: {config_path}")
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        cfg = yaml.full_load(f)
+
+    dataset_name = dataset_name.lower()
+    if seq is not None:
+        if dataset_name == "ca1m":
+            if "example" in cfg["data"]["datadir"]:
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                cfg["data"]["datadir"] = os.path.join(current_dir, cfg["data"]["datadir"])
+            else:
+                cfg["data"]["datadir"] = os.path.join(
+                    os.path.dirname(os.path.dirname(cfg["data"]["datadir"])),
+                    seq + "/",
+                )
+        elif dataset_name == "hm3d":
+            cfg["data"]["datadir"] = os.path.join(os.path.dirname(cfg["data"]["datadir"]), seq)
+        else:
+            cfg["data"]["datadir"] = os.path.join(
+                os.path.dirname(os.path.dirname(cfg["data"]["datadir"])),
+                seq + "/frames/",
+            )
+    return cfg
+
+
+def _resolve_clip_path(cli_value: Optional[str]) -> str:
+    candidates = [
+        cli_value,
+        "./models/ViT-B-32/open_clip_pytorch_model.bin",
+        "./models/open_clip_pytorch_model.bin",
+    ]
+    for candidate in candidates:
+        if candidate and os.path.exists(candidate):
+            return candidate
+    raise FileNotFoundError("Could not find a CLIP checkpoint. Pass --clip-path explicitly.")
+
+
+def _resolve_text_features_path(cli_value: Optional[str]) -> str:
+    candidates = [
+        cli_value,
+        "./data/class_features_small.pt",
+        "./data/class_features.pt",
+    ]
+    for candidate in candidates:
+        if candidate and os.path.exists(candidate):
+            return candidate
+    raise FileNotFoundError("Could not find a text-feature file. Pass --text-features explicitly.")
+
+
+def _infer_sequence_id(cfg: dict, seq: Optional[str]) -> str:
+    if seq:
+        return seq
+    datadir = Path(cfg["data"]["datadir"])
+    if datadir.name == "frames" and datadir.parent.name:
+        return datadir.parent.name
+    return datadir.name.rstrip("/")
+
+
+def _diagnostic_sort_key(item: dict) -> Tuple[float, float, int]:
+    return (
+        -float(item.get("teacher_evidence_score", 0.0)),
+        -float(item.get("impact_score", 0.0)),
+        int(item.get("frame_idx", 0)),
+    )
+
+
+def _run_single_sequence(
+    args: argparse.Namespace,
+    model,
+    clip_model,
+    preprocess,
+    text_class,
+    text_features,
+    augmentor,
+    preprocessor,
+    seq: Optional[str],
+):
+    from boxfusion.stage_a_demo import ClosedLoopDemoRecorder
+    from demo import run
+    from tools.utils import get_dataset
+
+    cfg = _load_config(args.dataset_path, args.config, seq)
+    if args.keyframe_gap is not None:
+        cfg["data"]["gap"] = int(args.keyframe_gap)
+    cfg["vis"]["rerun"] = bool(args.enable_rerun)
+
+    dataset = get_dataset(cfg)
+    if hasattr(dataset, "load_arkit_depth"):
+        dataset.load_arkit_depth = True
+    raw_total_frames = len(dataset) if hasattr(dataset, "__len__") else None
+    if args.every_nth_frame is not None:
+        dataset = itertools.islice(dataset, 0, None, args.every_nth_frame)
+        if raw_total_frames is not None:
+            raw_total_frames = math.ceil(raw_total_frames / args.every_nth_frame)
+    if args.max_frames is not None:
+        raw_total_frames = args.max_frames if raw_total_frames is None else min(raw_total_frames, args.max_frames)
+
+    sequence_id = _infer_sequence_id(cfg, seq)
+    recorder = ClosedLoopDemoRecorder(
+        output_root=args.output_root,
+        sequence_id=sequence_id,
+        capture_stride_frames=args.capture_stride or int(cfg["data"]["gap"]),
+        video_fps=args.video_fps,
+        canvas_size=(args.canvas_width, args.canvas_height),
+        save_scene_graph_vis=args.save_scene_graph_vis,
+        spotlight_count=args.spotlight_count,
+        room_seg_interval=args.room_seg_interval,
+        max_frames=args.max_frames,
+        full_rgb_replay=args.full_rgb_replay,
+        per_frame_pose_overlay=True,
+    )
+
+    result = run(
+        cfg,
+        model,
+        dataset,
+        clip_model,
+        preprocess,
+        text_class,
+        text_features,
+        augmentor,
+        preprocessor,
+        score_thresh=cfg["detection"]["score_thresh"],
+        viz_on_gt_points=args.viz_on_gt_points,
+        gap=cfg["data"]["gap"],
+        re_vis=cfg["vis"]["rerun"],
+        room_seg_interval=args.room_seg_interval,
+        demo_recorder=recorder,
+        debug_room_dir=str(recorder.output_root / "debug_room"),
+        save_scene_graph_vis=args.save_scene_graph_vis,
+        max_frames=args.max_frames,
+        total_frames=raw_total_frames,
+    )
+
+    summary_payload = None
+    demo_outputs = result.get("demo_outputs") or {}
+    summary_json = demo_outputs.get("summary_json")
+    if summary_json and os.path.exists(summary_json):
+        with open(summary_json, "r", encoding="utf-8") as f:
+            summary_payload = json.load(f)
+        summary_payload["summary_json"] = summary_json
+        summary_payload["report_path"] = demo_outputs.get("report_path")
+    return sequence_id, result, summary_payload
+
+
+def _quality_bonus(assessment: str) -> float:
+    return {
+        "continuous_rgb_honest_bev": 1.1,
+        "continuous_rgb_stepwise_map": 0.7,
+        "reasonably_progressive": 1.0,
+        "moderately_stepwise": 0.35,
+        "may_look_sparse": -0.8,
+    }.get(str(assessment), 0.0)
+
+
+def _write_multi_sequence_summary(
+    output_root: str,
+    aggregate_name: str,
+    sequence_summaries: List[Dict],
+) -> dict:
+    aggregate_dir = Path(output_root) / "_multi_sequence" / aggregate_name
+    aggregate_dir.mkdir(parents=True, exist_ok=True)
+
+    rows = []
+    runs = []
+    for summary in sequence_summaries:
+        diagnostics_path = summary.get("revisit_diagnostics_json")
+        diagnostics = []
+        if diagnostics_path and os.path.exists(diagnostics_path):
+            with open(diagnostics_path, "r", encoding="utf-8") as f:
+                diagnostics = json.load(f)
+
+        strongest = sorted(diagnostics, key=_diagnostic_sort_key)[:3]
+        best_event = strongest[0] if strongest else {}
+        strong_revisit_count = sum(float(item.get("teacher_evidence_score", 0.0)) >= 6.0 for item in diagnostics)
+        isolated_local_reuse_count = sum(
+            item.get("local_merge_audit", {}).get("attribution_label") == "isolated_local_reuse"
+            for item in diagnostics
+        )
+        likely_room_duplicate_count = sum(
+            item.get("duplicate_room_evidence", {}).get("likelihood") == "likely"
+            for item in diagnostics
+        )
+        likely_object_duplicate_count = sum(
+            item.get("duplicate_object_evidence", {}).get("likelihood") == "likely"
+            for item in diagnostics
+        )
+        presentation_assessment = str(summary.get("presentation_quality_note", {}).get("assessment", ""))
+        teacher_presentation_score = round(
+            float(best_event.get("teacher_evidence_score", 0.0)) * 2.0
+            + strong_revisit_count * 0.7
+            + isolated_local_reuse_count * 0.9
+            - likely_room_duplicate_count * 1.2
+            - likely_object_duplicate_count * 0.8
+            + _quality_bonus(presentation_assessment),
+            3,
+        )
+        row = {
+            "sequence_id": summary.get("sequence_id"),
+            "teacher_presentation_score": teacher_presentation_score,
+            "snapshot_count": int(summary.get("snapshot_count", 0)),
+            "replay_frame_count": int(summary.get("replay_frame_count", 0)),
+            "segmentation_cycle_count": int(summary.get("segmentation_cycle_count", 0)),
+            "final_rooms": int(summary.get("final_room_count", 0)),
+            "final_objects": int(summary.get("final_object_count", 0)),
+            "final_anchors": int(summary.get("final_anchor_count", 0)),
+            "grouped_revisits": int(summary.get("revisit_diagnostic_count", 0)),
+            "strong_revisits": int(strong_revisit_count),
+            "isolated_local_reuse_revisits": int(isolated_local_reuse_count),
+            "likely_room_duplicate_revisits": int(likely_room_duplicate_count),
+            "likely_object_duplicate_revisits": int(likely_object_duplicate_count),
+            "best_event_id": int(best_event.get("event_id", 0)) if best_event else 0,
+            "best_event_teacher_score": round(float(best_event.get("teacher_evidence_score", 0.0)), 3) if best_event else 0.0,
+            "best_event_trigger": best_event.get("trigger_reason", ""),
+            "best_event_rooms": ",".join(str(v) for v in best_event.get("matched_room_ids", [])),
+            "best_event_local_vs_global": best_event.get("local_merge_audit", {}).get("attribution_label", ""),
+            "presentation_quality": presentation_assessment,
+            "replay_mode": summary.get("replay_mode"),
+            "summary_json": summary.get("summary_json"),
+            "report_path": summary.get("report_path"),
+        }
+        rows.append(row)
+        runs.append(
+            {
+                "summary": summary,
+                "row": row,
+                "top_events": strongest,
+            }
+        )
+
+    rows.sort(
+        key=lambda item: (
+            -float(item["teacher_presentation_score"]),
+            -float(item["best_event_teacher_score"]),
+            str(item["sequence_id"]),
+        )
+    )
+    for rank, row in enumerate(rows, start=1):
+        row["rank"] = int(rank)
+
+    best_sequence_id = rows[0]["sequence_id"] if rows else None
+    json_path = aggregate_dir / "aggregate_summary.json"
+    csv_path = aggregate_dir / "aggregate_summary.csv"
+    md_path = aggregate_dir / "aggregate_summary.md"
+
+    payload = {
+        "aggregate_name": aggregate_name,
+        "sequence_count": int(len(rows)),
+        "best_sequence_id": best_sequence_id,
+        "rows": rows,
+        "runs": runs,
+    }
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+
+    if rows:
+        fieldnames = [
+            "rank",
+            "sequence_id",
+            "teacher_presentation_score",
+            "best_event_teacher_score",
+            "grouped_revisits",
+            "strong_revisits",
+            "isolated_local_reuse_revisits",
+            "likely_room_duplicate_revisits",
+            "likely_object_duplicate_revisits",
+            "snapshot_count",
+            "replay_frame_count",
+            "segmentation_cycle_count",
+            "final_rooms",
+            "final_objects",
+            "final_anchors",
+            "presentation_quality",
+            "replay_mode",
+            "best_event_id",
+            "best_event_trigger",
+            "best_event_rooms",
+            "best_event_local_vs_global",
+            "summary_json",
+            "report_path",
+        ]
+        with open(csv_path, "w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    md_lines = [
+        "# Multi-Sequence Stage A Summary",
+        "",
+        f"- Sequences compared: {len(rows)}",
+        f"- Best teacher-facing sequence: {best_sequence_id}",
+        "",
+        "| Rank | Sequence | Teacher Score | Best Event | Strong Revisits | Dup Room | Dup Object | Presentation |",
+        "| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
+    ]
+    for row in rows:
+        md_lines.append(
+            f"| {row['rank']} | {row['sequence_id']} | {row['teacher_presentation_score']:.2f} | "
+            f"{row['best_event_teacher_score']:.2f} | {row['strong_revisits']} | "
+            f"{row['likely_room_duplicate_revisits']} | {row['likely_object_duplicate_revisits']} | {row['presentation_quality']} |"
+        )
+    md_lines.extend(["", "## Notes", ""])
+    for row in rows:
+        md_lines.append(
+            "- "
+            f"{row['sequence_id']}: grouped revisits={row['grouped_revisits']}, strong revisits={row['strong_revisits']}, "
+            f"replay={row['replay_mode']}, frames={row['replay_frame_count']}, "
+            f"best event #{row['best_event_id']} ({row['best_event_trigger']}, rooms {row['best_event_rooms'] or 'unknown'}, "
+            f"{row['best_event_local_vs_global'] or 'unknown local/global split'}), "
+            f"duplicate warnings room/object={row['likely_room_duplicate_revisits']}/{row['likely_object_duplicate_revisits']}."
+        )
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(md_lines) + "\n")
+
+    return {
+        "aggregate_dir": str(aggregate_dir),
+        "aggregate_summary_json": str(json_path),
+        "aggregate_summary_csv": str(csv_path),
+        "aggregate_summary_md": str(md_path),
+        "best_sequence_id": best_sequence_id,
+    }
+
+
+def main() -> None:
+    import open_clip
+    import numpy as np
+    import torch
+
+    from boxfusion.cubify_transformer import make_cubify_transformer
+    from boxfusion.preprocessor import Augmentor, Preprocessor
+
+    parser = argparse.ArgumentParser(description="Stage A closed-loop demo exporter for BoxFusion")
+    parser.add_argument("dataset_path", choices=["CA1M", "scannet", "online", "hm3d"])
+    parser.add_argument("--model-path", required=True, help="Path to the BoxFusion / Cubify checkpoint")
+    parser.add_argument("--config", required=True, type=str, help="Config path")
+    parser.add_argument("--seq", default=None, type=str, help="Sequence id to run")
+    parser.add_argument("--seqs", nargs="+", default=None, help="Optional multi-sequence run list")
+    parser.add_argument("--class-txt", default="./data/panoptic_categories_nomerge.txt", type=str)
+    parser.add_argument("--clip-path", default=None, type=str, help="Optional CLIP checkpoint path")
+    parser.add_argument("--clip-model-name", default="ViT-B-32", type=str)
+    parser.add_argument("--text-features", default=None, type=str, help="Optional precomputed text feature tensor")
+    parser.add_argument("--device", default="cpu", help="cpu | cuda | mps")
+    parser.add_argument("--viz-on-gt-points", default=True, action="store_true")
+    parser.add_argument("--every-nth-frame", default=None, type=int)
+    parser.add_argument("--max-frames", default=None, type=int)
+    parser.add_argument("--keyframe-gap", default=None, type=int)
+    parser.add_argument("--room-seg-interval", default=100, type=int)
+    parser.add_argument("--capture-stride", default=None, type=int, help="Snapshot stride in frames")
+    parser.add_argument(
+        "--full-rgb-replay",
+        action="store_true",
+        help="Export one video frame per processed dataset frame while holding the BEV semantic map between real snapshot refreshes",
+    )
+    parser.add_argument("--output-root", default="./stage_a_outputs", type=str)
+    parser.add_argument("--video-fps", default=12, type=int)
+    parser.add_argument("--canvas-width", default=1600, type=int)
+    parser.add_argument("--canvas-height", default=900, type=int)
+    parser.add_argument("--spotlight-count", default=4, type=int, help="Number of strongest revisit events to export as spotlight frames")
+    parser.add_argument("--aggregate-name", default="stage_a_multi_sequence", type=str, help="Output folder name for multi-sequence aggregate summaries")
+    parser.add_argument("--enable-rerun", action="store_true", help="Keep rerun visualization enabled")
+    parser.add_argument("--save-scene-graph-vis", action="store_true", help="Also save per-snapshot scene graph PNGs")
+    args = parser.parse_args()
+
+    checkpoint = torch.load(args.model_path, map_location=args.device or "cpu")["model"]
+    backbone_embedding_dimension = checkpoint["backbone.0.patch_embed.proj.weight"].shape[0]
+    model = make_cubify_transformer(dimension=backbone_embedding_dimension, depth_model=True).eval()
+    model.load_state_dict(checkpoint)
+    model = model.to(args.device)
+
+    clip_path = _resolve_clip_path(args.clip_path)
+    text_features_path = _resolve_text_features_path(args.text_features)
+    clip_model, _, preprocess = open_clip.create_model_and_transforms(
+        model_name=args.clip_model_name,
+        pretrained=clip_path,
+    )
+    clip_model = clip_model.to(args.device).eval()
+
+    text_class = np.genfromtxt(args.class_txt, delimiter="\n", dtype=str)
+    text_features = torch.load(text_features_path, map_location=args.device).to(args.device)
+
+    augmentor = Augmentor(("wide/image", "wide/depth"))
+    preprocessor = Preprocessor()
+
+    requested_sequences = args.seqs if args.seqs else [args.seq]
+    if not requested_sequences:
+        requested_sequences = [None]
+
+    sequence_summaries = []
+    for seq in requested_sequences:
+        sequence_id, result, summary_payload = _run_single_sequence(
+            args,
+            model,
+            clip_model,
+            preprocess,
+            text_class,
+            text_features,
+            augmentor,
+            preprocessor,
+            seq,
+        )
+
+        print("\n=== Stage A Demo Package ===")
+        print(f"Sequence: {sequence_id}")
+        print(f"Processed frames: {result['processed_frames']}")
+        if result.get("demo_outputs"):
+            for key, value in result["demo_outputs"].items():
+                print(f"{key}: {value}")
+        if summary_payload is not None:
+            sequence_summaries.append(summary_payload)
+
+    if len(sequence_summaries) > 1:
+        aggregate_outputs = _write_multi_sequence_summary(
+            output_root=args.output_root,
+            aggregate_name=args.aggregate_name,
+            sequence_summaries=sequence_summaries,
+        )
+        print("\n=== Stage A Multi-Sequence Summary ===")
+        for key, value in aggregate_outputs.items():
+            print(f"{key}: {value}")
+
+
+if __name__ == "__main__":
+    main()

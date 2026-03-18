@@ -1115,7 +1115,13 @@ class DynamicRoomSegmenter:
                             "yaw": round(float(yaw), 3)
                         })
 
-    def get_vector_map_data(self, all_pred_box=None, count=None):
+    def get_vector_map_data(
+        self,
+        all_pred_box=None,
+        count=None,
+        save_scene_graph_vis=True,
+        scene_graph_vis_dir="./debug_room",
+    ):
         if self.last_room_markers is None: return {}
         
         vector_data = {
@@ -1311,11 +1317,16 @@ class DynamicRoomSegmenter:
             vector_data["anchors"] = sg.export_anchor_data()
             
             # 5. 生成并保存 2D 拓扑可视化
-            vis_path = f"./debug_room/scene_graph_{count if count is not None else 'latest'}.png"
-            try:
-                sg.visualize_bev_graph(save_path=vis_path)
-            except Exception as e:
-                print(f"[警告] 场景图可视化失败: {e}")
+            if save_scene_graph_vis:
+                os.makedirs(scene_graph_vis_dir, exist_ok=True)
+                vis_path = os.path.join(
+                    scene_graph_vis_dir,
+                    f"scene_graph_{count if count is not None else 'latest'}.png",
+                )
+                try:
+                    sg.visualize_bev_graph(save_path=vis_path)
+                except Exception as e:
+                    print(f"[警告] 场景图可视化失败: {e}")
 
         return vector_data
 

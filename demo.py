@@ -6,8 +6,6 @@ import glob
 import itertools
 import json
 import numpy as np
-import rerun
-import rerun.blueprint as rrb
 import yaml
 import torch
 import torchvision
@@ -18,10 +16,21 @@ from pathlib import Path
 from PIL import Image
 from scipy.spatial.transform import Rotation
 from tools.utils import * 
-import open_clip 
 import torch.nn.functional as F
 import time
 import cv2
+
+try:
+    import rerun
+    import rerun.blueprint as rrb
+except ImportError:
+    rerun = None
+    rrb = None
+
+try:
+    import open_clip
+except ImportError:
+    open_clip = None
 
 from boxfusion.cubify_transformer import make_cubify_transformer
 
@@ -33,39 +42,64 @@ from boxfusion.box_fusion import BoxFusion
 
 from boxfusion.dynamic_room_segmenter import DynamicRoomSegmenter
 
-def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_features, augmentor, preprocessor, score_thresh=0.0, viz_on_gt_points=False, gap=25, re_vis=True):
+
+def run(
+    cfg,
+    model,
+    dataset,
+    clip_model,
+    preprocess,
+    tokenized_text,
+    text_features,
+    augmentor,
+    preprocessor,
+    score_thresh=0.0,
+    viz_on_gt_points=False,
+    gap=25,
+    re_vis=True,
+    room_seg_interval=100,
+    demo_recorder=None,
+    debug_room_dir="./debug_room",
+    save_scene_graph_vis=True,
+    max_frames=None,
+    total_frames=None,
+):
+    if re_vis and (rerun is None or rrb is None):
+        raise ImportError("rerun is required when visualization is enabled. Install rerun or set re_vis=False.")
     is_depth_model = "wide/depth" in augmentor.measurement_keys
-    blueprint = rrb.Blueprint(
-        rrb.Vertical(
-            contents=[
-                rrb.Horizontal(
-                    contents=([
-                    rrb.Spatial3DView(
-                        name="World",
-                        contents=[
-                            "+ $origin/**",
-                            "+ /device/wide/pred_instances/**",
-                            # "+ /world/image/**"
-                        ],
-                        origin="/world"),
-                    ])),
-                rrb.Horizontal(
-                    contents=([
-                        rrb.Spatial2DView(
-                            name="Image",
-                            origin="/device/wide/image",
+    blueprint = None
+    if re_vis:
+        blueprint = rrb.Blueprint(
+            rrb.Vertical(
+                contents=[
+                    rrb.Horizontal(
+                        contents=([
+                        rrb.Spatial3DView(
+                            name="World",
                             contents=[
                                 "+ $origin/**",
-                                "+ /device/wide/pred_instances/**"
-                            ])
-                    ] + ([
-                        # Only show this for RGB-D.
-                        rrb.Spatial2DView(
-                            name="Depth",
-                            origin="/device/wide/depth")
-                    ] if is_depth_model else [])),
-                    name="Wide")
-            ]))
+                                "+ /device/wide/pred_instances/**",
+                                # "+ /world/image/**"
+                            ],
+                            origin="/world"),
+                        ])),
+                    rrb.Horizontal(
+                        contents=([
+                            rrb.Spatial2DView(
+                                name="Image",
+                                origin="/device/wide/image",
+                                contents=[
+                                    "+ $origin/**",
+                                    "+ /device/wide/pred_instances/**"
+                                ])
+                        ] + ([
+                            # Only show this for RGB-D.
+                            rrb.Spatial2DView(
+                                name="Depth",
+                                origin="/device/wide/depth")
+                        ] if is_depth_model else [])),
+                        name="Wide")
+                ]))
 
     recording = None
     video_id = None
@@ -88,11 +122,47 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
     
     room_segmenter = DynamicRoomSegmenter(resolution=0.05, config=cfg)
     accumulated_all_pts = []
+    latest_vector_map = None
+    segmentation_cycle_idx = 0
+    last_segmentation_frame_idx = None
+
+    os.makedirs(debug_room_dir, exist_ok=True)
+
+    def maybe_capture_demo_snapshot(frame_idx, timestamp, image_frame, pose_matrix, segmentation_updated=False):
+        nonlocal latest_vector_map
+        if demo_recorder is None or not demo_recorder.should_capture(frame_idx, segmentation_updated):
+            return
+
+        snapshot_vector_map = latest_vector_map
+        if room_segmenter.last_room_markers is not None:
+            snapshot_vector_map = room_segmenter.get_vector_map_data(
+                all_pred_box,
+                count=frame_idx,
+                save_scene_graph_vis=bool(save_scene_graph_vis and getattr(demo_recorder, "save_scene_graph_vis", False)),
+                scene_graph_vis_dir=str(getattr(demo_recorder, "scene_graph_dir", debug_room_dir)),
+            )
+            latest_vector_map = snapshot_vector_map
+
+        demo_recorder.record_snapshot(
+            frame_idx=frame_idx,
+            timestamp=timestamp,
+            image_rgb=image_frame,
+            pose=pose_matrix,
+            trajectory_xy=[(float(pt[0]), float(pt[1])) for pt in traj_xyz],
+            vector_map=snapshot_vector_map,
+            tracking_report=room_segmenter.last_tracking_report,
+            segmentation_updated=segmentation_updated,
+            segmentation_cycle_idx=segmentation_cycle_idx,
+            last_segmentation_frame_idx=last_segmentation_frame_idx,
+        )
     
     # 在循环外初始化起点
     t_loop_start = time.time()
     
     for sample in dataset:
+        if max_frames is not None and count >= max_frames:
+            break
+        is_last_frame = total_frames is not None and count == total_frames - 1
         # ---------------------------------------------------------
         # 阶段 1: 数据加载与预处理 (Data Loading & Preprocessing)
         # ---------------------------------------------------------
@@ -111,8 +181,9 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
         
         pose_np = pose.squeeze().cpu().numpy()
 
+        sample_timestamp = float(np.asarray(sample["meta"]["timestamp"]).reshape(-1)[0])
         if re_vis:
-            rerun.set_time_seconds("pts", sample["meta"]["timestamp"], recording=recording)
+            rerun.set_time_seconds("pts", sample_timestamp, recording=recording)
 
         # -> channels last.
         image = np.moveaxis(sample["wide"]["image"][-1].numpy(), 0, -1)  #[H,W,3]
@@ -148,7 +219,7 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
         t_infer_start = time.time()
         
         # Every gap nth frame is selected as keyframe
-        if count % gap == 0:
+        if count % gap == 0 or is_last_frame:
             with torch.no_grad():
                 pred_instances = model(packaged)[0] 
 
@@ -202,7 +273,8 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
         t_seg_start = time.time()
         
         # 将分割触发逻辑提出来，只要是 100 的整数倍帧就会检查，不再受 gap 限制
-        if count % 100 == 0:
+        segmentation_updated = False
+        if count % room_seg_interval == 0:
             print(f"\n[调试信息] 当前帧: {count}, 缓存的点云片段数: {len(accumulated_all_pts)}")
             
             if len(accumulated_all_pts) > 0:
@@ -228,17 +300,26 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
                 markers = room_segmenter.perform_segmentation(
                     xyz_only, 
                     all_pred_box, 
-                    debug_path="./debug_room/", 
+                    debug_path=debug_room_dir, 
                     count=count
                 )
 
                 if markers is not None:
                     # yaml_name = f"./debug_room/room_objects_{count}.yaml"
                     # room_segmenter.save_room_mapping_to_yaml(all_pred_box, output_path=yaml_name)
-                    vector_map = room_segmenter.get_vector_map_data(all_pred_box, count=count)
-                    with open(f"./debug_room/vector_map_{count}.json", 'w') as f:
+                    vector_map = room_segmenter.get_vector_map_data(
+                        all_pred_box,
+                        count=count,
+                        save_scene_graph_vis=save_scene_graph_vis,
+                        scene_graph_vis_dir=debug_room_dir,
+                    )
+                    latest_vector_map = vector_map
+                    with open(os.path.join(debug_room_dir, f"vector_map_{count}.json"), 'w') as f:
                         json.dump(vector_map, f, indent=2)
                     print(f"[{count}] Vector Map 及拓扑数据已更新！")
+                    segmentation_updated = True
+                    segmentation_cycle_idx += 1
+                    last_segmentation_frame_idx = int(count)
             else:
                 print(f"[{count}] 警告: 没有收集到有效点云，无法执行房间分割！")
                 
@@ -283,7 +364,7 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
         t_fusion_start = time.time()
         
         # only process keyframes
-        if count % gap ==0 or count == len(dataset)-1:
+        if count % gap == 0 or is_last_frame:
             
             all_kf_pose[count] = pose_np
             pose_np = np.expand_dims(pose_np,axis=0)
@@ -294,7 +375,25 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
                 all_poses = all_poses
                 box_count += len(pred_instances)
                 box_manager.num_record[count] = box_count
+                maybe_capture_demo_snapshot(
+                    frame_idx=count,
+                    timestamp=sample_timestamp,
+                    image_frame=image,
+                    pose_matrix=RT,
+                    segmentation_updated=segmentation_updated,
+                )
+                if demo_recorder is not None:
+                    demo_recorder.record_frame(
+                        frame_idx=count,
+                        timestamp=sample_timestamp,
+                        image_rgb=image,
+                        pose=RT,
+                        trajectory_xy=[(float(pt[0]), float(pt[1])) for pt in traj_xyz],
+                        segmentation_cycle_idx=segmentation_cycle_idx,
+                        last_segmentation_frame_idx=last_segmentation_frame_idx,
+                    )
                 count+=1
+                t_loop_start = time.time()
                 continue
             
             # add new properties for Instance3D predictions
@@ -421,8 +520,36 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
 
             if re_vis:
                 visualize_online_boxes(all_pred_box, prefix="/device/wide", boxes_3d_name="pred_boxes_3d", log_instances_name="pred_instances",count=count,save=False,show_class=cfg["vis"]["show_class"],show_label=cfg["vis"]["show_label"]) 
+
+            maybe_capture_demo_snapshot(
+                frame_idx=count,
+                timestamp=sample_timestamp,
+                image_frame=image,
+                pose_matrix=RT,
+                segmentation_updated=segmentation_updated,
+            )
                 
         t_fusion_end = time.time()
+
+        if segmentation_updated and not (count % gap == 0 or is_last_frame):
+            maybe_capture_demo_snapshot(
+                frame_idx=count,
+                timestamp=sample_timestamp,
+                image_frame=image,
+                pose_matrix=RT,
+                segmentation_updated=True,
+            )
+
+        if demo_recorder is not None:
+            demo_recorder.record_frame(
+                frame_idx=count,
+                timestamp=sample_timestamp,
+                image_rgb=image,
+                pose=RT,
+                trajectory_xy=[(float(pt[0]), float(pt[1])) for pt in traj_xyz],
+                segmentation_cycle_idx=segmentation_cycle_idx,
+                last_segmentation_frame_idx=last_segmentation_frame_idx,
+            )
         
         # --- 打印本帧耗时统计（仅在关键帧打印） ---
         if count % gap == 0:
@@ -439,55 +566,79 @@ def run(cfg, model, dataset, clip_model, preprocess, tokenized_text, text_featur
         # 为下一次循环重置起点
         t_loop_start = time.time()
         
-        # ... (保留你原来的 save global boxes for evaluation 等代码直至结束)
-        if count == len(dataset)-1 or (count+gap)>len(dataset)-1:
-            end_time = time.time()
-            duration = end_time - start_time  
-            fps = count / duration
-            print(f"count: {count:.2f} frames")
-            print(f"Cost: {duration:.2f} s", f"Average FPS: {fps:.2f}")
-            
-            # save global boxes for evaluation
-            if cfg['data']['output_dir'] is not None and cfg["eval"]:
-                class_list = tokenized_text.tolist()
-                class_idx = np.array([class_list.index(c) for c in all_pred_box.categories]) #[N]
+    end_time = time.time()
+    duration = end_time - start_time
+    fps = (count / duration) if duration > 0 else 0.0
+    print(f"count: {count:.2f} frames")
+    print(f"Cost: {duration:.2f} s", f"Average FPS: {fps:.2f}")
 
-                boxes_3d = all_pred_box.pred_boxes_3d.corners.cpu().numpy() # [N,8,3]
-                if cfg['dataset'] == 'scannet':
-                    boxes_3d = post_process(boxes_3d)
-                    
-                if boxes_3d.shape[0]>0:
-                    save_list = [[(int(0), (boxes_3d[n]), 1.0) for n in range(boxes_3d.shape[0])]] # list of tuples class_idx[n]
+    vid_str = video_id[0] if isinstance(video_id, list) else video_id
 
-                    save_box(save_list, os.path.join(cfg['data']['output_dir'], video_id[0]+"_boxes.pkl"))
+    # save global boxes for evaluation
+    if cfg['data']['output_dir'] is not None and cfg["eval"] and all_pred_box is not None:
+        class_list = tokenized_text.tolist()
+        class_idx = np.array([class_list.index(c) for c in all_pred_box.categories]) #[N]
 
-            print("正在保存点云文件...")
-            save_path = "./exported_pc/"
-            os.makedirs(save_path, exist_ok=True)
-            # --- 新增开始：将收集到的点云列表合并并保存为 PLY ---
-            if len(accumulated_all_pts) > 0:
-                all_pts_merged = np.concatenate(accumulated_all_pts, axis=0)
-                
-                pcd = o3d.geometry.PointCloud()
-                pcd.points = o3d.utility.Vector3dVector(all_pts_merged[:, :3])
-                
-                # 如果包含了颜色信息 (xyzrgb 维度为 6)
-                if all_pts_merged.shape[1] == 6:
-                    pcd.colors = o3d.utility.Vector3dVector(all_pts_merged[:, 3:6])
-                
-                # 进行体素降采样以减小文件体积，0.02 表示 2cm 的体素大小
-                pcd = pcd.voxel_down_sample(voxel_size=0.02)
-                
-                # 兼容 video_id 是列表或字符串的情况
-                vid_str = video_id[0] if isinstance(video_id, list) else video_id
-                pc_save_name = os.path.join(save_path, f"{vid_str}_global_map.ply")
-                
-                o3d.io.write_point_cloud(pc_save_name, pcd)
-                print(f"全局点云已成功保存至: {pc_save_name}，共 {len(pcd.points)} 个点。")
-            # --- 新增结束 ---
-            
-            exit(0)
-            break
+        boxes_3d = all_pred_box.pred_boxes_3d.corners.cpu().numpy() # [N,8,3]
+        if cfg['dataset'] == 'scannet':
+            boxes_3d = post_process(boxes_3d)
+
+        if boxes_3d.shape[0]>0:
+            save_list = [[(int(0), (boxes_3d[n]), 1.0) for n in range(boxes_3d.shape[0])]] # list of tuples class_idx[n]
+            save_box(save_list, os.path.join(cfg['data']['output_dir'], vid_str+"_boxes.pkl"))
+
+    print("正在保存点云文件...")
+    save_path = "./exported_pc/"
+    os.makedirs(save_path, exist_ok=True)
+    pc_save_name = None
+    # --- 新增开始：将收集到的点云列表合并并保存为 PLY ---
+    if len(accumulated_all_pts) > 0 and vid_str is not None:
+        all_pts_merged = np.concatenate(accumulated_all_pts, axis=0)
+
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(all_pts_merged[:, :3])
+
+        # 如果包含了颜色信息 (xyzrgb 维度为 6)
+        if all_pts_merged.shape[1] == 6:
+            pcd.colors = o3d.utility.Vector3dVector(all_pts_merged[:, 3:6])
+
+        # 进行体素降采样以减小文件体积，0.02 表示 2cm 的体素大小
+        pcd = pcd.voxel_down_sample(voxel_size=0.02)
+
+        pc_save_name = os.path.join(save_path, f"{vid_str}_global_map.ply")
+
+        o3d.io.write_point_cloud(pc_save_name, pcd)
+        print(f"全局点云已成功保存至: {pc_save_name}，共 {len(pcd.points)} 个点。")
+    # --- 新增结束 ---
+
+    demo_outputs = None
+    if demo_recorder is not None:
+        if room_segmenter.last_room_markers is not None:
+            latest_vector_map = room_segmenter.get_vector_map_data(
+                all_pred_box,
+                count=max(count - 1, 0),
+                save_scene_graph_vis=False,
+                scene_graph_vis_dir=str(getattr(demo_recorder, "scene_graph_dir", debug_room_dir)),
+            )
+        demo_outputs = demo_recorder.finalize(
+            {
+                "processed_frames": int(count),
+                "duration_sec": round(float(duration), 3),
+                "average_fps": round(float(fps), 3),
+                "sequence_id": vid_str,
+                "point_cloud_path": pc_save_name,
+                "final_vector_map_path": demo_recorder.latest_vector_map_path,
+            }
+        )
+
+    return {
+        "processed_frames": int(count),
+        "duration_sec": float(duration),
+        "average_fps": float(fps),
+        "sequence_id": vid_str,
+        "point_cloud_path": pc_save_name,
+        "demo_outputs": demo_outputs,
+    }
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
