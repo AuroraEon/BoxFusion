@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import cv2
 import numpy as np
 
+from boxfusion.room_topology import RoomTopologyBuilder
+
 
 def _stable_color(token: str, low: int = 80, high: int = 220) -> Tuple[int, int, int]:
     seed = abs(hash(token)) % (2 ** 32)
@@ -837,6 +839,28 @@ class ClosedLoopDemoRecorder:
         final_snapshot = self.snapshots[-1]
         final_vector_map = final_snapshot.vector_map or {}
         final_topology = _topology_summary(final_vector_map)
+        topology_json = self.log_dir / "topology_v0_1.json"
+        topology_query_report_json = self.log_dir / "topology_query_report.json"
+        topology_graphml = self.log_dir / "topology_v0_1.graphml"
+        topology_export_error = None
+        try:
+            room_topology = RoomTopologyBuilder().build(
+                final_vector_map,
+                sequence_id=self.sequence_id,
+                transition_history=self._topology_transition_history(),
+                metadata={
+                    "sequence_id": self.sequence_id,
+                    "snapshot_count": int(len(self.snapshots)),
+                    "replay_frame_count": int(len(self.replay_frames)),
+                    "replay_mode": "full_rgb_held_bev" if self.full_rgb_replay else "snapshot_only",
+                    "room_seg_interval": self.room_seg_interval,
+                },
+            )
+            room_topology.export_json(topology_json)
+            room_topology.export_query_report(topology_query_report_json)
+            room_topology.export_graphml(topology_graphml)
+        except Exception as exc:
+            topology_export_error = str(exc)
         presentation_parameters = self._presentation_parameters()
         presentation_quality_note = self._presentation_quality_note()
         summary_payload = dict(run_summary)
@@ -873,6 +897,10 @@ class ClosedLoopDemoRecorder:
                 "per_frame_pose_overlay_enabled": bool(self.full_rgb_replay and self.per_frame_pose_overlay),
                 "map_refresh_count": int(len(self.snapshots)),
                 "map_refresh_frame_indices": [int(snapshot.frame_idx) for snapshot in self.snapshots],
+                "topology_v0_1_json": None if topology_export_error else str(topology_json),
+                "topology_query_report_json": None if topology_export_error else str(topology_query_report_json),
+                "topology_v0_1_graphml": None if topology_export_error else str(topology_graphml),
+                "topology_export_error": topology_export_error,
             }
         )
         with open(summary_json, "w", encoding="utf-8") as f:
@@ -894,6 +922,9 @@ class ClosedLoopDemoRecorder:
             "revisit_diagnostics_csv": str(revisit_diagnostics_csv),
             "revisit_summary_md": str(revisit_summary_md),
             "spotlight_dir": str(self.spotlight_dir),
+            "topology_v0_1_json": None if topology_export_error else str(topology_json),
+            "topology_query_report_json": None if topology_export_error else str(topology_query_report_json),
+            "topology_v0_1_graphml": None if topology_export_error else str(topology_graphml),
         }
 
     def _snapshot_metric_summary(self, snapshot: SnapshotRecord) -> Dict[str, Any]:
@@ -912,6 +943,25 @@ class ClosedLoopDemoRecorder:
             "anchor_ids": anchor_ids,
             "topology": topology,
         }
+
+    def _topology_transition_history(self) -> List[Dict[str, Any]]:
+        if self.full_rgb_replay and self.replay_frames:
+            return [
+                {
+                    "frame_idx": int(frame.frame_idx),
+                    "timestamp": float(frame.timestamp),
+                    "current_room_id": frame.current_room_id,
+                }
+                for frame in self.replay_frames
+            ]
+        return [
+            {
+                "frame_idx": int(snapshot.frame_idx),
+                "timestamp": float(snapshot.timestamp),
+                "current_room_id": snapshot.current_room_id,
+            }
+            for snapshot in self.snapshots
+        ]
 
     def _find_effect_snapshot(self, snapshot_index: int) -> SnapshotRecord:
         origin = self.snapshots[snapshot_index]

@@ -1,0 +1,269 @@
+{
+  "package_id": "minimal_vln_demo_v0_1",
+  "package_name": "Minimal VLN Demo v0.1",
+  "version": "0.1",
+  "default_sequence": "main",
+  "default_policy": "balanced",
+  "sequence_aliases": {
+    "main": "00843-DYehNKdT76V",
+    "backup": "00847-bCPU9suPUw9",
+    "00843": "00843-DYehNKdT76V",
+    "00847": "00847-bCPU9suPUw9"
+  },
+  "semantic_room_name_demo_status": {
+    "included_in_v0_1_demo": false,
+    "status": "excluded",
+    "reason": "Template syntax exists, but the validated real exports still expose room_type=unknown or otherwise missing usable room semantic metadata, so semantic room-name instructions are not demo-honest for v0.1."
+  },
+  "sequences": {
+    "main": {
+      "alias": "main",
+      "display_label": "Main Sequence",
+      "sequence_id": "00843-DYehNKdT76V",
+      "topology_json": "stage_a_outputs/00843-DYehNKdT76V/logs/topology_v0_1.json",
+      "default_start_room_id": "room_2",
+      "route_policy": "balanced",
+      "teacher_note": "Primary validated teacher-facing sequence for Minimal VLN Demo v0.1.",
+      "case_order": [
+        "main_go_to_room_3",
+        "main_go_from_room_2_to_room_7",
+        "main_go_to_room_with_sofa",
+        "main_go_to_room_with_nightstand",
+        "main_go_to_anchor_room_6"
+      ],
+      "cases": [
+        {
+          "case_id": "main_go_to_room_3",
+          "case_name": "Explicit room target: room_3",
+          "display_label": "Direct room target",
+          "sequence_id": "00843-DYehNKdT76V",
+          "topology_json": "stage_a_outputs/00843-DYehNKdT76V/logs/topology_v0_1.json",
+          "instruction": "go to room_3",
+          "start_room_id": "room_2",
+          "expected_resolved_start_room_id": "room_2",
+          "intended_template_family": "explicit_room_target",
+          "target_reference": {
+            "goal_room_id": "room_3"
+          },
+          "expected_status": "PASS",
+          "expected_grounded_target_type": "room",
+          "expected_resolved_goal_room_id": "room_3",
+          "expected_route_room_sequence": [
+            "room_2",
+            "room_3"
+          ],
+          "expected_route_policy": "balanced",
+          "why_useful": "This case demonstrates direct room-target routing with an explicit room id."
+        },
+        {
+          "case_id": "main_go_from_room_2_to_room_7",
+          "case_name": "Room-to-room route: room_2 to room_7",
+          "display_label": "Room-to-room route",
+          "sequence_id": "00843-DYehNKdT76V",
+          "topology_json": "stage_a_outputs/00843-DYehNKdT76V/logs/topology_v0_1.json",
+          "instruction": "go from room_2 to room_7",
+          "start_room_id": null,
+          "expected_resolved_start_room_id": "room_2",
+          "intended_template_family": "room_to_room",
+          "target_reference": {
+            "instruction_start_room_id": "room_2",
+            "goal_room_id": "room_7"
+          },
+          "expected_status": "PASS",
+          "expected_grounded_target_type": "room",
+          "expected_resolved_goal_room_id": "room_7",
+          "expected_route_room_sequence": [
+            "room_2",
+            "room_3",
+            "room_7"
+          ],
+          "expected_route_policy": "balanced",
+          "why_useful": "This case demonstrates room-level multi-hop routing between explicit room ids."
+        },
+        {
+          "case_id": "main_go_to_room_with_sofa",
+          "case_name": "Object-label target: sofa",
+          "display_label": "Object-grounded short route",
+          "sequence_id": "00843-DYehNKdT76V",
+          "topology_json": "stage_a_outputs/00843-DYehNKdT76V/logs/topology_v0_1.json",
+          "instruction": "go to the room with sofa",
+          "start_room_id": "room_2",
+          "expected_resolved_start_room_id": "room_2",
+          "intended_template_family": "object_label_target",
+          "target_reference": {
+            "object_label": "sofa"
+          },
+          "expected_status": "PASS",
+          "expected_grounded_target_type": "object",
+          "expected_resolved_goal_room_id": "room_3",
+          "expected_route_room_sequence": [
+            "room_2",
+            "room_3"
+          ],
+          "expected_route_policy": "balanced",
+          "why_useful": "This case demonstrates semantic target grounding from an object label to a nearby room."
+        },
+        {
+          "case_id": "main_go_to_room_with_nightstand",
+          "case_name": "Object-label target: nightstand",
+          "display_label": "Object-grounded longer route",
+          "sequence_id": "00843-DYehNKdT76V",
+          "topology_json": "stage_a_outputs/00843-DYehNKdT76V/logs/topology_v0_1.json",
+          "instruction": "go to the room with nightstand",
+          "start_room_id": "room_2",
+          "expected_resolved_start_room_id": "room_2",
+          "intended_template_family": "object_label_target",
+          "target_reference": {
+            "object_label": "nightstand"
+          },
+          "expected_status": "PASS",
+          "expected_grounded_target_type": "object",
+          "expected_resolved_goal_room_id": "room_7",
+          "expected_route_room_sequence": [
+            "room_2",
+            "room_3",
+            "room_7"
+          ],
+          "expected_route_policy": "balanced",
+          "why_useful": "This case demonstrates semantic target grounding from an object label across a longer multi-room route."
+        },
+        {
+          "case_id": "main_go_to_anchor_room_6",
+          "case_name": "Anchor-id target: anchor_room_6",
+          "display_label": "Anchor target",
+          "sequence_id": "00843-DYehNKdT76V",
+          "topology_json": "stage_a_outputs/00843-DYehNKdT76V/logs/topology_v0_1.json",
+          "instruction": "go to anchor anchor_room_6",
+          "start_room_id": "room_2",
+          "expected_resolved_start_room_id": "room_2",
+          "intended_template_family": "anchor_id_target",
+          "target_reference": {
+            "anchor_id": "anchor_room_6"
+          },
+          "expected_status": "PASS",
+          "expected_grounded_target_type": "anchor",
+          "expected_resolved_goal_room_id": "room_6",
+          "expected_route_room_sequence": [
+            "room_2",
+            "room_6"
+          ],
+          "expected_route_policy": "balanced",
+          "why_useful": "This case demonstrates anchor-id grounding to a navigation-target room anchor."
+        }
+      ]
+    },
+    "backup": {
+      "alias": "backup",
+      "display_label": "Backup Sequence",
+      "sequence_id": "00847-bCPU9suPUw9",
+      "topology_json": "stage_a_outputs/00847-bCPU9suPUw9/logs/topology_v0_1.json",
+      "default_start_room_id": "room_2",
+      "route_policy": "balanced",
+      "teacher_note": "Backup validated sequence for Minimal VLN Demo v0.1 when the main sequence is unavailable.",
+      "case_order": [
+        "backup_go_to_room_3",
+        "backup_go_from_room_2_to_room_8",
+        "backup_go_to_room_with_chair",
+        "backup_go_to_anchor_room_6"
+      ],
+      "cases": [
+        {
+          "case_id": "backup_go_to_room_3",
+          "case_name": "Explicit room target: room_3",
+          "display_label": "Direct room target",
+          "sequence_id": "00847-bCPU9suPUw9",
+          "topology_json": "stage_a_outputs/00847-bCPU9suPUw9/logs/topology_v0_1.json",
+          "instruction": "go to room_3",
+          "start_room_id": "room_2",
+          "expected_resolved_start_room_id": "room_2",
+          "intended_template_family": "explicit_room_target",
+          "target_reference": {
+            "goal_room_id": "room_3"
+          },
+          "expected_status": "PASS",
+          "expected_grounded_target_type": "room",
+          "expected_resolved_goal_room_id": "room_3",
+          "expected_route_room_sequence": [
+            "room_2",
+            "room_3"
+          ],
+          "expected_route_policy": "balanced",
+          "why_useful": "This case demonstrates direct room-target routing on the backup sequence."
+        },
+        {
+          "case_id": "backup_go_from_room_2_to_room_8",
+          "case_name": "Room-to-room route: room_2 to room_8",
+          "display_label": "Room-to-room route",
+          "sequence_id": "00847-bCPU9suPUw9",
+          "topology_json": "stage_a_outputs/00847-bCPU9suPUw9/logs/topology_v0_1.json",
+          "instruction": "go from room_2 to room_8",
+          "start_room_id": null,
+          "expected_resolved_start_room_id": "room_2",
+          "intended_template_family": "room_to_room",
+          "target_reference": {
+            "instruction_start_room_id": "room_2",
+            "goal_room_id": "room_8"
+          },
+          "expected_status": "PASS",
+          "expected_grounded_target_type": "room",
+          "expected_resolved_goal_room_id": "room_8",
+          "expected_route_room_sequence": [
+            "room_2",
+            "room_5",
+            "room_8"
+          ],
+          "expected_route_policy": "balanced",
+          "why_useful": "This case demonstrates room-level multi-hop routing on the backup sequence."
+        },
+        {
+          "case_id": "backup_go_to_room_with_chair",
+          "case_name": "Object-label target: chair",
+          "display_label": "Object-grounded route",
+          "sequence_id": "00847-bCPU9suPUw9",
+          "topology_json": "stage_a_outputs/00847-bCPU9suPUw9/logs/topology_v0_1.json",
+          "instruction": "go to the room with chair",
+          "start_room_id": "room_2",
+          "expected_resolved_start_room_id": "room_2",
+          "intended_template_family": "object_label_target",
+          "target_reference": {
+            "object_label": "chair"
+          },
+          "expected_status": "PASS",
+          "expected_grounded_target_type": "object",
+          "expected_resolved_goal_room_id": "room_6",
+          "expected_route_room_sequence": [
+            "room_2",
+            "room_5",
+            "room_6"
+          ],
+          "expected_route_policy": "balanced",
+          "why_useful": "This case demonstrates object-label grounding on the backup sequence with a longer multi-hop route."
+        },
+        {
+          "case_id": "backup_go_to_anchor_room_6",
+          "case_name": "Anchor-id target: anchor_room_6",
+          "display_label": "Anchor target",
+          "sequence_id": "00847-bCPU9suPUw9",
+          "topology_json": "stage_a_outputs/00847-bCPU9suPUw9/logs/topology_v0_1.json",
+          "instruction": "go to anchor anchor_room_6",
+          "start_room_id": "room_2",
+          "expected_resolved_start_room_id": "room_2",
+          "intended_template_family": "anchor_id_target",
+          "target_reference": {
+            "anchor_id": "anchor_room_6"
+          },
+          "expected_status": "PASS",
+          "expected_grounded_target_type": "anchor",
+          "expected_resolved_goal_room_id": "room_6",
+          "expected_route_room_sequence": [
+            "room_2",
+            "room_5",
+            "room_6"
+          ],
+          "expected_route_policy": "balanced",
+          "why_useful": "This case demonstrates anchor-id grounding on the backup sequence."
+        }
+      ]
+    }
+  }
+}

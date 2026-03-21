@@ -167,6 +167,7 @@ Important notes:
 - This Stage A package uses dataset poses as the camera trajectory input unless you wire in a live online source.
 - Revisit / loop-closure-like events are logged explicitly and should be presented as approximations unless a real SLAM backend is added.
 - The package writes `report.md`, `final/*.png`, `final/*.mp4`, `logs/*.json`, local revisit audit summaries, and per-snapshot vector maps for debugging.
+- The package now also writes a room-centric queryable topology export under `logs/topology_v0_1.json`, plus `logs/topology_query_report.json` and `logs/topology_v0_1.graphml`.
 
 The revisit evidence exports now separate room-local reuse from unrelated map growth elsewhere in the same time window. Key additions inside each run folder are:
 - `logs/revisit_diagnostics.json` and `logs/revisit_diagnostics.csv`: grouped revisit events with `local_merge_audit`, room-polygon update summaries, retained/merged/added/removed object ids, duplicate-likelihood labels, and before/trigger/effect/after frame references.
@@ -194,6 +195,73 @@ That multi-sequence mode writes per-sequence exports as usual and also writes:
 - `stage_a_outputs/_multi_sequence/<aggregate-name>/aggregate_summary.md`
 
 The aggregate summary ranks sequences for teacher presentation using the strongest revisit evidence, counts of stronger revisit examples, duplicate warnings, and the presentation-quality note from each run.
+
+### Room-Centric Queryable Topology v0.1
+
+Stage A exports now derive a lightweight room-centric topology layer from the existing world-model outputs instead of introducing a separate backend database or planner. The topology layer:
+
+- keeps rooms as the primary topology nodes
+- stores `adjacent`, `transition`, and `possible_connection` room-room relations
+- preserves `object_to_room`, `anchor_to_room`, `room_to_objects`, and `room_to_anchors`
+- attaches evidence ids, support counts, confidence, and status labels to every topology edge
+- supports room-level abstract graph search and JSON export for debugging or downstream query / planner / LLM-tool integration
+
+On top of that graph layer, the repo now includes a minimal structured Query API v0.1 that:
+
+- resolves room / anchor / object targets into destination rooms
+- exposes explicit `strict`, `balanced`, and `exploratory` route policies
+- returns standardized structured results with inspectable failure reasons
+- stays bridge-like so a later LLM/tool-calling layer can translate NL into structured query inputs without changing the routing backend
+
+For a concise developer-facing description and usage notes, see [`docs/room_topology_v0_1.md`](/home/aurora/workspace1/BoxFusion/docs/room_topology_v0_1.md).
+
+To rebuild topology from an already-exported Stage A run without rerunning the full demo:
+
+```bash
+python stage_a_topology_export.py \
+  --sequence-dir ./stage_a_outputs/42898867
+```
+
+To run minimal room-level graph search on an exported topology:
+
+```bash
+python stage_a_topology_route.py \
+  --topology-json ./stage_a_outputs/42898867/logs/topology_v0_1.json \
+  --start room_1 \
+  --goal room_3
+```
+
+To run the structured Query API directly on an exported topology:
+
+```bash
+python stage_a_topology_query.py \
+  --topology-json ./stage_a_outputs/42898867/logs/topology_v0_1.json \
+  --start room_1 \
+  --object-label sofa \
+  --route-policy balanced
+```
+
+Before moving on to grounding or NL-facing work, refresh the topology export once and run the lightweight acceptance check on the exported JSON:
+
+```bash
+python stage_a_topology_export.py \
+  --sequence-dir ./stage_a_outputs/42898867
+```
+
+```bash
+python stage_a_topology_acceptance.py \
+  --topology-json ./stage_a_outputs/42898867/logs/topology_v0_1.json \
+  --list all \
+  --acceptance \
+  --report-json-out ./stage_a_outputs/42898867/logs/topology_acceptance_report.json
+```
+
+That acceptance utility is intentionally small and practical. It:
+
+- lists inspectable room ids, anchor ids, object ids, and object labels from the topology JSON
+- reports counts and sample ids/labels
+- exercises `query_route_to_anchor`, `query_route_to_object(object_id=...)`, and `query_route_to_object(object_label=...)` on real exported targets when available
+- reports explicit failures such as `object label lookup unavailable`, `no anchors present in this export`, `object metadata missing`, or `no routable target found`
 
 ## Tier 2A enablement
 
