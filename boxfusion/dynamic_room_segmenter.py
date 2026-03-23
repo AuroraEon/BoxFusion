@@ -29,6 +29,8 @@ class DynamicRoomSegmenter:
 
         self.last_room_markers = None
         self.last_gateways = []
+        self.last_height_slice_debug = {}
+        self.last_failure_debug = {}
         
         self.height_estimated = False
         self.slice_z_min = 2.8 
@@ -831,28 +833,70 @@ class DynamicRoomSegmenter:
 
     def perform_segmentation(self, all_pts_merged, all_pred_box=None, debug_path=None, count=0):
         all_pts_np = np.asarray(all_pts_merged)
-        if len(all_pts_np) == 0: return None
+        if len(all_pts_np) == 0:
+            self.last_failure_debug = {
+                "reason": "empty_point_cloud",
+                "frame_id": int(count),
+            }
+            return None
+
+        self.last_failure_debug = {}
 
         # 1. 动态高度切片
         if not self.height_estimated and len(all_pts_np) > 1000:
             z_values = all_pts_np[:, 2]
             floor_z = np.percentile(z_values, 2)
             ceiling_z = np.percentile(z_values, 98)
-            self.slice_z_min = floor_z + 1.5   # 借鉴HOV-SG: 地板上1.5m
-            self.slice_z_max = ceiling_z - 0.3 # 借鉴HOV-SG: 天花板下0.3m
-            
-            # HOV-SG 提取外部轮廓用的全尺寸切片高度 (去除天花板下0.2m)
-            self.full_z_max = ceiling_z - 0.2
+            span_z = max(float(ceiling_z - floor_z), 1e-6)
+            slice_z_min = float(floor_z + 1.5)   # 借鉴HOV-SG: 地板上1.5m
+            slice_z_max = float(ceiling_z - 0.3) # 借鉴HOV-SG: 天花板下0.3m
+            slice_mode = "default"
+            adaptive_applied = False
+
+            if slice_z_min >= slice_z_max:
+                adaptive_applied = True
+                slice_mode = "adaptive_low_span"
+                adaptive_upper_margin = min(0.3, max(0.1, 0.15 * span_z))
+                slice_z_min = float(floor_z + 0.6 * span_z)
+                slice_z_max = float(ceiling_z - adaptive_upper_margin)
+                if slice_z_min >= slice_z_max:
+                    slice_mode = "adaptive_mid_band"
+                    slice_mid = float(floor_z + 0.72 * span_z)
+                    half_band = max(0.05, 0.08 * span_z)
+                    slice_z_min = max(float(floor_z), float(slice_mid - half_band))
+                    slice_z_max = min(float(ceiling_z), float(slice_mid + half_band))
+
+            self.slice_z_min = float(slice_z_min)
+            self.slice_z_max = float(slice_z_max)
+
+            # HOV-SG 提取外部轮廓用的全尺寸切片高度
+            self.full_z_max = float(ceiling_z - min(0.2, max(0.05, 0.12 * span_z)))
             self.height_estimated = True
+            self.last_height_slice_debug = {
+                "floor_z": float(floor_z),
+                "ceiling_z": float(ceiling_z),
+                "span_z": float(span_z),
+                "slice_z_min": float(self.slice_z_min),
+                "slice_z_max": float(self.slice_z_max),
+                "full_z_max": float(self.full_z_max),
+                "mode": slice_mode,
+                "adaptive_applied": bool(adaptive_applied),
+            }
             print(f"\n[RoomSegmenter] 动态高度 -> 地板: {floor_z:.2f}m | 天花板: {ceiling_z:.2f}m")
+            if adaptive_applied:
+                print(
+                    "[RoomSegmenter] Height slice fallback -> "
+                    f"mode={slice_mode}, span={span_z:.2f}m, "
+                    f"slice=[{self.slice_z_min:.2f}, {self.slice_z_max:.2f}]"
+                )
 
         max_x = np.max(all_pts_np[:, 0])
         max_y = np.max(all_pts_np[:, 1])
-        
+
         # 计算当前点云需要的最大网格尺寸，并增加 20 个 pixel 的 padding 缓冲
         needed_width = int(np.ceil((max_x - self.origin_x) / self.resolution)) + 20
         needed_height = int(np.ceil((max_y - self.origin_y) / self.resolution)) + 20
-        
+
         # 只增不减，确保画布稳定
         self.grid_width = max(self.grid_width, needed_width)
         self.grid_height = max(self.grid_height, needed_height)
@@ -860,32 +904,43 @@ class DynamicRoomSegmenter:
         # 2. 准备 HOV-SG 所需的两组点云切片
         z_mask_walls = (all_pts_np[:, 2] >= self.slice_z_min) & (all_pts_np[:, 2] <= self.slice_z_max)
         z_mask_full = (all_pts_np[:, 2] < self.full_z_max)
-        
+
         pts_walls = all_pts_np[z_mask_walls][:, [0, 1]]
         pts_full = all_pts_np[z_mask_full][:, [0, 1]]
 
         # 计算网格 Bin 数量时，直接使用当前的 grid_width 和 grid_height
         num_bins = (self.grid_width, self.grid_height)
-        hist_range = [[self.origin_x, self.origin_x + self.grid_width * self.resolution], 
+        hist_range = [[self.origin_x, self.origin_x + self.grid_width * self.resolution],
                       [self.origin_y, self.origin_y + self.grid_height * self.resolution]]
 
         # ---------------------------------------------------------
-        # 步骤 A: 提取强化的墙壁骨架 (Walls Skeleton) 
+        # 步骤 A: 提取强化的墙壁骨架 (Walls Skeleton)
         # ---------------------------------------------------------
-        if len(pts_walls) == 0: return None
-        
+        if len(pts_walls) == 0:
+            self.last_failure_debug = {
+                "reason": "empty_wall_slice",
+                "frame_id": int(count),
+                "point_count": int(len(all_pts_np)),
+                "wall_point_count": 0,
+                "full_point_count": int(len(pts_full)),
+                "height_slice": dict(self.last_height_slice_debug),
+            }
+            if debug_path:
+                self._save_failure_debug(debug_path, count, self.last_failure_debug)
+            return None
+
         hist, _, _ = np.histogram2d(pts_walls[:, 0], pts_walls[:, 1], bins=num_bins, range=hist_range)
         hist = hist.T  # <--- 【千万别漏】：必须转置，把 (W, H) 变成图像需要的 (H, W)！
-        
+
         # 【核心修复 1】：过滤点云密度异常值！截断前 2% 的极高密度点
         hist_nonzero = hist[hist > 0]
         if len(hist_nonzero) > 0:
             p98 = np.percentile(hist_nonzero, 98)
-            hist = np.clip(hist, 0, p98) 
+            hist = np.clip(hist, 0, p98)
 
         hist = cv2.normalize(hist, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
         hist = cv2.GaussianBlur(hist, (5, 5), 1)
-        
+
         hist_threshold = 0.15 * np.max(hist)
         _, walls_skeleton = cv2.threshold(hist, hist_threshold, 255, cv2.THRESH_BINARY)
 
@@ -896,8 +951,19 @@ class DynamicRoomSegmenter:
         # ---------------------------------------------------------
         # 步骤 B: 提取外部物理轮廓 (Outside Boundary)
         # ---------------------------------------------------------
-        if len(pts_full) == 0: return None
-        
+        if len(pts_full) == 0:
+            self.last_failure_debug = {
+                "reason": "empty_full_slice",
+                "frame_id": int(count),
+                "point_count": int(len(all_pts_np)),
+                "wall_point_count": int(len(pts_walls)),
+                "full_point_count": 0,
+                "height_slice": dict(self.last_height_slice_debug),
+            }
+            if debug_path:
+                self._save_failure_debug(debug_path, count, self.last_failure_debug)
+            return None
+
         # <--- 【极度关键】：步骤 B 必须使用完全一致的 range，保证画布绝对重合
         hist_full, _, _ = np.histogram2d(pts_full[:, 0], pts_full[:, 1], bins=num_bins, range=hist_range)
         hist_full = hist_full.T  # <--- 这里也要转置！
@@ -919,7 +985,7 @@ class DynamicRoomSegmenter:
         full_map_padded = cv2.bitwise_or(walls_skeleton, cv2.bitwise_not(outside_boundary))
         kernel_rect3 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         full_map_padded = cv2.morphologyEx(full_map_padded, cv2.MORPH_CLOSE, kernel_rect3, iterations=2)
-        
+
         # 去除 Padding 恢复原图尺寸
         h_p, w_p = full_map_padded.shape
         full_map = full_map_padded[10:h_p-10, 10:w_p-10]
@@ -935,19 +1001,19 @@ class DynamicRoomSegmenter:
                     door_boxes_present = True
                     door_box_count += 1
                     pts_2d = corners_3d[i, :, :2]
-                    
+
                     # --- [新增：接收并使用 valid_mask 过滤越界坐标，防止后续崩溃] ---
                     box_u, box_v, valid_mask = self._world_to_grid(pts_2d)
                     box_u = box_u[valid_mask]
                     box_v = box_v[valid_mask]
-                    
+
                     # 只有合法点 >= 3 个才能构成闭合多边形
-                    if len(box_u) >= 3: 
+                    if len(box_u) >= 3:
                         hull = cv2.convexHull(np.column_stack((box_u, box_v)))
                         cv2.fillPoly(full_map, [hull], 0)
 
         # ---------------------------------------------------------
-        # 步骤 D: 距离变换与分水岭 
+        # 步骤 D: 距离变换与分水岭
         # ---------------------------------------------------------
         segmentation_state = self._build_segmentation_state(full_map, frame_id=count)
         print(
@@ -961,6 +1027,22 @@ class DynamicRoomSegmenter:
 
         if "markers" not in segmentation_state:
             print("[RoomSegmenter] 警告: 未能提取到有效种子点，分割终止。")
+            self.last_failure_debug = {
+                "reason": "no_valid_seed_points",
+                "frame_id": int(count),
+                "point_count": int(len(all_pts_np)),
+                "wall_point_count": int(len(pts_walls)),
+                "full_point_count": int(len(pts_full)),
+                "height_slice": dict(self.last_height_slice_debug),
+                "segmentation_state": {
+                    "max_dist": float(segmentation_state.get("max_dist", 0.0)),
+                    "seed_components": int(segmentation_state.get("seed_components", 0)),
+                    "valid_seed_count": int(segmentation_state.get("valid_seed_count", 0)),
+                    "min_area_m": float(segmentation_state.get("min_area_m", 0.0)),
+                },
+            }
+            if debug_path:
+                self._save_failure_debug(debug_path, count, self.last_failure_debug)
             return None
 
         raw_markers = segmentation_state["markers"]
@@ -1020,7 +1102,7 @@ class DynamicRoomSegmenter:
                 full_map_before_doors if door_boxes_present else None,
                 self.last_door_debug,
             )
-            
+
         return markers
 
     def _extract_gateways(self, markers, wall_label, all_pred_box):
@@ -1588,3 +1670,8 @@ class DynamicRoomSegmenter:
 
         with open(f"{path}/run_{count}_12_tracking_report.json", 'w', encoding='utf-8') as f:
             json.dump(debug_summary, f, indent=2)
+
+    def _save_failure_debug(self, path, count, payload):
+        os.makedirs(path, exist_ok=True)
+        with open(f"{path}/run_{count}_12_failure_report.json", 'w', encoding='utf-8') as f:
+            json.dump(payload, f, indent=2, ensure_ascii=False)

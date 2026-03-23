@@ -19,6 +19,7 @@ DEFAULT_EVIDENCE_WEIGHTS: Dict[str, float] = {
     "repeated_crossing": 0.20,
     "shared_frontier": 0.15,
     "door_detection": 0.60,
+    "vertical_transition_observation": 0.65,
 }
 
 DEFAULT_STATUS_THRESHOLDS: Dict[str, float] = {
@@ -30,6 +31,7 @@ DEFAULT_ROUTE_RELATION_COSTS: Dict[str, float] = {
     "transition": 1.0,
     "adjacent": 1.6,
     "possible_connection": 2.4,
+    "vertical_transition": 1.2,
 }
 
 DEFAULT_TOPOLOGY_CONFIG: Dict[str, Any] = {
@@ -236,6 +238,7 @@ class RoomTopology:
         if route_relation_costs:
             self.route_relation_costs.update(route_relation_costs)
         self.evidences: Dict[str, Dict[str, Any]] = {}
+        self.floor_records: Dict[str, Dict[str, Any]] = {}
         self.object_to_room: Dict[str, str] = {}
         self.anchor_to_room: Dict[str, str] = {}
         self.room_to_objects: Dict[str, List[str]] = {}
@@ -257,6 +260,12 @@ class RoomTopology:
             if item.get("evidence_id")
         }
 
+        topology.floor_records = {
+            str(item.get("floor_id")): dict(item)
+            for item in payload.get("floors", [])
+            if item.get("floor_id")
+        }
+
         for room in payload.get("rooms", []):
             room_id = _canonical_room_id(room.get("id"))
             if room_id is None:
@@ -270,6 +279,10 @@ class RoomTopology:
                 "node_type": "room",
                 "room_uuid": room.get("room_uuid", _room_uuid(room_id)),
                 "room_type": room.get("room_type", "unknown"),
+                "floor_id": _clean_optional_text(room.get("floor_id")),
+                "floor_index": room.get("floor_index"),
+                "floor_assignment_confidence": _round_float(room.get("floor_assignment_confidence")),
+                "status": room.get("status", "confirmed"),
                 "polygon": polygon,
                 "center": [float(center[0]), float(center[1])],
                 "area_m2": _round_float(room.get("area_m2", _polygon_area(polygon))),
@@ -361,6 +374,7 @@ class RoomTopology:
                 "score": _round_float(obj.get("score")),
                 "detection_confidence": _round_float(obj.get("detection_confidence")),
                 "semantic_confidence": _round_float(obj.get("semantic_confidence")),
+                "floor_id": _clean_optional_text(obj.get("floor_id")),
             }
         for object_id, room_id in topology.object_to_room.items():
             record = topology.object_records.setdefault(
@@ -374,6 +388,7 @@ class RoomTopology:
                     "score": None,
                     "detection_confidence": None,
                     "semantic_confidence": None,
+                    "floor_id": None,
                 },
             )
             record["room_id"] = room_id
@@ -389,6 +404,7 @@ class RoomTopology:
                 "target_id": anchor.get("target_id"),
                 "valid": bool(anchor.get("valid", True)),
                 "score": _round_float(anchor.get("score")),
+                "floor_id": _clean_optional_text(anchor.get("floor_id")),
             }
         for anchor_id, room_id in topology.anchor_to_room.items():
             record = topology.anchor_records.setdefault(
@@ -400,6 +416,7 @@ class RoomTopology:
                     "target_id": None,
                     "valid": True,
                     "score": None,
+                    "floor_id": None,
                 },
             )
             record["room_id"] = room_id
@@ -532,6 +549,7 @@ class RoomTopology:
             for record in self.object_records.values()
         )
         return {
+            "floor_count": len(self.floor_records),
             "room_count": len(room_ids),
             "anchor_count": len(anchor_ids),
             "object_count": len(object_ids),
@@ -544,6 +562,7 @@ class RoomTopology:
             "sample_anchor_ids": anchor_ids[:sample_limit],
             "sample_object_ids": object_ids[:sample_limit],
             "sample_object_labels": object_labels[:sample_limit],
+            "vertical_transition_edge_count": int(sum(1 for _, _, data in self.graph.edges(data=True) if data.get("relation_type") == "vertical_transition") // 2),
             "capabilities": {
                 "anchor_lookup_available": bool(anchor_ids),
                 "object_id_lookup_available": bool(object_ids),
@@ -924,6 +943,8 @@ class RoomTopology:
             "exists": True,
             "room_type": room.get("room_type", "unknown"),
             "room_uuid": room.get("room_uuid"),
+            "floor_id": room.get("floor_id"),
+            "floor_index": room.get("floor_index"),
             "area_m2": room.get("area_m2"),
             "center": room.get("center"),
             "object_count": contents["object_count"],
@@ -933,23 +954,56 @@ class RoomTopology:
 
     def validate(self) -> List[str]:
         errors: List[str] = []
+        for room_id, attrs in self.graph.nodes(data=True):
+            if attrs.get("node_type") != "room":
+                continue
+            floor_id = attrs.get("floor_id")
+            if floor_id is not None and self.floor_records and floor_id not in self.floor_records:
+                errors.append(f"room references missing floor: {room_id} -> {floor_id}")
         for room_id, object_ids in self.room_to_objects.items():
             if room_id not in self.graph.nodes:
                 errors.append(f"room_to_objects references missing room: {room_id}")
             for object_id in object_ids:
                 if self.object_to_room.get(object_id) != room_id:
                     errors.append(f"object_to_room mismatch for {object_id}: expected {room_id}")
+        for object_id, record in self.object_records.items():
+            room_id = record.get("room_id")
+            floor_id = record.get("floor_id")
+            if room_id is not None and room_id not in self.graph.nodes:
+                errors.append(f"object references missing room: {object_id} -> {room_id}")
+                continue
+            if room_id is not None and floor_id is not None:
+                room_floor_id = self.graph.nodes[room_id].get("floor_id")
+                if room_floor_id is not None and room_floor_id != floor_id:
+                    errors.append(f"object floor mismatch for {object_id}: room={room_floor_id}, object={floor_id}")
         for room_id, anchor_ids in self.room_to_anchors.items():
             if room_id not in self.graph.nodes:
                 errors.append(f"room_to_anchors references missing room: {room_id}")
             for anchor_id in anchor_ids:
                 if self.anchor_to_room.get(anchor_id) != room_id:
                     errors.append(f"anchor_to_room mismatch for {anchor_id}: expected {room_id}")
+        for anchor_id, record in self.anchor_records.items():
+            room_id = record.get("room_id")
+            floor_id = record.get("floor_id")
+            if room_id is not None and room_id not in self.graph.nodes:
+                errors.append(f"anchor references missing room: {anchor_id} -> {room_id}")
+                continue
+            if room_id is not None and floor_id is not None:
+                room_floor_id = self.graph.nodes[room_id].get("floor_id")
+                if room_floor_id is not None and room_floor_id != floor_id:
+                    errors.append(f"anchor floor mismatch for {anchor_id}: room={room_floor_id}, anchor={floor_id}")
         for source, target, data in self.graph.edges(data=True):
             if source not in self.graph.nodes:
                 errors.append(f"edge source missing: {source}")
             if target not in self.graph.nodes:
                 errors.append(f"edge target missing: {target}")
+            relation_type = str(data.get("relation_type"))
+            source_floor = self.graph.nodes.get(source, {}).get("floor_id")
+            target_floor = self.graph.nodes.get(target, {}).get("floor_id")
+            if relation_type in {"adjacent", "transition", "possible_connection"} and source_floor != target_floor:
+                errors.append(f"same-floor relation crosses floors: {source} -[{relation_type}]-> {target}")
+            if relation_type == "vertical_transition" and source_floor == target_floor:
+                errors.append(f"vertical_transition must connect different floors: {source} -> {target}")
             for evidence_id in data.get("evidence_ids", []):
                 if evidence_id not in self.evidences:
                     errors.append(f"missing evidence reference: {evidence_id}")
@@ -957,6 +1011,7 @@ class RoomTopology:
 
     def to_dict(self, include_query_examples: bool = True) -> Dict[str, Any]:
         rooms = []
+        floors = [dict(self.floor_records[floor_id]) for floor_id in sorted(self.floor_records)]
         for room_id, attrs in sorted(self.graph.nodes(data=True), key=lambda item: str(item[0])):
             if attrs.get("node_type") != "room":
                 continue
@@ -965,6 +1020,10 @@ class RoomTopology:
                     "id": room_id,
                     "room_uuid": attrs.get("room_uuid"),
                     "room_type": attrs.get("room_type", "unknown"),
+                    "floor_id": attrs.get("floor_id"),
+                    "floor_index": attrs.get("floor_index"),
+                    "floor_assignment_confidence": _round_float(attrs.get("floor_assignment_confidence")),
+                    "status": attrs.get("status", "confirmed"),
                     "center": list(attrs.get("center", [])),
                     "polygon": [list(map(float, pt)) for pt in attrs.get("polygon", [])],
                     "area_m2": _round_float(attrs.get("area_m2", 0.0)),
@@ -995,6 +1054,7 @@ class RoomTopology:
         payload = {
             "version": self.version,
             "sequence_id": self.sequence_id,
+            "floors": floors,
             "rooms": rooms,
             "edges": sorted(edges, key=lambda item: (item["source"], item["target"], item["relation_type"])),
             "indices": {
@@ -1027,6 +1087,7 @@ class RoomTopology:
         )
         inspection = self.inspect_export(sample_limit=5)
         examples: Dict[str, Any] = {
+            "floor_count": len(self.floor_records),
             "room_count": len(room_ids),
             "edge_count": int(sum(1 for _ in self.graph.edges()) // 2),
             "anchor_count": int(inspection["anchor_count"]),
@@ -1075,6 +1136,7 @@ class RoomTopology:
                 node_id,
                 room_uuid=str(attrs.get("room_uuid", "")),
                 room_type=str(attrs.get("room_type", "unknown")),
+                floor_id=str(attrs.get("floor_id", "")),
                 area_m2=str(_round_float(attrs.get("area_m2", 0.0)) or 0.0),
             )
         seen: Set[Tuple[str, str, str]] = set()
@@ -1201,6 +1263,11 @@ class RoomTopologyBuilder:
 
     def _sync_rooms(self, topology: RoomTopology, world: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         room_lookup: Dict[str, Dict[str, Any]] = {}
+        topology.floor_records = {
+            str(item.get("floor_id")): dict(item)
+            for item in world.get("floors", [])
+            if item.get("floor_id")
+        }
         for room in world.get("rooms", []):
             room_id = _canonical_room_id(room.get("id"))
             if room_id is None:
@@ -1212,6 +1279,10 @@ class RoomTopologyBuilder:
                 "node_type": "room",
                 "room_uuid": _room_uuid(room_id),
                 "room_type": room.get("room_type", "unknown"),
+                "floor_id": _clean_optional_text(room.get("floor_id")),
+                "floor_index": room.get("floor_index"),
+                "floor_assignment_confidence": _round_float(room.get("floor_assignment_confidence")),
+                "status": room.get("status", "confirmed"),
                 "polygon": polygon,
                 "center": [float(center[0]), float(center[1])],
                 "area_m2": _round_float(_polygon_area(polygon)),
@@ -1248,6 +1319,7 @@ class RoomTopologyBuilder:
                 "score": _round_float(obj.get("score")),
                 "detection_confidence": _round_float(obj.get("detection_confidence")),
                 "semantic_confidence": _round_float(obj.get("semantic_confidence")),
+                "floor_id": _clean_optional_text(obj.get("floor_id")),
             }
             if room_id is None or room_id not in room_lookup:
                 continue
@@ -1266,6 +1338,7 @@ class RoomTopologyBuilder:
                 "target_id": anchor.get("target_id"),
                 "valid": bool(anchor.get("valid", True)),
                 "score": _round_float(anchor.get("score")),
+                "floor_id": _clean_optional_text(anchor.get("floor_id")),
             }
             if room_id is None or room_id not in room_lookup:
                 continue
@@ -1309,7 +1382,8 @@ class RoomTopologyBuilder:
     ) -> Dict[Tuple[str, str], Dict[str, Dict[str, Any]]]:
         edge_support: Dict[Tuple[str, str], Dict[str, Dict[str, Any]]] = {}
         self._collect_adjacency_support(edge_support, world, room_lookup)
-        self._collect_transition_support(edge_support, transition_history)
+        self._collect_transition_support(edge_support, transition_history, room_lookup)
+        self._collect_vertical_transition_support(edge_support, world, room_lookup)
         self._promote_possible_connections(edge_support)
         return edge_support
 
@@ -1329,6 +1403,8 @@ class RoomTopologyBuilder:
             if room_a is None or room_b is None or room_a == room_b:
                 continue
             if room_a not in room_lookup or room_b not in room_lookup:
+                continue
+            if room_lookup[room_a].get("floor_id") != room_lookup[room_b].get("floor_id"):
                 continue
             pair = tuple(sorted((room_a, room_b)))
             info = gateway_pairs.setdefault(
@@ -1399,6 +1475,8 @@ class RoomTopologyBuilder:
         possible_distance = float(self.config["possible_connection_distance_m"])
         for idx, room_a in enumerate(room_ids):
             for room_b in room_ids[idx + 1:]:
+                if room_lookup[room_a].get("floor_id") != room_lookup[room_b].get("floor_id"):
+                    continue
                 pair = tuple(sorted((room_a, room_b)))
                 gap = _bbox_gap(room_boxes[room_a], room_boxes[room_b])
                 if gap is None:
@@ -1439,6 +1517,7 @@ class RoomTopologyBuilder:
         self,
         edge_support: Dict[Tuple[str, str], Dict[str, Dict[str, Any]]],
         transition_history: Sequence[Dict[str, Any]],
+        room_lookup: Dict[str, Dict[str, Any]],
     ) -> None:
         segments = self._stable_room_segments(transition_history)
         pair_switches: Dict[Tuple[str, str], List[Tuple[Dict[str, Any], Dict[str, Any]]]] = {}
@@ -1452,6 +1531,8 @@ class RoomTopologyBuilder:
             if int(previous_seg["obs_count"]) < int(self.config["room_switch_min_segment_len"]):
                 continue
             if int(next_seg["obs_count"]) < int(self.config["room_switch_min_segment_len"]):
+                continue
+            if room_lookup.get(room_a, {}).get("floor_id") != room_lookup.get(room_b, {}).get("floor_id"):
                 continue
             pair = tuple(sorted((room_a, room_b)))
             pair_switches.setdefault(pair, []).append((previous_seg, next_seg))
@@ -1484,6 +1565,42 @@ class RoomTopologyBuilder:
                 metadata={"crossing_count": int(len(switches))},
             )
             self._attach_evidence(edge_support, pair, "transition", evidence)
+
+    def _collect_vertical_transition_support(
+        self,
+        edge_support: Dict[Tuple[str, str], Dict[str, Dict[str, Any]]],
+        world: Dict[str, Any],
+        room_lookup: Dict[str, Dict[str, Any]],
+    ) -> None:
+        pair_events: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
+        for item in world.get("vertical_transitions", []):
+            room_a = _canonical_room_id(item.get("from_room_id"))
+            room_b = _canonical_room_id(item.get("to_room_id"))
+            if room_a is None or room_b is None or room_a == room_b:
+                continue
+            if room_a not in room_lookup or room_b not in room_lookup:
+                continue
+            if room_lookup[room_a].get("floor_id") == room_lookup[room_b].get("floor_id"):
+                continue
+            pair = tuple(sorted((room_a, room_b)))
+            pair_events.setdefault(pair, []).append(dict(item))
+
+        for pair, events in pair_events.items():
+            score = min(1.0, max(float(event.get("confidence", 0.0)) for event in events))
+            evidence = self._make_evidence(
+                "vertical_transition_observation",
+                score=score,
+                step_start=min(int(event.get("frame_start", 0)) for event in events),
+                step_end=max(int(event.get("frame_end", 0)) for event in events),
+                source_ref=",".join(str(event.get("transition_id", "vt")) for event in events),
+                notes="explicit cross-floor room transition exported by the world model",
+                metadata={
+                    "transition_count": int(len(events)),
+                    "from_floor_ids": sorted({str(event.get("from_floor_id")) for event in events}),
+                    "to_floor_ids": sorted({str(event.get("to_floor_id")) for event in events}),
+                },
+            )
+            self._attach_evidence(edge_support, pair, "vertical_transition", evidence)
 
     def _promote_possible_connections(
         self,

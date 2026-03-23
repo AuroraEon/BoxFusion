@@ -15,22 +15,22 @@ from boxfusion.scene_graph_builder import normalize_open_vocab_label
 
 DEFAULT_QUERY_ROUTE_POLICIES: Dict[str, Dict[str, Any]] = {
     "strict": {
-        "allowed_relations": ["transition", "adjacent"],
+        "allowed_relations": ["transition", "adjacent", "vertical_transition"],
         "min_conf": 0.35,
         "max_candidate_paths": 1,
-        "description": "Prefer stronger traversable links and reject weak fallback edges.",
+        "description": "Prefer stronger traversable links, including explicit cross-floor links, and reject weak fallback edges.",
     },
     "balanced": {
-        "allowed_relations": ["transition", "adjacent", "possible_connection"],
+        "allowed_relations": ["transition", "adjacent", "possible_connection", "vertical_transition"],
         "min_conf": 0.0,
         "max_candidate_paths": 1,
-        "description": "Default room-level routing with conservative-but-usable weak-edge fallback.",
+        "description": "Default room-level routing with conservative-but-usable weak-edge fallback and explicit cross-floor links.",
     },
     "exploratory": {
-        "allowed_relations": ["transition", "adjacent", "possible_connection"],
+        "allowed_relations": ["transition", "adjacent", "possible_connection", "vertical_transition"],
         "min_conf": 0.0,
         "max_candidate_paths": 3,
-        "description": "Keep weak fallback edges and surface alternate candidate routes for inspection.",
+        "description": "Keep weak fallback edges, preserve explicit cross-floor links, and surface alternate candidate routes for inspection.",
     },
 }
 

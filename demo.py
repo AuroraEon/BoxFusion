@@ -40,7 +40,7 @@ from boxfusion.preprocessor import Augmentor, Preprocessor
 from boxfusion.box_manager import BoxManager
 from boxfusion.box_fusion import BoxFusion
 
-from boxfusion.dynamic_room_segmenter import DynamicRoomSegmenter
+from boxfusion.floor_aware_room_segmenter import FloorAwareRoomSegmenter
 
 
 def run(
@@ -120,11 +120,12 @@ def run(
     box_count = 0
     start_time = time.time()
     
-    room_segmenter = DynamicRoomSegmenter(resolution=0.05, config=cfg)
+    room_segmenter = FloorAwareRoomSegmenter(resolution=0.05, config=cfg)
     accumulated_all_pts = []
     latest_vector_map = None
     segmentation_cycle_idx = 0
     last_segmentation_frame_idx = None
+    last_demo_frame = None
 
     os.makedirs(debug_room_dir, exist_ok=True)
 
@@ -180,6 +181,7 @@ def run(
             recording = new_recording
         
         pose_np = pose.squeeze().cpu().numpy()
+        RT = sample["sensor_info"].gt.RT[-1].numpy()
 
         sample_timestamp = float(np.asarray(sample["meta"]["timestamp"]).reshape(-1)[0])
         if re_vis:
@@ -217,6 +219,7 @@ def run(
         # 阶段 2: 主模型推理 (Network Inference)
         # ---------------------------------------------------------
         t_infer_start = time.time()
+        frame_floor_observed = False
         
         # Every gap nth frame is selected as keyframe
         if count % gap == 0 or is_last_frame:
@@ -264,6 +267,14 @@ def run(
                 
                 xyzrgb_down = np.concatenate([np.asarray(pcd_frame.points), np.asarray(pcd_frame.colors)], axis=1)
                 accumulated_all_pts.append(xyzrgb_down)
+                room_segmenter.observe_frame(
+                    frame_idx=count,
+                    timestamp=sample_timestamp,
+                    pose_matrix=RT,
+                    points_xyzrgb=xyzrgb_down,
+                    is_keyframe=True,
+                )
+                frame_floor_observed = True
                 
         t_infer_end = time.time()
 
@@ -271,7 +282,16 @@ def run(
         # 阶段 3: 房间拓扑分割 (Room Segmentation)
         # ---------------------------------------------------------
         t_seg_start = time.time()
-        
+
+        if not frame_floor_observed:
+            room_segmenter.observe_frame(
+                frame_idx=count,
+                timestamp=sample_timestamp,
+                pose_matrix=RT,
+                points_xyzrgb=None,
+                is_keyframe=False,
+            )
+
         # 将分割触发逻辑提出来，只要是 100 的整数倍帧就会检查，不再受 gap 限制
         segmentation_updated = False
         if count % room_seg_interval == 0:
@@ -279,34 +299,22 @@ def run(
             
             if len(accumulated_all_pts) > 0:
                 print(f"[{count}] 正在执行动态 2D 栅格生成与房间拓扑分割...")
-                
-                # --- 全局二次降采样与缓存清理 ---
+
                 all_pts_merged = np.concatenate(accumulated_all_pts, axis=0)
-                
                 pcd_global = o3d.geometry.PointCloud()
-                # 【关键修复】：同样做类型保护
                 pcd_global.points = o3d.utility.Vector3dVector(np.ascontiguousarray(all_pts_merged[:, :3], dtype=np.float64))
                 pcd_global.colors = o3d.utility.Vector3dVector(np.ascontiguousarray(all_pts_merged[:, 3:6], dtype=np.float64))
                 pcd_global = pcd_global.voxel_down_sample(voxel_size=0.05)
-                
                 downsampled_merged_pts = np.concatenate([np.asarray(pcd_global.points), np.asarray(pcd_global.colors)], axis=1)
-                
-                # 用精简后的全局点云覆盖列表
                 accumulated_all_pts = [downsampled_merged_pts]
-                
-                # 提取 xyz 传给分割器
-                xyz_only = np.ascontiguousarray(downsampled_merged_pts[:, :3], dtype=np.float64)
-    
+
                 markers = room_segmenter.perform_segmentation(
-                    xyz_only, 
-                    all_pred_box, 
-                    debug_path=debug_room_dir, 
-                    count=count
+                    all_pred_box=all_pred_box,
+                    debug_path=debug_room_dir,
+                    count=count,
                 )
 
                 if markers is not None:
-                    # yaml_name = f"./debug_room/room_objects_{count}.yaml"
-                    # room_segmenter.save_room_mapping_to_yaml(all_pred_box, output_path=yaml_name)
                     vector_map = room_segmenter.get_vector_map_data(
                         all_pred_box,
                         count=count,
@@ -331,7 +339,6 @@ def run(
         t_rerun_start = time.time()
         
         # Hold off on logging anything until now, since the delay might confuse the user in the visualizer.
-        RT = sample["sensor_info"].gt.RT[-1].numpy()
         if re_vis:
             pose_transform = rerun.Transform3D(
                 translation=RT[:3, 3],
@@ -611,14 +618,55 @@ def run(
         print(f"全局点云已成功保存至: {pc_save_name}，共 {len(pcd.points)} 个点。")
     # --- 新增结束 ---
 
+    final_frame_idx = max(count - 1, 0)
+    final_flush_report = room_segmenter.flush_pending_floor_segments(
+        all_pred_box=all_pred_box,
+        debug_path=debug_room_dir,
+        count=final_frame_idx,
+    )
+    if final_flush_report.get("segmented_floor_count", 0) > 0:
+        segmentation_cycle_idx += int(final_flush_report["segmented_floor_count"])
+        last_segmentation_frame_idx = int(final_frame_idx)
+        print(
+            f"[finalize] 追加分割刷新楼层: {final_flush_report.get('segmented_floor_ids', [])} "
+            f"at frame {final_frame_idx}"
+        )
+
+    if room_segmenter.last_room_markers is not None:
+        latest_vector_map = room_segmenter.get_vector_map_data(
+            all_pred_box,
+            count=final_frame_idx,
+            save_scene_graph_vis=False,
+            scene_graph_vis_dir=str(getattr(demo_recorder, "scene_graph_dir", debug_room_dir)) if demo_recorder is not None else debug_room_dir,
+        )
+        if final_flush_report.get("segmented_floor_count", 0) > 0:
+            with open(os.path.join(debug_room_dir, f"vector_map_{final_frame_idx}_final_flush.json"), 'w') as f:
+                json.dump(latest_vector_map, f, indent=2)
+
+    diagnostics_dir = os.path.join(debug_room_dir, "floor_diagnostics")
+    room_segmenter.save_floor_diagnostics(
+        output_dir=diagnostics_dir,
+        vector_map=latest_vector_map,
+        total_frames=count,
+        last_segmentation_frame_idx=last_segmentation_frame_idx,
+        room_seg_interval=room_seg_interval,
+        sequence_id=vid_str,
+    )
+
     demo_outputs = None
     if demo_recorder is not None:
-        if room_segmenter.last_room_markers is not None:
-            latest_vector_map = room_segmenter.get_vector_map_data(
-                all_pred_box,
-                count=max(count - 1, 0),
-                save_scene_graph_vis=False,
-                scene_graph_vis_dir=str(getattr(demo_recorder, "scene_graph_dir", debug_room_dir)),
+        if final_flush_report.get("segmented_floor_count", 0) > 0 and last_demo_frame is not None:
+            demo_recorder.record_snapshot(
+                frame_idx=int(last_demo_frame["frame_idx"]),
+                timestamp=float(last_demo_frame["timestamp"]),
+                image_rgb=last_demo_frame["image_rgb"],
+                pose=last_demo_frame["pose"],
+                trajectory_xy=[(float(pt[0]), float(pt[1])) for pt in traj_xyz],
+                vector_map=latest_vector_map,
+                tracking_report=room_segmenter.last_tracking_report,
+                segmentation_updated=True,
+                segmentation_cycle_idx=segmentation_cycle_idx,
+                last_segmentation_frame_idx=last_segmentation_frame_idx,
             )
         demo_outputs = demo_recorder.finalize(
             {

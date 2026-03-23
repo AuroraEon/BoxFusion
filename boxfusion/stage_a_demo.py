@@ -138,6 +138,46 @@ def _best_room_for_pose(position_xy: Sequence[float], rooms: Sequence[Dict[str, 
     return None
 
 
+def _assign_floor_from_floors(pose_z: float, floors: Sequence[Dict[str, Any]]) -> Optional[str]:
+    if not floors:
+        return None
+    pose_z = float(pose_z)
+    best_floor = None
+    best_distance = float("inf")
+    for floor in floors:
+        z_center = floor.get("z_center")
+        if z_center is None:
+            continue
+        distance = abs(pose_z - float(z_center))
+        if distance < best_distance:
+            best_distance = distance
+            best_floor = str(floor.get("floor_id"))
+    return best_floor
+
+
+def _floor_id_for_pose(frame_idx: int, pose_z: float, vector_map: Optional[Dict[str, Any]]) -> Optional[str]:
+    vector_map = dict(vector_map or {})
+    history = list(vector_map.get("frame_floor_assignments") or [])
+    for item in reversed(history):
+        if int(item.get("frame_idx", -1)) == int(frame_idx) and item.get("floor_id") is not None:
+            return str(item.get("floor_id"))
+    return _assign_floor_from_floors(pose_z, vector_map.get("floors", []))
+
+
+def _best_room_for_pose_floor_aware(
+    frame_idx: int,
+    pose_xyz: Sequence[float],
+    vector_map: Optional[Dict[str, Any]],
+) -> Optional[int]:
+    vector_map = dict(vector_map or {})
+    rooms = list(vector_map.get("rooms") or [])
+    if not rooms:
+        return None
+    floor_id = _floor_id_for_pose(frame_idx, float(pose_xyz[2]), vector_map)
+    candidate_rooms = [room for room in rooms if floor_id is None or room.get("floor_id") == floor_id]
+    return _best_room_for_pose((pose_xyz[0], pose_xyz[1]), candidate_rooms or rooms)
+
+
 def _collect_map_bounds(snapshots: Sequence["SnapshotRecord"]) -> Tuple[float, float, float, float]:
     xs: List[float] = []
     ys: List[float] = []
@@ -624,20 +664,30 @@ class ClosedLoopDemoRecorder:
             vector_map = self.latest_vector_map
             vector_map_path = self.latest_vector_map_path
 
+        overwrite_existing = bool(self.snapshots and int(self.snapshots[-1].frame_idx) == int(frame_idx))
+        existing_snapshot = self.snapshots[-1] if overwrite_existing else None
+
         current_room_id = None
         if vector_map:
-            current_room_id = _best_room_for_pose((pose[0, 3], pose[1, 3]), vector_map.get("rooms", []))
+            current_room_id = _best_room_for_pose_floor_aware(
+                frame_idx=int(frame_idx),
+                pose_xyz=(float(pose[0, 3]), float(pose[1, 3]), float(pose[2, 3])),
+                vector_map=vector_map,
+            )
 
-        revisit_events = self.revisit_detector.update(
-            frame_idx=int(frame_idx),
-            timestamp=float(timestamp),
-            position_xy=(float(pose[0, 3]), float(pose[1, 3])),
-            current_room_id=current_room_id,
-        )
-        self.revisit_events.extend(revisit_events)
+        if overwrite_existing and existing_snapshot is not None:
+            revisit_events = list(existing_snapshot.revisit_events)
+        else:
+            revisit_events = self.revisit_detector.update(
+                frame_idx=int(frame_idx),
+                timestamp=float(timestamp),
+                position_xy=(float(pose[0, 3]), float(pose[1, 3])),
+                current_room_id=current_room_id,
+            )
+            self.revisit_events.extend(revisit_events)
 
         snapshot = SnapshotRecord(
-            index=len(self.snapshots),
+            index=len(self.snapshots) - 1 if overwrite_existing else len(self.snapshots),
             frame_idx=int(frame_idx),
             timestamp=float(timestamp),
             pose=np.asarray(pose, dtype=np.float32).copy(),
@@ -652,7 +702,10 @@ class ClosedLoopDemoRecorder:
             segmentation_cycle_idx=int(segmentation_cycle_idx),
             last_segmentation_frame_idx=None if last_segmentation_frame_idx is None else int(last_segmentation_frame_idx),
         )
-        self.snapshots.append(snapshot)
+        if overwrite_existing:
+            self.snapshots[-1] = snapshot
+        else:
+            self.snapshots.append(snapshot)
         self.last_captured_frame = int(frame_idx)
 
     def record_frame(
@@ -673,7 +726,11 @@ class ClosedLoopDemoRecorder:
         vector_map = None if map_snapshot is None else map_snapshot.vector_map
         current_room_id = None
         if vector_map:
-            current_room_id = _best_room_for_pose((pose[0, 3], pose[1, 3]), vector_map.get("rooms", []))
+            current_room_id = _best_room_for_pose_floor_aware(
+                frame_idx=int(frame_idx),
+                pose_xyz=(float(pose[0, 3]), float(pose[1, 3]), float(pose[2, 3])),
+                vector_map=vector_map,
+            )
 
         self.replay_frames.append(
             ReplayFrameRecord(
@@ -691,11 +748,13 @@ class ClosedLoopDemoRecorder:
         )
 
     def _map_snapshot_for_replay_frame(self, frame: ReplayFrameRecord) -> Optional[SnapshotRecord]:
-        if frame.map_snapshot_index is None:
-            return None
-        if frame.map_snapshot_index < 0 or frame.map_snapshot_index >= len(self.snapshots):
-            return None
-        return self.snapshots[frame.map_snapshot_index]
+        chosen = None
+        for snapshot in self.snapshots:
+            if int(snapshot.frame_idx) <= int(frame.frame_idx):
+                chosen = snapshot
+            else:
+                break
+        return chosen
 
     def _map_display_context(
         self,
@@ -2351,154 +2410,227 @@ class ClosedLoopDemoRecorder:
         diagnostic: Optional[Dict[str, Any]] = None,
         map_snapshot: Optional[SnapshotRecord] = None,
     ) -> np.ndarray:
-        canvas = np.full((height, width, 3), 250, dtype=np.uint8)
+        canvas = np.full((height, width, 3), 248, dtype=np.uint8)
         cv2.rectangle(canvas, (0, 0), (width - 1, height - 1), (218, 224, 232), 2)
-        cv2.putText(canvas, "Incremental BEV Semantic Map", (18, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (35, 35, 35), 2, cv2.LINE_AA)
+        cv2.putText(canvas, "Incremental Multi-Floor BEV", (18, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (35, 35, 35), 2, cv2.LINE_AA)
 
         if map_snapshot is None and isinstance(frame_record, SnapshotRecord):
             map_snapshot = frame_record
         vector_map = {} if map_snapshot is None else (map_snapshot.vector_map or {})
-        rooms = vector_map.get("rooms", [])
-        objects = vector_map.get("objects", [])
-        anchors = vector_map.get("anchors", [])
-        gateways = vector_map.get("gateways", [])
-        topology = _topology_summary(vector_map)
+        floors = sorted(
+            list(vector_map.get("floors", [])),
+            key=lambda item: float(item.get("z_center", 0.0) or 0.0),
+            reverse=True,
+        )
+        if not floors:
+            _draw_text_block(canvas, ["No semantic map available yet."], (18, 56), font_scale=0.6)
+            return canvas
+
+        rooms = list(vector_map.get("rooms", []))
+        objects = list(vector_map.get("objects", []))
+        anchors = list(vector_map.get("anchors", []))
+        gateways = list(vector_map.get("gateways", []))
+        vertical_transitions = list(vector_map.get("vertical_transitions", []))
+        floor_debug = dict(vector_map.get("floor_debug") or {})
         tracking_report = {} if map_snapshot is None else map_snapshot.tracking_report
+        topology = _topology_summary(vector_map)
+        room_lookup = {int(room["id"]): room for room in rooms}
+        room_floor_lookup = {int(room["id"]): room.get("floor_id") for room in rooms}
 
         matched_room_ids = set(int(room_id) for room_id in (diagnostic or {}).get("matched_room_ids", []))
         tracking_matched_room_ids = set(int(item["global_id"]) for item in tracking_report.get("matched", []))
         tracking_new_room_ids = set(int(item["global_id"]) for item in tracking_report.get("new_rooms", []))
 
-        room_centers: Dict[int, Tuple[float, float]] = {}
-        for room in rooms:
-            polygon = room.get("polygon", [])
-            if len(polygon) < 3:
-                continue
-            room_id = int(room["id"])
-            pts = np.array([_world_to_canvas(pt, bounds, width, height) for pt in polygon], dtype=np.int32)
-            fill_color = _stable_color(f"room_{room_id}", low=180, high=235)
-            outline_color = _stable_color(f"room_outline_{room_id}", low=90, high=160)
-            overlay = canvas.copy()
-            cv2.fillPoly(overlay, [pts], fill_color)
-            cv2.addWeighted(overlay, 0.30, canvas, 0.70, 0, canvas)
-
-            outline_thickness = 2
-            if room_id in tracking_new_room_ids:
-                outline_color = (56, 141, 255)
-                outline_thickness = 4
-            elif room_id in tracking_matched_room_ids:
-                outline_color = (43, 111, 68)
-                outline_thickness = 3
-            if room_id in matched_room_ids:
-                outline_color = (0, 120, 220)
-                outline_thickness = 4
-            cv2.polylines(canvas, [pts], True, outline_color, outline_thickness, cv2.LINE_AA)
-
-            centroid = _polygon_centroid(polygon)
-            room_centers[room_id] = centroid
-            cx, cy = _world_to_canvas(centroid, bounds, width, height)
-            cv2.putText(canvas, f"R{room_id}", (cx - 12, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (50, 50, 50), 2, cv2.LINE_AA)
-
-        for edge in topology["adjacency_edges"]:
-            room_a, room_b = edge["rooms"]
-            center_a = room_centers.get(int(room_a))
-            center_b = room_centers.get(int(room_b))
-            if center_a is None or center_b is None:
-                continue
-            color = (40, 40, 220) if edge["primary_type"] == "door" else (90, 90, 255)
-            ax, ay = _world_to_canvas(center_a, bounds, width, height)
-            bx, by = _world_to_canvas(center_b, bounds, width, height)
-            cv2.line(canvas, (ax, ay), (bx, by), color, 1, cv2.LINE_AA)
-
         pose_source = frame_record
         if map_snapshot is not None and self.full_rgb_replay and not self.per_frame_pose_overlay:
             pose_source = map_snapshot
 
-        trajectory_pts = [_world_to_canvas((x, y), bounds, width, height) for x, y in pose_source.trajectory_xy]
-        if len(trajectory_pts) >= 2:
-            cv2.polylines(canvas, [np.asarray(trajectory_pts, dtype=np.int32)], False, (36, 118, 220), 2, cv2.LINE_AA)
-        for point in trajectory_pts[:: max(1, len(trajectory_pts) // 50)]:
-            cv2.circle(canvas, point, 2, (36, 118, 220), -1, cv2.LINE_AA)
+        current_floor_id = _floor_id_for_pose(
+            frame_idx=int(frame_record.frame_idx),
+            pose_z=float(pose_source.pose[2, 3]),
+            vector_map=vector_map,
+        )
 
-        for obj in objects:
-            footprint = obj.get("footprint_2d", [])
-            label = str(obj.get("label", "obj"))
-            if len(footprint) >= 3:
-                pts = np.array([_world_to_canvas(pt, bounds, width, height) for pt in footprint], dtype=np.int32)
+        per_floor_summary = {
+            item.get("floor_id"): item for item in floor_debug.get("per_floor", []) if item.get("floor_id") is not None
+        }
+        assignment_history = [
+            item for item in vector_map.get("frame_floor_assignments", [])
+            if int(item.get("frame_idx", 0)) <= int(frame_record.frame_idx)
+        ]
+
+        panel_top = 52
+        panel_bottom = height - 146
+        panel_left = 14
+        panel_right = width - 14
+        panel_gap = 12
+        panel_count = len(floors)
+        cols = 1 if panel_count <= 3 else 2
+        rows = int(math.ceil(panel_count / float(cols)))
+        panel_width = int((panel_right - panel_left - panel_gap * (cols - 1)) / max(cols, 1))
+        panel_height = int((panel_bottom - panel_top - panel_gap * (rows - 1)) / max(rows, 1))
+
+        panel_rects: Dict[str, Tuple[int, int, int, int]] = {}
+        room_centers_canvas: Dict[int, Tuple[int, int]] = {}
+
+        def to_panel(point_xy: Sequence[float], rect: Tuple[int, int, int, int]) -> Tuple[int, int]:
+            x0, y0, w, h = rect
+            px, py = _world_to_canvas(point_xy, bounds, w, h)
+            return int(x0 + px), int(y0 + py)
+
+        for index, floor in enumerate(floors):
+            floor_id = str(floor.get("floor_id"))
+            row = index // cols
+            col = index % cols
+            x0 = panel_left + col * (panel_width + panel_gap)
+            y0 = panel_top + row * (panel_height + panel_gap)
+            rect = (x0, y0, panel_width, panel_height)
+            panel_rects[floor_id] = rect
+
+            is_active = floor_id == current_floor_id
+            bg = (255, 252, 247) if is_active else (252, 252, 252)
+            border = (24, 102, 196) if is_active else (205, 212, 220)
+            cv2.rectangle(canvas, (x0, y0), (x0 + panel_width, y0 + panel_height), bg, -1)
+            cv2.rectangle(canvas, (x0, y0), (x0 + panel_width, y0 + panel_height), border, 3 if is_active else 2)
+
+            summary = dict(per_floor_summary.get(floor_id) or {})
+            title = (
+                f"{floor_id} | idx {floor.get('floor_index')} | "
+                f"R/O/A {summary.get('exported_room_count', 0)}/{summary.get('exported_object_count', 0)}/{summary.get('exported_anchor_count', 0)}"
+            )
+            cv2.putText(canvas, title[:52], (x0 + 10, y0 + 22), cv2.FONT_HERSHEY_SIMPLEX, 0.48, (45, 45, 45), 1, cv2.LINE_AA)
+            if is_active:
+                cv2.putText(canvas, "ACTIVE", (x0 + panel_width - 74, y0 + 22), cv2.FONT_HERSHEY_SIMPLEX, 0.48, (24, 102, 196), 2, cv2.LINE_AA)
+
+            floor_rooms = [room for room in rooms if room.get("floor_id") == floor_id]
+            floor_objects = [obj for obj in objects if obj.get("floor_id") == floor_id]
+            floor_anchors = [anchor for anchor in anchors if anchor.get("floor_id") == floor_id]
+            floor_gateways = [gateway for gateway in gateways if gateway.get("floor_id") == floor_id]
+            floor_history = [item for item in assignment_history if item.get("floor_id") == floor_id]
+
+            for room in floor_rooms:
+                polygon = room.get("polygon", [])
+                if len(polygon) < 3:
+                    continue
+                room_id = int(room["id"])
+                pts = np.array([to_panel(pt, rect) for pt in polygon], dtype=np.int32)
+                fill_color = _stable_color(f"room_{room_id}", low=180, high=235)
+                outline_color = _stable_color(f"room_outline_{room_id}", low=90, high=160)
                 overlay = canvas.copy()
-                cv2.fillPoly(overlay, [pts], (154, 198, 124))
-                cv2.addWeighted(overlay, 0.20, canvas, 0.80, 0, canvas)
-                cv2.polylines(canvas, [pts], True, (46, 105, 58), 2, cv2.LINE_AA)
-            pose_xy = obj.get("pose", [])
-            if len(pose_xy) >= 2:
-                px, py = _world_to_canvas((pose_xy[0], pose_xy[1]), bounds, width, height)
-                cv2.circle(canvas, (px, py), 3, (32, 96, 42), -1, cv2.LINE_AA)
-                if float(obj.get("score", 1.0)) >= 0.55:
-                    cv2.putText(canvas, label[:18], (px + 4, py - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (28, 62, 35), 1, cv2.LINE_AA)
+                cv2.fillPoly(overlay, [pts], fill_color)
+                cv2.addWeighted(overlay, 0.28, canvas, 0.72, 0, canvas)
+                outline_thickness = 2
+                if room_id in tracking_new_room_ids:
+                    outline_color = (56, 141, 255)
+                    outline_thickness = 4
+                elif room_id in tracking_matched_room_ids:
+                    outline_color = (43, 111, 68)
+                    outline_thickness = 3
+                if room_id in matched_room_ids:
+                    outline_color = (0, 120, 220)
+                    outline_thickness = 4
+                cv2.polylines(canvas, [pts], True, outline_color, outline_thickness, cv2.LINE_AA)
+                centroid = _polygon_centroid(polygon)
+                cx, cy = to_panel(centroid, rect)
+                room_centers_canvas[room_id] = (cx, cy)
+                cv2.putText(canvas, f"R{room_id}", (cx - 12, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.44, (50, 50, 50), 1, cv2.LINE_AA)
 
-        room_lookup = {f"room_{room['id']}": room for room in rooms}
-        object_lookup = {f"obj_{obj['id']}": obj for obj in objects}
-        for anchor in anchors:
-            position = anchor.get("position", [])
-            if len(position) < 2:
-                continue
-            ax, ay = _world_to_canvas((position[0], position[1]), bounds, width, height)
-            if anchor.get("anchor_type") == "room":
-                cv2.drawMarker(canvas, (ax, ay), (5, 102, 204), cv2.MARKER_STAR, 18, 2, cv2.LINE_AA)
-            else:
-                cv2.drawMarker(canvas, (ax, ay), (14, 156, 119), cv2.MARKER_DIAMOND, 14, 2, cv2.LINE_AA)
-            target_id = anchor.get("target_id")
-            target_xy = None
-            if target_id in room_lookup:
-                target_xy = _polygon_centroid(room_lookup[target_id].get("polygon", []))
-            elif target_id in object_lookup:
-                pose_xy = object_lookup[target_id].get("pose", [])
+            for edge in topology["adjacency_edges"]:
+                room_a, room_b = edge["rooms"]
+                if room_floor_lookup.get(int(room_a)) != floor_id or room_floor_lookup.get(int(room_b)) != floor_id:
+                    continue
+                center_a = room_centers_canvas.get(int(room_a))
+                center_b = room_centers_canvas.get(int(room_b))
+                if center_a is None or center_b is None:
+                    continue
+                color = (40, 40, 220) if edge["primary_type"] == "door" else (90, 90, 255)
+                cv2.line(canvas, center_a, center_b, color, 1, cv2.LINE_AA)
+
+            if len(floor_history) >= 2:
+                traj_pts = np.asarray([to_panel(item.get("position_xy", [0.0, 0.0]), rect) for item in floor_history], dtype=np.int32)
+                cv2.polylines(canvas, [traj_pts], False, (36, 118, 220), 2, cv2.LINE_AA)
+                for point in traj_pts[:: max(1, len(traj_pts) // 25)]:
+                    cv2.circle(canvas, tuple(point), 2, (36, 118, 220), -1, cv2.LINE_AA)
+
+            for obj in floor_objects:
+                footprint = obj.get("footprint_2d", [])
+                label = str(obj.get("label", "obj"))
+                if len(footprint) >= 3:
+                    pts = np.array([to_panel(pt, rect) for pt in footprint], dtype=np.int32)
+                    overlay = canvas.copy()
+                    cv2.fillPoly(overlay, [pts], (154, 198, 124))
+                    cv2.addWeighted(overlay, 0.20, canvas, 0.80, 0, canvas)
+                    cv2.polylines(canvas, [pts], True, (46, 105, 58), 2, cv2.LINE_AA)
+                pose_xy = obj.get("pose", [])
                 if len(pose_xy) >= 2:
-                    target_xy = (float(pose_xy[0]), float(pose_xy[1]))
-            if target_xy is not None:
-                tx, ty = _world_to_canvas(target_xy, bounds, width, height)
-                cv2.line(canvas, (ax, ay), (tx, ty), (128, 128, 128), 1, cv2.LINE_AA)
+                    px, py = to_panel((pose_xy[0], pose_xy[1]), rect)
+                    cv2.circle(canvas, (px, py), 3, (32, 96, 42), -1, cv2.LINE_AA)
+                    if float(obj.get("score", 1.0)) >= 0.55:
+                        cv2.putText(canvas, label[:16], (px + 4, py - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (28, 62, 35), 1, cv2.LINE_AA)
 
-        for gateway in gateways:
-            pos_world = gateway.get("pos_world", [])
-            if len(pos_world) < 2:
-                continue
-            gx, gy = _world_to_canvas(pos_world, bounds, width, height)
-            if gateway.get("type") == "door":
-                cv2.drawMarker(canvas, (gx, gy), (62, 96, 240), cv2.MARKER_TILTED_CROSS, 14, 2, cv2.LINE_AA)
-            else:
-                cv2.circle(canvas, (gx, gy), 4, (118, 118, 118), -1, cv2.LINE_AA)
+            floor_room_lookup = {f"room_{room['id']}": room for room in floor_rooms}
+            floor_object_lookup = {f"obj_{obj['id']}": obj for obj in floor_objects}
+            for anchor in floor_anchors:
+                position = anchor.get("position", [])
+                if len(position) < 2:
+                    continue
+                ax, ay = to_panel((position[0], position[1]), rect)
+                if anchor.get("anchor_type") == "room":
+                    cv2.drawMarker(canvas, (ax, ay), (5, 102, 204), cv2.MARKER_STAR, 16, 2, cv2.LINE_AA)
+                else:
+                    cv2.drawMarker(canvas, (ax, ay), (14, 156, 119), cv2.MARKER_DIAMOND, 12, 2, cv2.LINE_AA)
+                target_id = anchor.get("target_id")
+                target_xy = None
+                if target_id in floor_room_lookup:
+                    target_xy = _polygon_centroid(floor_room_lookup[target_id].get("polygon", []))
+                elif target_id in floor_object_lookup:
+                    pose_xy = floor_object_lookup[target_id].get("pose", [])
+                    if len(pose_xy) >= 2:
+                        target_xy = (float(pose_xy[0]), float(pose_xy[1]))
+                if target_xy is not None:
+                    tx, ty = to_panel(target_xy, rect)
+                    cv2.line(canvas, (ax, ay), (tx, ty), (128, 128, 128), 1, cv2.LINE_AA)
 
-        current_xy = (float(pose_source.pose[0, 3]), float(pose_source.pose[1, 3]))
-        current_px, current_py = _world_to_canvas(current_xy, bounds, width, height)
-        heading_xy = _pose_heading_xy(pose_source.pose)
-        tip_world = np.asarray(current_xy, dtype=np.float32) + 0.45 * heading_xy
-        tip_px, tip_py = _world_to_canvas(tip_world, bounds, width, height)
-        cv2.circle(canvas, (current_px, current_py), 7, (18, 68, 170), -1, cv2.LINE_AA)
-        cv2.arrowedLine(canvas, (current_px, current_py), (tip_px, tip_py), (18, 68, 170), 2, cv2.LINE_AA, tipLength=0.35)
+            for gateway in floor_gateways:
+                pos_world = gateway.get("pos_world", [])
+                if len(pos_world) < 2:
+                    continue
+                gx, gy = to_panel(pos_world, rect)
+                if gateway.get("type") == "door":
+                    cv2.drawMarker(canvas, (gx, gy), (62, 96, 240), cv2.MARKER_TILTED_CROSS, 12, 2, cv2.LINE_AA)
+                else:
+                    cv2.circle(canvas, (gx, gy), 4, (118, 118, 118), -1, cv2.LINE_AA)
 
-        for event in self.revisit_events:
-            if int(event["frame_idx"]) > int(frame_record.frame_idx):
+            if is_active:
+                current_xy = (float(pose_source.pose[0, 3]), float(pose_source.pose[1, 3]))
+                current_px, current_py = to_panel(current_xy, rect)
+                heading_xy = _pose_heading_xy(pose_source.pose)
+                tip_world = np.asarray(current_xy, dtype=np.float32) + 0.45 * heading_xy
+                tip_px, tip_py = to_panel(tip_world, rect)
+                cv2.circle(canvas, (current_px, current_py), 7, (18, 68, 170), -1, cv2.LINE_AA)
+                cv2.arrowedLine(canvas, (current_px, current_py), (tip_px, tip_py), (18, 68, 170), 2, cv2.LINE_AA, tipLength=0.35)
+
+        for idx, transition in enumerate(vertical_transitions, start=1):
+            from_room_id = int(transition.get("from_room_id", -1))
+            to_room_id = int(transition.get("to_room_id", -1))
+            source_pt = room_centers_canvas.get(from_room_id)
+            target_pt = room_centers_canvas.get(to_room_id)
+            if source_pt is None or target_pt is None:
                 continue
-            position_xy = event.get("position_xy", [])
-            if len(position_xy) < 2:
-                continue
-            ex, ey = _world_to_canvas((position_xy[0], position_xy[1]), bounds, width, height)
-            color = (20, 140, 255)
-            thickness = 2
-            if diagnostic is not None and int(event["frame_idx"]) == int(diagnostic["frame_idx"]):
-                color = (0, 90, 220)
-                thickness = 3
-            cv2.circle(canvas, (ex, ey), 11, color, thickness, cv2.LINE_AA)
+            color = (140, 110, 40)
+            cv2.circle(canvas, source_pt, 11, color, 2, cv2.LINE_AA)
+            cv2.circle(canvas, target_pt, 11, color, 2, cv2.LINE_AA)
+            cv2.putText(canvas, f"VT{idx}", (source_pt[0] - 12, source_pt[1] - 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA)
+            cv2.putText(canvas, f"VT{idx}", (target_pt[0] - 12, target_pt[1] - 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA)
+            cv2.line(canvas, source_pt, target_pt, color, 1, cv2.LINE_AA)
 
         legend = [
-            "Blue path: trajectory and current pose",
-            "Room ids + red edges: lightweight topology",
-            "Green boxes: fused semantic objects",
-            "Blue/orange markers: anchors and revisit signals",
-            "Door markers: doorway / passage hints from current segmentation",
+            "One panel per floor with shared XY scale",
+            "Blue path/current pose: active-floor trajectory and camera",
+            "Green boxes: fused objects | stars/diamonds: anchors",
+            "VT labels/links: explicit cross-floor transitions",
         ]
         if self.full_rgb_replay:
-            legend.append("Semantic layer is held between real map refresh frames")
-        _draw_text_block(canvas, legend, (18, height - 126), font_scale=0.49)
+            legend.append("Panels still hold between real semantic refreshes; the active floor border shows the current pose floor")
+        _draw_text_block(canvas, legend, (18, height - 118), font_scale=0.46)
         return canvas

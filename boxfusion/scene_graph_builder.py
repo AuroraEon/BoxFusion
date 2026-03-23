@@ -269,6 +269,34 @@ class SemanticObservation:
 
 
 @dataclass
+class FloorNode:
+    """Explicit floor node for the world-graph truth layer."""
+
+    id: str
+    floor_index: int
+    z_min: float
+    z_max: float
+    z_center: float
+    confidence: float
+    status: str
+    support_statistics: Dict[str, Any] = field(default_factory=dict)
+    node_type: str = "floor"
+
+    def get_attributes(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "node_type": self.node_type,
+            "floor_index": int(self.floor_index),
+            "z_min": float(self.z_min),
+            "z_max": float(self.z_max),
+            "z_center": float(self.z_center),
+            "confidence": float(self.confidence),
+            "status": self.status,
+            "support_statistics": dict(self.support_statistics),
+        }
+
+
+@dataclass
 class RoomNode:
     """Room node schema used by the VLN scene graph."""
 
@@ -276,6 +304,9 @@ class RoomNode:
     room_type: str
     polygon: List[Tuple[float, float]] = field(default_factory=list)
     center: Optional[Tuple[float, float]] = None
+    floor_id: Optional[str] = None
+    floor_assignment_confidence: float = 1.0
+    status: str = "confirmed"
     node_type: str = "room"
 
     def __post_init__(self) -> None:
@@ -292,6 +323,9 @@ class RoomNode:
             "room_type": self.room_type,
             "polygon": self.polygon,
             "center": list(self.center),
+            "floor_id": self.floor_id,
+            "floor_assignment_confidence": float(self.floor_assignment_confidence),
+            "status": self.status,
         }
 
 
@@ -306,6 +340,7 @@ class AnchorNode:
     target_id: str
     valid: bool
     score: float
+    floor_id: Optional[str] = None
     candidate_positions: Optional[List[Tuple[float, float]]] = None
     node_type: str = "anchor"
 
@@ -319,6 +354,7 @@ class AnchorNode:
             "target_id": self.target_id,
             "valid": bool(self.valid),
             "score": float(self.score),
+            "floor_id": self.floor_id,
         }
         if self.candidate_positions:
             attrs["candidate_positions"] = [list(map(float, pt)) for pt in self.candidate_positions]
@@ -337,6 +373,7 @@ class ObjectNode:
     clip_feature: Optional[Sequence[float]]
     confidence: float
     room_id: str
+    floor_id: Optional[str] = None
     yaw: float = 0.0
     footprint: Optional[List[Tuple[float, float]]] = None
     semantic_observations: Optional[List[Any]] = None
@@ -491,6 +528,8 @@ class ObjectNode:
             self.fuse_observation(observation, cfg=cfg)
         if other.room_id:
             self.room_id = other.room_id
+        if other.floor_id:
+            self.floor_id = other.floor_id
 
     def get_attributes(self) -> Dict[str, Any]:
         return {
@@ -516,6 +555,7 @@ class ObjectNode:
             "semantic_confidence": float(self.semantic_confidence or self.confidence),
             "association_confidence": float(self.association_confidence),
             "room_id": self.room_id,
+            "floor_id": self.floor_id,
         }
 
 
@@ -540,12 +580,19 @@ class SemanticSceneGraph:
         self.landmark_rules = _merge_rule_sets(DEFAULT_LANDMARK_RULES, landmark_rules)
         self.objects: List[ObjectNode] = []
         self.object_index: Dict[str, ObjectNode] = {}
+        self.floors: Dict[str, FloorNode] = {}
         self.rooms: Dict[str, RoomNode] = {}
         self.anchors: Dict[str, AnchorNode] = {}
+
+    def add_floor_node(self, floor: FloorNode) -> None:
+        self.floors[floor.id] = floor
+        self.graph.add_node(floor.id, **floor.get_attributes())
 
     def add_room_node(self, room: RoomNode) -> None:
         self.rooms[room.id] = room
         self.graph.add_node(room.id, **room.get_attributes())
+        if room.floor_id is not None and room.floor_id in self.graph.nodes:
+            self._add_relation_edge(room.id, room.floor_id, "ON_FLOOR")
 
     def _relation_exists(self, source_id: str, target_id: str, relation: str) -> bool:
         edge_data = self.graph.get_edge_data(source_id, target_id, default={})
@@ -583,6 +630,8 @@ class SemanticSceneGraph:
         obj._initialize_semantic_state()
         self.object_index[obj.id] = obj
         self._sync_object_node(obj)
+        if obj.floor_id is not None and obj.floor_id in self.graph.nodes:
+            self._add_relation_edge(obj.id, obj.floor_id, "ON_FLOOR")
         return obj
 
     def fuse_object_observation(
@@ -801,6 +850,7 @@ class SemanticSceneGraph:
                 target_id=obj.id,
                 valid=True,
                 score=float(score * semantic_gate),
+                floor_id=obj.floor_id or room.floor_id,
             )
             if best_anchor is None or anchor.score > best_anchor.score:
                 best_anchor = anchor
@@ -865,6 +915,7 @@ class SemanticSceneGraph:
                 target_id=room_id,
                 valid=True,
                 score=score,
+                floor_id=room.floor_id,
                 candidate_positions=debug_candidates if debug else None,
             )
             if best_anchor is None or anchor.score > best_anchor.score:
@@ -911,6 +962,7 @@ class SemanticSceneGraph:
                 target_id=obj.id,
                 valid=True,
                 score=score,
+                floor_id=obj.floor_id or room.floor_id,
                 candidate_positions=debug_candidates if debug else None,
             )
             if best_anchor is None or anchor.score > best_anchor.score:
@@ -935,6 +987,8 @@ class SemanticSceneGraph:
             self.graph.add_node(anchor.id, **anchor.get_attributes())
             self._add_relation_edge(anchor.id, anchor.room_id, "IN_ROOM")
             self._add_relation_edge(anchor.id, anchor.target_id, "FOR")
+            if anchor.floor_id is not None and anchor.floor_id in self.graph.nodes:
+                self._add_relation_edge(anchor.id, anchor.floor_id, "ON_FLOOR")
 
     def generate_room_anchors(self, debug: bool = False) -> List[AnchorNode]:
         anchors: List[AnchorNode] = []
@@ -965,8 +1019,10 @@ class SemanticSceneGraph:
         print("=== Scene Graph Nodes ===")
         for node, data in self.graph.nodes(data=True):
             node_type = data["node_type"]
-            if node_type == "room":
-                print(f"📍 {node} (Room) | type={data['room_type']} | center={data['center']}")
+            if node_type == "floor":
+                print(f"🏢 {node} (Floor) | index={data.get('floor_index')} | z=[{data.get('z_min')}, {data.get('z_max')}]")
+            elif node_type == "room":
+                print(f"📍 {node} (Room) | type={data['room_type']} | floor={data.get('floor_id')} | center={data['center']}")
             elif node_type == "anchor":
                 print(
                     f"🧭 {node} (Anchor) | anchor_type={data['anchor_type']} | "
