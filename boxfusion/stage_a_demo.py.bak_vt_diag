@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import cv2
 import numpy as np
 
-from boxfusion.floor_artifacts import display_floor_label as canonical_display_floor_label
 from boxfusion.room_topology import RoomTopologyBuilder
 
 
@@ -179,14 +178,14 @@ def _display_floor_label(
     vector_map: Optional[Dict[str, Any]] = None,
     floor_lookup: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> str:
+    if floor_id is None:
+        return "floor_unknown"
     lookup = floor_lookup if floor_lookup is not None else _floor_display_lookup(vector_map)
-    floor_meta = dict(lookup.get(str(floor_id)) or {}) if floor_id is not None else {}
-    return canonical_display_floor_label(
-        floor_id,
-        floor_meta.get("display_floor_id"),
-        floor_lookup=lookup,
-        include_internal=True,
-    )
+    floor_meta = dict(lookup.get(str(floor_id)) or {})
+    display_floor_id = floor_meta.get("display_floor_id", floor_id)
+    if display_floor_id != floor_id:
+        return f"{display_floor_id} (internal {floor_id})"
+    return str(display_floor_id)
 
 
 def _best_room_for_pose_floor_aware(
@@ -428,63 +427,6 @@ def _topology_summary(vector_map: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         "adjacency_edge_count": int(len(edges)),
         "adjacency_edges": [edges[key] for key in sorted(edges)],
     }
-
-
-def _transition_display_id(transition: Dict[str, Any], index: int) -> str:
-    raw = transition.get("transition_id")
-    if raw is None:
-        return f"VT{int(index)}"
-    text = str(raw).strip()
-    if text.lower().startswith("vt_") and text.split("_", 1)[1].isdigit():
-        return f"VT{text.split('_', 1)[1]}"
-    return text.upper()
-
-
-def _vertical_transition_lines(vector_map: Optional[Dict[str, Any]], limit: int = 4) -> List[str]:
-    vector_map = dict(vector_map or {})
-    summary = dict(vector_map.get("vertical_transition_summary") or {})
-    transitions = list(summary.get("transitions") or vector_map.get("vertical_transitions", []))
-    if not transitions:
-        return ["No explicit vertical transitions exported."]
-    lines: List[str] = []
-    for idx, item in enumerate(transitions[: max(1, int(limit))], start=1):
-        tid = _transition_display_id(item, idx)
-        from_floor = item.get("from_display_floor_id", item.get("from_floor_id"))
-        to_floor = item.get("to_display_floor_id", item.get("to_floor_id"))
-        from_room = item.get("from_room_label")
-        if from_room is None and item.get("from_room_id") is not None:
-            from_room = f"R{int(item['from_room_id'])}"
-        to_room = item.get("to_room_label")
-        if to_room is None and item.get("to_room_id") is not None:
-            to_room = f"R{int(item['to_room_id'])}"
-        connector_label = item.get("connector_label", "unknown_vertical_connector")
-        frame_start = item.get("transition_frame_start", item.get("frame_start"))
-        frame_end = item.get("transition_frame_end", item.get("frame_end"))
-        confidence = item.get("confidence")
-        lines.append(
-            f"{tid}: {from_floor}:{from_room or '?'} -> {to_floor}:{to_room or '?'} | {connector_label} | f{frame_start}-{frame_end} | c={confidence}"
-        )
-    return lines
-
-
-def _segmentation_fallback_lines(vector_map: Optional[Dict[str, Any]], limit: int = 4) -> List[str]:
-    vector_map = dict(vector_map or {})
-    diagnostics = dict(vector_map.get("room_segmentation_diagnostics") or {})
-    if not diagnostics:
-        return ["No room-segmentation diagnostics exported."]
-    lines = [
-        f"Runs={diagnostics.get('run_count', 0)}; successful={diagnostics.get('successful_run_count', 0)}; fallback runs={diagnostics.get('fallback_run_count', 0)}; modes={diagnostics.get('fallback_counts', {})}"
-    ]
-    per_floor = sorted(
-        diagnostics.get("per_floor", []),
-        key=lambda item: (int(item.get("display_order", 10**6) or 10**6), str(item.get("display_floor_id", item.get("floor_id", "")))),
-    )
-    for floor in per_floor[: max(1, int(limit))]:
-        display_floor_id = floor.get("display_floor_id", floor.get("floor_id"))
-        lines.append(
-            f"{display_floor_id}: runs={floor.get('run_count', 0)}; fallback runs={floor.get('fallback_run_count', 0)}; fallback counts={floor.get('fallback_counts', {})}"
-        )
-    return lines
 
 
 def _tracking_counts(tracking_report: Dict[str, Any]) -> Tuple[int, int]:
@@ -980,15 +922,9 @@ class ClosedLoopDemoRecorder:
         final_snapshot = self.snapshots[-1]
         final_vector_map = final_snapshot.vector_map or {}
         final_topology = _topology_summary(final_vector_map)
-        vertical_transition_summary = dict(final_vector_map.get("vertical_transition_summary") or {})
-        room_segmentation_diagnostics = dict(final_vector_map.get("room_segmentation_diagnostics") or {})
-        floor_diagnostics_summary = dict(final_vector_map.get("floor_debug") or {})
         topology_json = self.log_dir / "topology_v0_1.json"
         topology_query_report_json = self.log_dir / "topology_query_report.json"
         topology_graphml = self.log_dir / "topology_v0_1.graphml"
-        vertical_transition_evidence_json = self.log_dir / "vertical_transition_evidence.json"
-        room_segmentation_diagnostics_json = self.log_dir / "room_segmentation_diagnostics.json"
-        floor_diagnostics_summary_json = self.log_dir / "floor_diagnostics_summary.json"
         topology_export_error = None
         try:
             room_topology = RoomTopologyBuilder().build(
@@ -1008,22 +944,6 @@ class ClosedLoopDemoRecorder:
             room_topology.export_graphml(topology_graphml)
         except Exception as exc:
             topology_export_error = str(exc)
-        with open(vertical_transition_evidence_json, "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "sequence_id": self.sequence_id,
-                    "summary": vertical_transition_summary,
-                    "transitions": final_vector_map.get("vertical_transitions", []),
-                },
-                f,
-                indent=2,
-            )
-        with open(room_segmentation_diagnostics_json, "w", encoding="utf-8") as f:
-            json.dump(room_segmentation_diagnostics, f, indent=2)
-        floor_diagnostics_payload = dict(floor_diagnostics_summary)
-        floor_diagnostics_payload["sequence_id"] = self.sequence_id
-        with open(floor_diagnostics_summary_json, "w", encoding="utf-8") as f:
-            json.dump(floor_diagnostics_payload, f, indent=2)
         presentation_parameters = self._presentation_parameters()
         presentation_quality_note = self._presentation_quality_note()
         summary_payload = dict(run_summary)
@@ -1040,8 +960,6 @@ class ClosedLoopDemoRecorder:
                 "final_anchor_count": int(len(final_vector_map.get("anchors", []))),
                 "final_gateway_count": int(final_topology["gateway_count"]),
                 "final_adjacency_edge_count": int(final_topology["adjacency_edge_count"]),
-                "final_vertical_transition_count": int(vertical_transition_summary.get("count", len(final_vector_map.get("vertical_transitions", [])))),
-                "final_fallback_run_count": int(room_segmentation_diagnostics.get("fallback_run_count", 0)),
                 "video_path": str(video_path),
                 "final_map_png": str(final_map_png),
                 "final_split_png": str(final_split_png),
@@ -1052,9 +970,6 @@ class ClosedLoopDemoRecorder:
                 "revisit_diagnostics_csv": str(revisit_diagnostics_csv),
                 "revisit_summary_md": str(revisit_summary_md),
                 "presentation_note_md": str(presentation_note_md),
-                "vertical_transition_evidence_json": str(vertical_transition_evidence_json),
-                "room_segmentation_diagnostics_json": str(room_segmentation_diagnostics_json),
-                "floor_diagnostics_summary_json": str(floor_diagnostics_summary_json),
                 "spotlight_dir": str(self.spotlight_dir),
                 "spotlight_count": int(len(spotlight_paths)),
                 "presentation_parameters": presentation_parameters,
@@ -1089,9 +1004,6 @@ class ClosedLoopDemoRecorder:
             "revisit_diagnostics_json": str(revisit_diagnostics_json),
             "revisit_diagnostics_csv": str(revisit_diagnostics_csv),
             "revisit_summary_md": str(revisit_summary_md),
-            "vertical_transition_evidence_json": str(vertical_transition_evidence_json),
-            "room_segmentation_diagnostics_json": str(room_segmentation_diagnostics_json),
-            "floor_diagnostics_summary_json": str(floor_diagnostics_summary_json),
             "spotlight_dir": str(self.spotlight_dir),
             "topology_v0_1_json": None if topology_export_error else str(topology_json),
             "topology_query_report_json": None if topology_export_error else str(topology_query_report_json),
@@ -2132,10 +2044,6 @@ class ClosedLoopDemoRecorder:
         strongest = sorted(diagnostics, key=self._diagnostic_sort_key)[:3]
         presentation_parameters = summary.get("presentation_parameters", {})
         presentation_quality_note = summary.get("presentation_quality_note", {})
-        vertical_transition_summary = dict(vector_map.get("vertical_transition_summary") or {})
-        room_segmentation_diagnostics = dict(vector_map.get("room_segmentation_diagnostics") or {})
-        transition_lines = _vertical_transition_lines(vector_map, limit=6)
-        fallback_lines = _segmentation_fallback_lines(vector_map, limit=6)
         full_rgb_replay = bool(summary.get("rgb_replay_frame_continuous", False))
         pose_overlay_enabled = bool(summary.get("per_frame_pose_overlay_enabled", False))
         map_refresh_frames = summary.get("map_refresh_frame_indices", [])
@@ -2162,8 +2070,6 @@ class ClosedLoopDemoRecorder:
             f"- Segmentation refresh cycles: {int(summary.get('segmentation_cycle_count', 0))}",
             f"- Final rooms / objects / anchors: {len(vector_map.get('rooms', []))} / {len(vector_map.get('objects', []))} / {len(vector_map.get('anchors', []))}",
             f"- Final gateways / adjacency edges: {int(topology['gateway_count'])} / {int(topology['adjacency_edge_count'])}",
-            f"- Final vertical transitions: {int(vertical_transition_summary.get('count', len(vector_map.get('vertical_transitions', []))))}",
-            f"- Segmentation fallback runs: {int(room_segmentation_diagnostics.get('fallback_run_count', 0))}",
             f"- Raw revisit triggers / grouped revisit diagnostics: {int(summary.get('revisit_event_count', 0))} / {int(summary.get('revisit_diagnostic_count', 0))}",
             f"- Latest room-tracking cycle: matched existing rooms={matched_count}, new rooms={new_room_count}",
             f"- Replay mode / pose overlay: {presentation_parameters.get('replay_mode')} / {'enabled' if pose_overlay_enabled else 'disabled'}",
@@ -2204,13 +2110,9 @@ class ClosedLoopDemoRecorder:
             f"- Max frames: {presentation_parameters.get('max_frames')}",
             f"- Presentation quality note: {presentation_quality_note.get('assessment')} | {presentation_quality_note.get('note')}",
             "",
+            "## Strongest Revisit Examples",
+            "",
         ]
-
-        lines.extend(["## Cross-Floor Structure", ""])
-        lines.extend([f"- {line}" for line in transition_lines])
-        lines.extend(["", "## Segmentation Fallback Diagnostics", ""])
-        lines.extend([f"- {line}" for line in fallback_lines])
-        lines.extend(["", "## Strongest Revisit Examples", ""])
 
         if strongest:
             for item in strongest:
@@ -2561,13 +2463,6 @@ class ClosedLoopDemoRecorder:
         topology = _topology_summary(vector_map)
         room_lookup = {int(room["id"]): room for room in rooms}
         room_floor_lookup = {int(room["id"]): room.get("floor_id") for room in rooms}
-        panel_transition_labels: Dict[str, List[str]] = {}
-        for idx, transition in enumerate(vertical_transitions, start=1):
-            transition_label = _transition_display_id(transition, idx)
-            for floor_key in (transition.get("from_floor_id"), transition.get("to_floor_id")):
-                if floor_key is None:
-                    continue
-                panel_transition_labels.setdefault(str(floor_key), []).append(transition_label)
 
         matched_room_ids = set(int(room_id) for room_id in (diagnostic or {}).get("matched_room_ids", []))
         tracking_matched_room_ids = set(int(item["global_id"]) for item in tracking_report.get("matched", []))
@@ -2636,9 +2531,6 @@ class ClosedLoopDemoRecorder:
             cv2.putText(canvas, subtitle[:52], (x0 + 10, y0 + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (95, 95, 95), 1, cv2.LINE_AA)
             if is_active:
                 cv2.putText(canvas, "ACTIVE", (x0 + panel_width - 74, y0 + 22), cv2.FONT_HERSHEY_SIMPLEX, 0.48, (24, 102, 196), 2, cv2.LINE_AA)
-            vt_tags = panel_transition_labels.get(floor_id, [])
-            if vt_tags:
-                cv2.putText(canvas, f"links: {' '.join(vt_tags[:4])}"[:34], (x0 + 10, y0 + panel_height - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.36, (120, 98, 44), 1, cv2.LINE_AA)
 
             floor_rooms = [room for room in rooms if room.get("floor_id") == floor_id]
             floor_objects = [obj for obj in objects if obj.get("floor_id") == floor_id]
@@ -2749,30 +2641,17 @@ class ClosedLoopDemoRecorder:
                 cv2.arrowedLine(canvas, (current_px, current_py), (tip_px, tip_py), (18, 68, 170), 2, cv2.LINE_AA, tipLength=0.35)
 
         for idx, transition in enumerate(vertical_transitions, start=1):
-            transition_label = _transition_display_id(transition, idx)
-            raw_from_room_id = transition.get("from_room_id")
-            raw_to_room_id = transition.get("to_room_id")
-            from_room_id = int(raw_from_room_id) if raw_from_room_id is not None else -1
-            to_room_id = int(raw_to_room_id) if raw_to_room_id is not None else -1
-            source_pt = room_centers_canvas.get(from_room_id) if from_room_id >= 0 else None
-            target_pt = room_centers_canvas.get(to_room_id) if to_room_id >= 0 else None
-            if source_pt is None:
-                from_floor_id = transition.get("from_floor_id")
-                from_position = transition.get("from_position_xy")
-                if from_floor_id is not None and from_position is not None and len(from_position) >= 2 and str(from_floor_id) in panel_rects:
-                    source_pt = to_panel(from_position, panel_rects[str(from_floor_id)])
-            if target_pt is None:
-                to_floor_id = transition.get("to_floor_id")
-                to_position = transition.get("to_position_xy")
-                if to_floor_id is not None and to_position is not None and len(to_position) >= 2 and str(to_floor_id) in panel_rects:
-                    target_pt = to_panel(to_position, panel_rects[str(to_floor_id)])
+            from_room_id = int(transition.get("from_room_id", -1))
+            to_room_id = int(transition.get("to_room_id", -1))
+            source_pt = room_centers_canvas.get(from_room_id)
+            target_pt = room_centers_canvas.get(to_room_id)
             if source_pt is None or target_pt is None:
                 continue
             color = (140, 110, 40)
             cv2.circle(canvas, source_pt, 11, color, 2, cv2.LINE_AA)
             cv2.circle(canvas, target_pt, 11, color, 2, cv2.LINE_AA)
-            cv2.putText(canvas, transition_label[:6], (source_pt[0] - 12, source_pt[1] - 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA)
-            cv2.putText(canvas, transition_label[:6], (target_pt[0] - 12, target_pt[1] - 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA)
+            cv2.putText(canvas, f"VT{idx}", (source_pt[0] - 12, source_pt[1] - 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA)
+            cv2.putText(canvas, f"VT{idx}", (target_pt[0] - 12, target_pt[1] - 14), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA)
             cv2.line(canvas, source_pt, target_pt, color, 1, cv2.LINE_AA)
 
         legend = [
@@ -2781,7 +2660,10 @@ class ClosedLoopDemoRecorder:
             "Green boxes: fused objects | stars/diamonds: anchors",
             "VT labels/links: explicit cross-floor transitions",
         ]
-        transition_notes = _vertical_transition_lines(vector_map, limit=3)
+        transition_notes = [
+            f"VT{idx}: {transition.get('from_display_floor_id', transition.get('from_floor_id'))} -> {transition.get('to_display_floor_id', transition.get('to_floor_id'))}"
+            for idx, transition in enumerate(vertical_transitions[:3], start=1)
+        ]
         legend.extend(transition_notes)
         if self.full_rgb_replay:
             legend.append("Panels hold between real semantic refreshes; the active border shows the current pose floor")

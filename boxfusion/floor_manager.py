@@ -5,6 +5,8 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
+from boxfusion.floor_artifacts import canonicalize_floors
+
 
 DEFAULT_FLOOR_MANAGER_CONFIG: Dict[str, float] = {
     "stable_assignment_margin_m": 0.75,
@@ -112,11 +114,19 @@ class FloorHypothesis:
             return 0.0
         return float(np.max(np.asarray(self.z_samples, dtype=np.float32)))
 
-    def to_dict(self, floor_index: int, cfg: Dict[str, float]) -> Dict[str, Any]:
+    def to_dict(
+        self,
+        floor_index: int,
+        cfg: Dict[str, float],
+        display_floor_id: Optional[str] = None,
+        display_order: Optional[int] = None,
+    ) -> Dict[str, Any]:
         band_pad = float(cfg["floor_band_padding_m"])
         return {
             "floor_id": self.floor_id,
             "floor_index": int(floor_index),
+            "display_floor_id": display_floor_id or self.floor_id,
+            "display_order": int(display_order if display_order is not None else floor_index + 1),
             "z_min": _round_float(self.z_min - band_pad),
             "z_max": _round_float(self.z_max + band_pad),
             "z_center": _round_float(self.z_center),
@@ -275,6 +285,8 @@ class FloorManager:
             return {
                 "floor_id": None,
                 "floor_index": None,
+                "display_floor_id": None,
+                "display_order": None,
                 "status": "unknown",
                 "confidence": 0.0,
                 "reason": "no_floors_available",
@@ -283,11 +295,14 @@ class FloorManager:
         nearest_floor = min(self.floors.values(), key=lambda item: abs(pose_z - item.z_center))
         nearest_distance = abs(pose_z - nearest_floor.z_center)
         stable_margin = float(self.config["stable_assignment_margin_m"])
-        floor_index = self._ordered_floor_ids().index(nearest_floor.floor_id)
+        display_meta = self._display_metadata_lookup().get(nearest_floor.floor_id, {})
+        floor_index = display_meta.get("floor_index")
         if nearest_distance <= stable_margin:
             return {
                 "floor_id": nearest_floor.floor_id,
                 "floor_index": int(floor_index),
+                "display_floor_id": display_meta.get("display_floor_id"),
+                "display_order": display_meta.get("display_order"),
                 "status": "stable",
                 "confidence": max(0.5, 1.0 - nearest_distance / max(stable_margin, 1e-6)),
                 "reason": "nearest_confirmed_floor",
@@ -295,23 +310,53 @@ class FloorManager:
         return {
             "floor_id": nearest_floor.floor_id,
             "floor_index": int(floor_index),
+            "display_floor_id": display_meta.get("display_floor_id"),
+            "display_order": display_meta.get("display_order"),
             "status": "uncertain",
             "confidence": 0.25,
             "reason": "height_outside_floor_band",
         }
 
     def export_floors(self) -> List[Dict[str, Any]]:
-        ordered_ids = self._ordered_floor_ids()
+        display_lookup = self._display_metadata_lookup()
         return [
-            self.floors[floor_id].to_dict(floor_index=index, cfg=self.config)
-            for index, floor_id in enumerate(ordered_ids)
+            self.floors[floor_id].to_dict(
+                floor_index=int(meta["floor_index"]),
+                cfg=self.config,
+                display_floor_id=str(meta["display_floor_id"]),
+                display_order=int(meta["display_order"]),
+            )
+            for floor_id, meta in display_lookup.items()
         ]
 
     def export_assignment_history(self) -> List[Dict[str, Any]]:
-        return [item.to_dict() for item in self.observations]
+        display_lookup = self._display_metadata_lookup()
+        history: List[Dict[str, Any]] = []
+        for item in self.observations:
+            payload = item.to_dict()
+            if item.floor_id in display_lookup:
+                payload.update(display_lookup[item.floor_id])
+            else:
+                payload["display_floor_id"] = None
+                payload["display_order"] = None
+            history.append(payload)
+        return history
 
     def export_debug_events(self) -> List[Dict[str, Any]]:
-        return [item.to_dict() for item in self.events]
+        display_lookup = self._display_metadata_lookup()
+        events: List[Dict[str, Any]] = []
+        for item in self.events:
+            payload = item.to_dict()
+            if item.floor_id in display_lookup:
+                payload.update({
+                    "display_floor_id": display_lookup[item.floor_id].get("display_floor_id"),
+                    "display_order": display_lookup[item.floor_id].get("display_order"),
+                })
+            else:
+                payload["display_floor_id"] = None
+                payload["display_order"] = None
+            events.append(payload)
+        return events
 
     def export_pending_state(self) -> Dict[str, Any]:
         candidate_z = None
@@ -331,6 +376,26 @@ class FloorManager:
                 key=lambda item: (item.z_center, item.creation_order),
             )
         ]
+
+    def _display_metadata_lookup(self) -> Dict[str, Dict[str, Any]]:
+        canonical = canonicalize_floors(
+            [
+                {
+                    "floor_id": floor.floor_id,
+                    "creation_order": floor.creation_order,
+                    "z_center": floor.z_center,
+                }
+                for floor in self.floors.values()
+            ]
+        )
+        return {
+            str(item["floor_id"]): {
+                "floor_index": int(item["floor_index"]),
+                "display_floor_id": str(item["display_floor_id"]),
+                "display_order": int(item["display_order"]),
+            }
+            for item in canonical
+        }
 
     def _is_new_floor_sample(self, pose_z: float, separation: float) -> bool:
         return all(abs(float(pose_z) - floor.z_center) >= separation for floor in self.floors.values())

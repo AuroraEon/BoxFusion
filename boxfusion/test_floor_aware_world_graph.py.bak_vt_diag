@@ -204,23 +204,11 @@ def _validate_multifloor_topology() -> None:
     assert route["room_sequence"] == ["room_1", "room_2", "room_3", "room_4"]
     assert route["used_relation_types"] == ["transition", "vertical_transition", "transition"]
 
-    query_api = RoomTopologyQueryAPI(topology)
-    strict_query = query_api.query_route("room_1", "room_4", route_policy="strict")
+    strict_query = RoomTopologyQueryAPI(topology).query_route("room_1", "room_4", route_policy="strict")
     assert strict_query["found"]
     assert strict_query["route"]["used_relation_types"] == ["transition", "vertical_transition", "transition"]
-    assert strict_query["target_resolution"]["resolved_floor_id"] == "floor_2"
-    assert len(strict_query["explanation"]["floor_switches"]) == 1
-    assert strict_query["explanation"]["floor_switches"][0]["relation_type"] == "vertical_transition"
-    assert "floor switch" in strict_query["explanation"]["route_summary"]
-    assert any("vertical_transition" in item for item in strict_query["explanation"]["hop_summaries"])
 
-    anchor_query = query_api.query_route_to_anchor("room_1", "anchor_obj_401")
-    assert anchor_query["found"]
-    assert anchor_query["target_resolution"]["resolved_floor_id"] == "floor_2"
 
-    object_query = query_api.query_route_to_object("room_1", object_id=401)
-    assert object_query["found"]
-    assert object_query["target_resolution"]["resolved_floor_id"] == "floor_2"
 
 
 def _validate_end_of_sequence_floor_flush() -> None:
@@ -455,206 +443,6 @@ def _validate_floor_aware_scene_graph() -> None:
 
 
 
-def _validate_vertical_transition_evidence_regression() -> None:
-    segmenter = FloorAwareRoomSegmenter(
-        resolution=0.05,
-        config={
-            "floor_segmentation": {
-                "new_floor_confirm_frames": 2,
-                "min_confirmed_support_frames": 2,
-                "stable_assignment_margin_m": 0.7,
-                "pending_assignment_margin_m": 1.0,
-                "new_floor_min_separation_m": 2.0,
-            }
-        },
-    )
-    segmenter.frame_history = [
-        {"frame_idx": 0, "status": "stable", "floor_id": "floor_1", "display_floor_id": "floor_1", "pose_z": 0.1, "position_xy": [5.2, 2.0]},
-        {"frame_idx": 1, "status": "stable", "floor_id": "floor_1", "display_floor_id": "floor_1", "pose_z": 0.2, "position_xy": [5.8, 2.0]},
-        {"frame_idx": 2, "status": "transition", "floor_id": "floor_1", "display_floor_id": "floor_1", "pose_z": 0.8, "position_xy": [6.0, 2.0]},
-        {"frame_idx": 3, "status": "transition", "floor_id": "floor_1", "display_floor_id": "floor_1", "pose_z": 1.6, "position_xy": [6.05, 2.0]},
-        {"frame_idx": 4, "status": "transition", "floor_id": "floor_2", "display_floor_id": "floor_2", "pose_z": 2.4, "position_xy": [6.1, 2.0]},
-        {"frame_idx": 5, "status": "stable", "floor_id": "floor_2", "display_floor_id": "floor_2", "pose_z": 3.1, "position_xy": [6.2, 2.0]},
-        {"frame_idx": 6, "status": "stable", "floor_id": "floor_2", "display_floor_id": "floor_2", "pose_z": 3.2, "position_xy": [6.3, 2.0]},
-    ]
-    rooms = [
-        {
-            "id": 2,
-            "polygon": [[4.1, 0.0], [8.1, 0.0], [8.1, 4.0], [4.1, 4.0]],
-            "floor_id": "floor_1",
-            "display_floor_id": "floor_1",
-        },
-        {
-            "id": 3,
-            "polygon": [[4.1, 0.0], [8.1, 0.0], [8.1, 4.0], [4.1, 4.0]],
-            "floor_id": "floor_2",
-            "display_floor_id": "floor_2",
-        },
-    ]
-
-    transitions = segmenter._build_vertical_transitions(rooms)
-    summary = segmenter._build_vertical_transition_summary(transitions)
-
-    assert len(transitions) == 1
-    transition = transitions[0]
-    assert transition["type"] == "vertical_transition"
-    assert transition["from_floor_id"] == "floor_1"
-    assert transition["to_floor_id"] == "floor_2"
-    assert transition["from_room_id"] == 2
-    assert transition["to_room_id"] == 3
-    assert transition["transition_frame_start"] == 2
-    assert transition["transition_frame_end"] == 4
-    assert transition["entry_stable_frame"] == 1
-    assert transition["exit_stable_frame"] == 5
-    assert transition["supporting_frame_count"] == 7
-    assert transition["transition_frame_count"] == 3
-    assert transition["connector_label"] in {"stair_like", "landing_like", "ramp_like", "unknown_vertical_connector"}
-    assert transition["from_room_support"]["room_id"] == 2
-    assert transition["to_room_support"]["room_id"] == 3
-    assert transition["room_association_complete"] is True
-    assert transition["edge_eligible"] is True
-    assert transition["evidence_summary"]
-
-    assert summary["count"] == 1
-    assert summary["edge_eligible_count"] == 1
-    assert summary["transitions"][0]["from_floor_id"] == "floor_1"
-    assert summary["transitions"][0]["to_floor_id"] == "floor_2"
-    assert summary["transitions"][0]["evidence_summary"]
-
-    vector_map = _build_multifloor_vector_map()
-    vector_map["vertical_transitions"] = transitions
-    vector_map["vertical_transition_summary"] = summary
-
-    topology = RoomTopologyBuilder().build(
-        vector_map,
-        sequence_id="vertical_transition_evidence_mock",
-        transition_history=_build_multifloor_transition_history(),
-        metadata={"test_case": "vertical_transition_evidence_regression"},
-    )
-    explanation = topology.explain_connection("room_2", "room_3")
-    vertical_relation = next(item for item in explanation["relations"] if item["relation_type"] == "vertical_transition")
-    relation_metadata = dict(vertical_relation.get("metadata", {}))
-
-    assert relation_metadata["from_floor_ids"] == ["floor_1"]
-    assert relation_metadata["to_floor_ids"] == ["floor_2"]
-    assert relation_metadata["display_floor_pairs"] == ["floor_1->floor_2"]
-    assert relation_metadata["supporting_frame_count_total"] == 7
-    assert relation_metadata["transition_records"][0]["transition_frame_start"] == 2
-    assert relation_metadata["transition_records"][0]["transition_frame_end"] == 4
-    assert relation_metadata["transition_records"][0]["evidence_summary"]
-
-    evidence_metadata = dict(vertical_relation["evidences"][0].get("metadata", {}))
-    assert evidence_metadata["transition_count"] == 1
-    assert evidence_metadata["from_floor_ids"] == ["floor_1"]
-    assert evidence_metadata["to_floor_ids"] == ["floor_2"]
-    assert evidence_metadata["transition_records"][0]["connector_label"] == transition["connector_label"]
-
-
-def _validate_persistent_fallback_diagnostics_regression() -> None:
-    segmenter = FloorAwareRoomSegmenter(
-        resolution=0.05,
-        config={
-            "floor_segmentation": {
-                "new_floor_confirm_frames": 2,
-                "min_confirmed_support_frames": 2,
-                "stable_assignment_margin_m": 0.7,
-                "pending_assignment_margin_m": 1.0,
-                "new_floor_min_separation_m": 2.0,
-            }
-        },
-    )
-
-    def pose(z: float) -> np.ndarray:
-        mat = np.eye(4, dtype=np.float32)
-        mat[2, 3] = float(z)
-        return mat
-
-    segmenter.observe_frame(frame_idx=0, timestamp=0.0, pose_matrix=pose(0.0), points_xyzrgb=None, is_keyframe=True)
-    segmenter.observe_frame(frame_idx=1, timestamp=0.1, pose_matrix=pose(0.05), points_xyzrgb=None, is_keyframe=True)
-
-    floor_state = segmenter._get_or_create_floor_state("floor_1")
-    floor_state.segmenter.last_failure_debug = {}
-    floor_state.segmenter.last_room_markers = np.array([[1, 1], [1, 2]], dtype=np.int32)
-
-    floor_state.segmenter.last_height_slice_debug = {
-        "mode": "adaptive_low_span",
-        "adaptive_applied": True,
-        "slice_z_min": 0.1,
-        "slice_z_max": 0.8,
-    }
-    floor_state.segmenter.last_tracking_report = {
-        "matched": [],
-        "new_rooms": [{"global_id": 1}],
-        "retained_missing": [],
-        "dropped_missing": [],
-    }
-    adaptive_record = segmenter._record_segmentation_run(
-        "floor_1",
-        floor_state,
-        trigger_reason="interval_trigger",
-        active_status="stable",
-        count=10,
-        pending_chunk_count=2,
-        pending_chunk_frame_indices=[0, 1],
-        merged_point_count=120,
-        success=True,
-    )
-
-    floor_state.segmenter.last_height_slice_debug = {
-        "mode": "default",
-        "adaptive_applied": False,
-        "slice_z_min": 0.2,
-        "slice_z_max": 1.8,
-    }
-    floor_state.segmenter.last_tracking_report = {
-        "matched": [{"global_id": 1}],
-        "new_rooms": [],
-        "retained_missing": [],
-        "dropped_missing": [],
-    }
-    default_record = segmenter._record_segmentation_run(
-        "floor_1",
-        floor_state,
-        trigger_reason="interval_trigger",
-        active_status="stable",
-        count=11,
-        pending_chunk_count=0,
-        pending_chunk_frame_indices=[],
-        merged_point_count=120,
-        success=True,
-    )
-
-    diagnostics = segmenter._build_segmentation_diagnostics(segmenter.floor_manager.export_floors())
-    assert diagnostics["run_count"] == 2
-    assert diagnostics["successful_run_count"] == 2
-    assert diagnostics["fallback_run_count"] == 1
-    assert diagnostics["fallback_counts"] == {"adaptive_low_span": 1}
-    assert diagnostics["slice_mode_counts"] == {"adaptive_low_span": 1, "default_slice": 1}
-
-    per_floor = diagnostics["per_floor"][0]
-    assert per_floor["fallback_run_count"] == 1
-    assert per_floor["fallback_counts"] == {"adaptive_low_span": 1}
-    assert adaptive_record["fallback_used"] is True
-    assert adaptive_record["fallback_modes"] == ["adaptive_low_span"]
-    assert adaptive_record["fallback_reason_summary"] == "slice=adaptive_low_span; adaptive_height_slice_applied"
-    assert adaptive_record["pending_chunk_frame_start"] == 0
-    assert adaptive_record["pending_chunk_frame_end"] == 1
-    assert default_record["fallback_used"] is False
-    assert default_record["fallback_modes"] == []
-    assert default_record["fallback_reason_summary"] == "slice=default_slice"
-
-    vector_map = segmenter.get_vector_map_data(save_scene_graph_vis=False)
-    exported = dict(vector_map.get("room_segmentation_diagnostics") or {})
-    assert exported["run_count"] == 2
-    assert exported["fallback_run_count"] == 1
-    assert exported["fallback_counts"] == {"adaptive_low_span": 1}
-    assert exported["runs"][0]["primary_fallback_mode"] == "adaptive_low_span"
-    assert exported["runs"][0]["pending_chunk_frame_count"] == 2
-    assert exported["runs"][1]["fallback_used"] is False
-    assert exported["runs"][1]["fallback_modes"] == []
-
-
-
 def run_mock_test() -> None:
     print("Running floor-aware world graph validation...")
     _validate_floor_manager()
@@ -662,8 +450,6 @@ def run_mock_test() -> None:
     _validate_end_of_sequence_floor_flush()
     _validate_late_floor_starvation_regression()
     _validate_low_span_slice_regression()
-    _validate_vertical_transition_evidence_regression()
-    _validate_persistent_fallback_diagnostics_regression()
     _validate_floor_aware_scene_graph()
     print("Floor-aware world graph validated.")
 

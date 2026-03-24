@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -11,15 +10,6 @@ import numpy as np
 import open3d as o3d
 
 from boxfusion.dynamic_room_segmenter import DynamicRoomSegmenter
-from boxfusion.floor_artifacts import (
-    attach_floor_metadata,
-    build_fallback_summary,
-    build_floor_lookup,
-    build_vertical_transition_summary,
-    canonicalize_floors,
-    canonicalize_vertical_transitions,
-    display_floor_label,
-)
 from boxfusion.floor_manager import FloorManager
 from boxfusion.scene_graph_builder import FloorNode, ObjectNode, RoomNode, SemanticSceneGraph
 
@@ -30,7 +20,6 @@ class FloorState:
     segmenter: DynamicRoomSegmenter
     merged_points_xyzrgb: Optional[np.ndarray] = None
     pending_chunks: List[np.ndarray] = field(default_factory=list)
-    pending_chunk_frame_indices: List[int] = field(default_factory=list)
     local_to_world_room_id: Dict[int, int] = field(default_factory=dict)
     last_tracking_report: Dict[str, Any] = field(default_factory=dict)
     last_segmentation_frame_idx: Optional[int] = None
@@ -43,7 +32,6 @@ class FloorState:
     exported_anchor_count: int = 0
     last_stable_frame_idx: Optional[int] = None
     last_transition_frame_idx: Optional[int] = None
-    segmentation_reports: List[Dict[str, Any]] = field(default_factory=list)
 
 
 class FloorAwareRoomSegmenter:
@@ -100,7 +88,6 @@ class FloorAwareRoomSegmenter:
 
         if points_xyzrgb is not None and observation.status == "stable" and floor_state is not None:
             floor_state.pending_chunks.append(np.asarray(points_xyzrgb, dtype=np.float64))
-            floor_state.pending_chunk_frame_indices.append(int(frame_idx))
             floor_state.stable_keyframe_chunk_count += 1
 
         return payload
@@ -139,9 +126,12 @@ class FloorAwareRoomSegmenter:
         debug_path: Optional[str] = None,
         count: int = 0,
     ) -> Dict[str, Any]:
-        canonical_floors = canonicalize_floors(self.floor_manager.export_floors())
-        floor_ids = [str(item["floor_id"]) for item in canonical_floors]
-        floor_export_lookup = build_floor_lookup(canonical_floors)
+        floor_ids = self.floor_manager._ordered_floor_ids()
+        floor_export_lookup = {
+            str(item.get("floor_id")): dict(item)
+            for item in self.floor_manager.export_floors()
+            if item.get("floor_id") is not None
+        }
         floors = []
         segmented_floor_ids: List[str] = []
         segmented_display_floor_ids: List[str] = []
@@ -210,8 +200,6 @@ class FloorAwareRoomSegmenter:
         trigger_reason: str = "manual",
     ):
         floor_state = self._get_or_create_floor_state(floor_id)
-        pending_chunk_count = self._pending_chunk_count(floor_state)
-        pending_chunk_frame_indices = [int(item) for item in floor_state.pending_chunk_frame_indices]
         merged_points = self._merge_floor_points(floor_state)
         if merged_points is None or len(merged_points) == 0:
             if update_last_tracking:
@@ -236,35 +224,13 @@ class FloorAwareRoomSegmenter:
             debug_path=floor_debug_dir,
             count=count,
         )
-        segmentation_run = self._record_segmentation_run(
-            floor_id=floor_id,
-            floor_state=floor_state,
-            trigger_reason=trigger_reason,
-            active_status=active_status,
-            count=count,
-            pending_chunk_count=pending_chunk_count,
-            pending_chunk_frame_indices=pending_chunk_frame_indices,
-            merged_point_count=0 if merged_points is None else int(len(merged_points)),
-            success=markers is not None,
-        )
         if markers is None:
-            if update_last_tracking:
-                self.last_tracking_report = {
-                    "active_floor_id": floor_id,
-                    "active_floor_status": active_status,
-                    "matched": [],
-                    "new_rooms": [],
-                    "per_floor": {},
-                    "reason": "segmentation_returned_none",
-                    "segmentation_run": segmentation_run,
-                }
             return None
 
         floor_state.last_segmentation_frame_idx = int(count)
         floor_state.segmentation_trigger_count += 1
         mapped_report = self._map_tracking_report(floor_id, floor_state.segmenter.last_tracking_report)
         mapped_report["segmentation_trigger_reason"] = trigger_reason
-        mapped_report["segmentation_run"] = segmentation_run
         floor_state.last_tracking_report = mapped_report
         if update_last_tracking:
             self.last_tracking_report = {
@@ -274,7 +240,6 @@ class FloorAwareRoomSegmenter:
                 "new_rooms": list(mapped_report.get("new_rooms", [])),
                 "per_floor": {floor_id: mapped_report},
                 "segmentation_trigger_reason": trigger_reason,
-                "segmentation_run": segmentation_run,
             }
         self.last_room_markers = True
         return markers
@@ -286,7 +251,7 @@ class FloorAwareRoomSegmenter:
         save_scene_graph_vis: bool = True,
         scene_graph_vis_dir: str = "./debug_room",
     ) -> Dict[str, Any]:
-        floors = canonicalize_floors(self.floor_manager.export_floors())
+        floors = self.floor_manager.export_floors()
         vector_data: Dict[str, Any] = {
             "map_info": {
                 "resolution": self.resolution,
@@ -301,21 +266,12 @@ class FloorAwareRoomSegmenter:
             "anchors": [],
             "relationships": [],
             "frame_floor_assignments": self.floor_manager.export_assignment_history(),
-            "room_segmentation_diagnostics": {},
-            "vertical_transition_summary": {},
         }
 
-        floor_lookup = build_floor_lookup(floors)
+        floor_lookup = {item["floor_id"]: dict(item) for item in floors}
         room_records, room_lookup = self._export_rooms_and_gateways(vector_data, floor_lookup)
         vector_data["room_floor_validation"] = self._build_room_floor_validation(room_records)
-        vector_data["vertical_transitions"] = canonicalize_vertical_transitions(
-            self._build_vertical_transitions(room_records),
-            floor_lookup,
-        )
-        vector_data["vertical_transition_summary"] = build_vertical_transition_summary(
-            vector_data["vertical_transitions"],
-            floor_lookup,
-        )
+        vector_data["vertical_transitions"] = self._build_vertical_transitions(room_records)
         vector_data["objects"], embedding_lookup = self._build_object_exports(all_pred_box, floor_lookup, room_lookup)
 
         sg = SemanticSceneGraph()
@@ -389,7 +345,6 @@ class FloorAwareRoomSegmenter:
                 }
             )
         vector_data["anchors"] = self._attach_display_floor_metadata(sg.export_anchor_data(), floor_lookup)
-        vector_data["room_segmentation_diagnostics"] = self._build_segmentation_diagnostics(floors)
         vector_data["floor_debug"] = self._build_floor_debug_summary(vector_data)
         self.last_floor_diagnostics = vector_data["floor_debug"]
 
@@ -423,7 +378,6 @@ class FloorAwareRoomSegmenter:
             chunks.append(floor_state.merged_points_xyzrgb)
         chunks.extend(chunk for chunk in floor_state.pending_chunks if len(chunk) > 0)
         floor_state.pending_chunks = []
-        floor_state.pending_chunk_frame_indices = []
         if not chunks:
             return floor_state.merged_points_xyzrgb
         merged = np.concatenate(chunks, axis=0)
@@ -523,25 +477,11 @@ class FloorAwareRoomSegmenter:
 
     def _build_floor_debug_summary(self, vector_map: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         vector_map = dict(vector_map or {})
-        floors = canonicalize_floors(list(vector_map.get("floors") or self.floor_manager.export_floors()))
-        floor_lookup = build_floor_lookup(floors)
+        floors = list(vector_map.get("floors") or self.floor_manager.export_floors())
         rooms = list(vector_map.get("rooms") or [])
         objects = list(vector_map.get("objects") or [])
         anchors = list(vector_map.get("anchors") or [])
-        history = [
-            attach_floor_metadata(dict(item), floor_lookup)
-            for item in list(vector_map.get("frame_floor_assignments") or self.floor_manager.export_assignment_history())
-        ]
-        raw_segmentation = dict(vector_map.get("room_segmentation_diagnostics") or {})
-        segmentation_diagnostics = (
-            build_fallback_summary(raw_segmentation.get("runs", []), floors)
-            if raw_segmentation.get("runs") is not None
-            else self._build_segmentation_diagnostics(floors)
-        )
-        vertical_transition_summary = build_vertical_transition_summary(
-            vector_map.get("vertical_transitions", []),
-            floor_lookup,
-        )
+        history = list(vector_map.get("frame_floor_assignments") or self.floor_manager.export_assignment_history())
         room_counts = {}
         object_counts = {}
         anchor_counts = {}
@@ -552,11 +492,6 @@ class FloorAwareRoomSegmenter:
         for anchor in anchors:
             anchor_counts[anchor.get("floor_id")] = anchor_counts.get(anchor.get("floor_id"), 0) + 1
 
-        floor_diag_lookup = {
-            item.get("floor_id"): dict(item)
-            for item in segmentation_diagnostics.get("per_floor", [])
-            if item.get("floor_id") is not None
-        }
         per_floor = []
         for floor in floors:
             floor_id = floor.get("floor_id")
@@ -564,7 +499,6 @@ class FloorAwareRoomSegmenter:
             stable_frames = sum(1 for item in history if item.get("floor_id") == floor_id and item.get("status") == "stable")
             transition_frames = sum(1 for item in history if item.get("floor_id") == floor_id and item.get("status") in {"transition", "uncertain"})
             support_stats = dict(floor.get("support_statistics") or {})
-            floor_diag = dict(floor_diag_lookup.get(floor_id) or {})
             summary = {
                 "floor_id": floor_id,
                 "floor_index": floor.get("floor_index"),
@@ -578,10 +512,6 @@ class FloorAwareRoomSegmenter:
                 "transition_frame_count": int(transition_frames),
                 "stable_keyframe_chunk_count": int(getattr(floor_state, "stable_keyframe_chunk_count", support_stats.get("keyframe_count", 0) or 0)),
                 "segmentation_trigger_count": int(getattr(floor_state, "segmentation_trigger_count", 0)),
-                "segmentation_run_count": int(floor_diag.get("run_count", 0)),
-                "fallback_run_count": int(floor_diag.get("fallback_run_count", 0)),
-                "fallback_counts": dict(floor_diag.get("fallback_counts", {})),
-                "slice_mode_counts": dict(floor_diag.get("slice_mode_counts", {})),
                 "exported_room_count": int(room_counts.get(floor_id, 0)),
                 "exported_object_count": int(object_counts.get(floor_id, 0)),
                 "exported_anchor_count": int(anchor_counts.get(floor_id, 0)),
@@ -601,8 +531,6 @@ class FloorAwareRoomSegmenter:
         return {
             "per_floor": per_floor,
             "finalization_report": self.last_finalization_report,
-            "room_segmentation_diagnostics": segmentation_diagnostics,
-            "vertical_transition_summary": vertical_transition_summary,
         }
 
     def _build_floor_diagnostics_markdown(self, report: Dict[str, Any]) -> str:
@@ -620,45 +548,8 @@ class FloorAwareRoomSegmenter:
                 "- "
                 f"{_display_floor_ref(floor.get('floor_id'), floor.get('display_floor_id'))} idx={floor.get('floor_index')} z=[{floor.get('z_min')}, {floor.get('z_max')}] center={floor.get('z_center')} "
                 f"support={floor.get('support_count')} stable={floor.get('stable_frame_count')} transition={floor.get('transition_frame_count')} "
-                f"stable_chunks={floor.get('stable_keyframe_chunk_count')} seg_triggers={floor.get('segmentation_trigger_count')} seg_runs={floor.get('segmentation_run_count', 0)} fallback_runs={floor.get('fallback_run_count', 0)} "
+                f"stable_chunks={floor.get('stable_keyframe_chunk_count')} seg_triggers={floor.get('segmentation_trigger_count')} "
                 f"exported rooms/objects/anchors={floor.get('exported_room_count')}/{floor.get('exported_object_count')}/{floor.get('exported_anchor_count')}"
-            )
-            if floor.get("fallback_counts"):
-                lines.append(f"  fallback_counts={floor.get('fallback_counts')}")
-        lines.append("")
-        lines.append("## Vertical transitions")
-        lines.append("")
-        vertical_summary = dict(report.get("vertical_transition_summary") or {})
-        lines.append(
-            "- "
-            f"count={vertical_summary.get('count', 0)} edge_eligible={vertical_summary.get('edge_eligible_count', 0)} "
-            f"partial_room_association={vertical_summary.get('partial_room_association_count', 0)} "
-            f"connector_labels={vertical_summary.get('connector_label_counts', {})}"
-        )
-        for item in vertical_summary.get("transitions", []):
-            lines.append(
-                "- "
-                f"{item.get('transition_id')}: {item.get('from_display_floor_id')} -> {item.get('to_display_floor_id')} "
-                f"rooms={item.get('from_room_label')} -> {item.get('to_room_label')} "
-                f"frames={item.get('transition_frame_start')}-{item.get('transition_frame_end')} "
-                f"label={item.get('connector_label')} confidence={item.get('confidence')} status={item.get('status')}"
-            )
-        lines.append("")
-        lines.append("## Segmentation fallback diagnostics")
-        lines.append("")
-        segmentation_diagnostics = dict(report.get("room_segmentation_diagnostics") or {})
-        lines.append(
-            "- "
-            f"run_count={segmentation_diagnostics.get('run_count', 0)} successful={segmentation_diagnostics.get('successful_run_count', 0)} "
-            f"fallback_runs={segmentation_diagnostics.get('fallback_run_count', 0)} slice_modes={segmentation_diagnostics.get('slice_mode_counts', {})} "
-            f"fallback_counts={segmentation_diagnostics.get('fallback_counts', {})}"
-        )
-        for item in segmentation_diagnostics.get("runs", []):
-            lines.append(
-                "- "
-                f"{_display_floor_ref(item.get('floor_id'), item.get('display_floor_id'))} frame={item.get('frame_idx')} trigger={item.get('trigger_reason')} "
-                f"slice={item.get('slice_mode')} fallbacks={item.get('fallback_modes') or ['none']} success={item.get('success')} "
-                f"pending_frames={item.get('pending_chunk_frame_start')}->{item.get('pending_chunk_frame_end')} reason={item.get('fallback_reason_summary')}"
             )
         lines.append("")
         lines.append("## Floor hypothesis events")
@@ -825,315 +716,6 @@ class FloorAwareRoomSegmenter:
         vector_data["rooms"] = room_records
         return room_records, room_lookup
 
-    def _record_segmentation_run(
-        self,
-        floor_id: str,
-        floor_state: FloorState,
-        trigger_reason: str,
-        active_status: Optional[str],
-        count: int,
-        pending_chunk_count: int,
-        pending_chunk_frame_indices: Sequence[int],
-        merged_point_count: int,
-        success: bool,
-    ) -> Dict[str, Any]:
-        segmenter = floor_state.segmenter
-        height_slice = dict(segmenter.last_height_slice_debug or {})
-        failure_debug = dict(segmenter.last_failure_debug or {})
-        tracking_report = dict(segmenter.last_tracking_report or {})
-
-        slice_mode = str(height_slice.get("mode", "unknown"))
-        slice_mode_label = "default_slice" if slice_mode == "default" else slice_mode
-        adaptive_applied = bool(height_slice.get("adaptive_applied", False))
-        fallback_modes: List[str] = []
-        if slice_mode in {"adaptive_low_span", "adaptive_mid_band"}:
-            fallback_modes.append(slice_mode)
-        if trigger_reason == "end_of_sequence_flush":
-            fallback_modes.append("end_of_sequence_forced_segmentation")
-
-        failure_reason = failure_debug.get("reason")
-        if success:
-            result_status = "rooms_returned"
-        elif failure_reason:
-            result_status = f"failed:{failure_reason}"
-        else:
-            result_status = "segmentation_returned_none"
-
-        reason_parts = [f"slice={slice_mode_label}"]
-        if adaptive_applied:
-            reason_parts.append("adaptive_height_slice_applied")
-        if trigger_reason == "end_of_sequence_flush":
-            reason_parts.append("forced_end_of_sequence_flush")
-        if failure_reason:
-            reason_parts.append(f"failure={failure_reason}")
-        fallback_reason_summary = "; ".join(reason_parts)
-
-        run_record = {
-            "run_id": f"{floor_id}_seg_{len(floor_state.segmentation_reports) + 1}",
-            "floor_id": floor_id,
-            "display_floor_id": None,
-            "display_order": None,
-            "frame_idx": int(count),
-            "active_status": active_status,
-            "trigger_reason": str(trigger_reason),
-            "success": bool(success),
-            "result_status": result_status,
-            "pending_chunk_count": int(pending_chunk_count),
-            "pending_chunk_frame_start": None if not pending_chunk_frame_indices else int(min(pending_chunk_frame_indices)),
-            "pending_chunk_frame_end": None if not pending_chunk_frame_indices else int(max(pending_chunk_frame_indices)),
-            "pending_chunk_frame_count": int(len(pending_chunk_frame_indices)),
-            "pending_chunk_frame_indices": [int(item) for item in pending_chunk_frame_indices],
-            "merged_point_count": int(merged_point_count),
-            "slice_mode": slice_mode_label,
-            "adaptive_applied": bool(adaptive_applied),
-            "fallback_used": bool(fallback_modes),
-            "fallback_modes": list(fallback_modes),
-            "primary_fallback_mode": None if not fallback_modes else str(fallback_modes[0]),
-            "fallback_reason_summary": fallback_reason_summary,
-            "failure_reason": failure_reason,
-            "height_slice": {
-                key: height_slice.get(key)
-                for key in (
-                    "floor_z",
-                    "ceiling_z",
-                    "span_z",
-                    "slice_z_min",
-                    "slice_z_max",
-                    "full_z_max",
-                    "mode",
-                    "adaptive_applied",
-                )
-                if key in height_slice
-            },
-            "failure_debug": failure_debug,
-            "tracking_summary": {
-                "matched_count": int(len(tracking_report.get("matched", []))),
-                "new_room_count": int(len(tracking_report.get("new_rooms", []))),
-                "retained_missing_count": int(len(tracking_report.get("retained_missing", []))),
-                "dropped_missing_count": int(len(tracking_report.get("dropped_missing", []))),
-            },
-            "room_count_after_segmentation": int(self._segmenter_room_count(segmenter)),
-        }
-        floor_state.segmentation_reports.append(run_record)
-        print(
-            "[FloorAwareRoomSegmenter] segmentation diagnostics -> "
-            f"floor={floor_id}, trigger={trigger_reason}, slice={slice_mode_label}, "
-            f"fallbacks={','.join(fallback_modes) if fallback_modes else 'none'}, "
-            f"success={success}, frame={int(count)}"
-        )
-        return run_record
-
-    def _segmenter_room_count(self, segmenter: DynamicRoomSegmenter) -> int:
-        markers = getattr(segmenter, "last_room_markers", None)
-        if markers is None:
-            return 0
-        unique_labels = np.unique(markers)
-        if len(unique_labels) == 0:
-            return 0
-        wall_label = np.max(unique_labels)
-        return int(sum(1 for label in unique_labels if label > 0 and label != wall_label))
-
-    def _build_segmentation_diagnostics(
-        self,
-        floors: Sequence[Dict[str, Any]],
-    ) -> Dict[str, Any]:
-        floor_lookup = build_floor_lookup(floors)
-        runs: List[Dict[str, Any]] = []
-        for floor_id in self.floor_manager._ordered_floor_ids():
-            floor_state = self.floor_states.get(str(floor_id))
-            reports = list(getattr(floor_state, "segmentation_reports", []))
-            for report in reports:
-                runs.append(attach_floor_metadata(dict(report), floor_lookup))
-        return build_fallback_summary(runs, floors)
-
-    def _build_vertical_transition_summary(
-        self,
-        transitions: Sequence[Dict[str, Any]],
-    ) -> Dict[str, Any]:
-        return build_vertical_transition_summary(
-            transitions,
-            build_floor_lookup(self.floor_manager.export_floors()),
-        )
-
-    def _stable_floor_segments(self) -> List[Dict[str, Any]]:
-        stable_segments: List[Dict[str, Any]] = []
-        for item in self.frame_history:
-            if item.get("status") != "stable" or item.get("floor_id") is None:
-                continue
-            if not stable_segments or stable_segments[-1]["floor_id"] != item.get("floor_id"):
-                stable_segments.append(
-                    {
-                        "floor_id": item.get("floor_id"),
-                        "display_floor_id": item.get("display_floor_id", item.get("floor_id")),
-                        "frame_start": int(item.get("frame_idx", 0)),
-                        "frame_end": int(item.get("frame_idx", 0)),
-                        "items": [item],
-                    }
-                )
-                continue
-            stable_segments[-1]["frame_end"] = int(item.get("frame_idx", 0))
-            stable_segments[-1]["items"].append(item)
-        return stable_segments
-
-    def _room_support_summary(
-        self,
-        items: Sequence[Dict[str, Any]],
-        room_records: Sequence[Dict[str, Any]],
-        floor_id: str,
-    ) -> Dict[str, Any]:
-        floor_rooms = [room for room in room_records if room.get("floor_id") == floor_id]
-        if not items or not floor_rooms:
-            return {
-                "room_id": None,
-                "room_id_label": None,
-                "display_floor_id": None,
-                "status": "unknown",
-                "support_count": 0,
-                "candidate_frame_count": int(len(items)),
-                "position_xy": None,
-                "sample_frames": [],
-                "match_type_counts": {},
-                "mean_distance_m": None,
-            }
-
-        room_votes: Dict[int, int] = {}
-        room_direct_votes: Dict[int, int] = {}
-        room_distances: Dict[int, List[float]] = {}
-        room_frames: Dict[int, List[int]] = {}
-        room_positions: Dict[int, List[List[float]]] = {}
-        match_type_counts: Counter[str] = Counter()
-
-        for item in items:
-            position_xy = item.get("position_xy")
-            if position_xy is None or len(position_xy) < 2:
-                continue
-            candidate = _room_candidate_for_pose(position_xy, floor_rooms, floor_id=floor_id, max_distance=3.2)
-            if candidate is None:
-                continue
-            room = candidate["room"]
-            room_id = int(room["id"])
-            room_votes[room_id] = room_votes.get(room_id, 0) + 1
-            room_frames.setdefault(room_id, []).append(int(item.get("frame_idx", 0)))
-            room_positions.setdefault(room_id, []).append([round(float(position_xy[0]), 3), round(float(position_xy[1]), 3)])
-            room_distances.setdefault(room_id, []).append(float(candidate["distance_m"]))
-            match_type = str(candidate["match_type"])
-            match_type_counts[match_type] += 1
-            if match_type == "polygon_contains":
-                room_direct_votes[room_id] = room_direct_votes.get(room_id, 0) + 1
-
-        if not room_votes:
-            return {
-                "room_id": None,
-                "room_id_label": None,
-                "display_floor_id": None,
-                "status": "unknown",
-                "support_count": 0,
-                "candidate_frame_count": int(len(items)),
-                "position_xy": None,
-                "sample_frames": [],
-                "match_type_counts": {},
-                "mean_distance_m": None,
-            }
-
-        best_room_id = sorted(
-            room_votes,
-            key=lambda room_id: (
-                -int(room_votes[room_id]),
-                -int(room_direct_votes.get(room_id, 0)),
-                float(np.mean(room_distances.get(room_id, [999.0]))),
-                room_id,
-            ),
-        )[0]
-        best_room = next(room for room in floor_rooms if int(room["id"]) == int(best_room_id))
-        support_count = int(room_votes[best_room_id])
-        direct_support_count = int(room_direct_votes.get(best_room_id, 0))
-        candidate_frame_count = int(len(items))
-        if direct_support_count > 0 or support_count >= 2:
-            status = "supported"
-        elif support_count > 0:
-            status = "weak"
-        else:
-            status = "unknown"
-        sample_frames = room_frames.get(best_room_id, [])
-        sample_positions = room_positions.get(best_room_id, [])
-        representative_position = sample_positions[-1] if sample_positions else None
-        return {
-            "room_id": int(best_room_id),
-            "room_id_label": f"R{int(best_room_id)}",
-            "display_floor_id": best_room.get("display_floor_id", floor_id),
-            "status": status,
-            "support_count": support_count,
-            "direct_support_count": direct_support_count,
-            "candidate_frame_count": candidate_frame_count,
-            "support_ratio": round(float(support_count / max(1, candidate_frame_count)), 3),
-            "position_xy": representative_position,
-            "sample_frames": [int(item) for item in sample_frames[:6]],
-            "match_type_counts": dict(match_type_counts),
-            "mean_distance_m": round(float(np.mean(room_distances.get(best_room_id, [0.0]))), 3),
-        }
-
-    def _classify_vertical_transition_interval(
-        self,
-        transition_items: Sequence[Dict[str, Any]],
-        z_span: Optional[float],
-    ) -> str:
-        if not transition_items or z_span is None:
-            return "unknown_vertical_connector"
-        z_values = np.asarray(
-            [float(item.get("pose_z")) for item in transition_items if item.get("pose_z") is not None],
-            dtype=np.float32,
-        )
-        if len(z_values) < 2:
-            return "unknown_vertical_connector"
-
-        rounded_bins = np.round(z_values / 0.05) * 0.05
-        dominant_bin_count = int(max(Counter(float(item) for item in rounded_bins).values(), default=0))
-        diffs = np.diff(z_values)
-        significant_diffs = diffs[np.abs(diffs) > 0.015]
-        if len(significant_diffs) == 0:
-            return "landing_like"
-
-        overall_sign = np.sign(float(z_values[-1] - z_values[0]))
-        if overall_sign == 0.0:
-            overall_sign = float(np.sign(np.sum(significant_diffs)))
-        if overall_sign == 0.0:
-            overall_sign = 1.0
-        monotonic_ratio = float(np.mean(np.sign(significant_diffs) == np.sign(overall_sign)))
-        diff_std = float(np.std(significant_diffs)) if len(significant_diffs) > 1 else 0.0
-
-        if dominant_bin_count >= max(5, int(round(0.35 * len(z_values)))) and float(z_span) >= 0.5:
-            return "landing_like"
-        if monotonic_ratio >= 0.85 and float(z_span) >= 1.0 and diff_std <= 0.03:
-            return "ramp_like"
-        if monotonic_ratio >= 0.7 and float(z_span) >= 1.0:
-            return "stair_like"
-        return "unknown_vertical_connector"
-
-    def _vertical_transition_confidence(
-        self,
-        source_support: Dict[str, Any],
-        target_support: Dict[str, Any],
-        transition_items: Sequence[Dict[str, Any]],
-        z_span: Optional[float],
-        connector_label: str,
-        room_association_complete: bool,
-    ) -> float:
-        confidence = 0.28
-        for support in (source_support, target_support):
-            status = str(support.get("status", "unknown"))
-            if status == "supported":
-                confidence += 0.18
-            elif status == "weak":
-                confidence += 0.08
-        confidence += min(0.18, 0.015 * float(len(transition_items)))
-        if z_span is not None:
-            confidence += min(0.16, 0.07 * max(0.0, float(z_span) - 0.4))
-        if connector_label in {"stair_like", "landing_like", "ramp_like"}:
-            confidence += 0.08
-        if not room_association_complete:
-            confidence = min(confidence, 0.58)
-        return max(0.25, min(0.95, confidence))
-
     def _attach_display_floor_metadata(
         self,
         records: Sequence[Dict[str, Any]],
@@ -1283,107 +865,63 @@ class FloorAwareRoomSegmenter:
 
     def _build_vertical_transitions(self, room_records: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
         room_list = [dict(item) for item in room_records]
-        stable_segments = self._stable_floor_segments()
+        stable_segments: List[Dict[str, Any]] = []
+        for item in self.frame_history:
+            if item.get("status") != "stable" or item.get("floor_id") is None:
+                continue
+            if not stable_segments or stable_segments[-1]["floor_id"] != item.get("floor_id"):
+                stable_segments.append(
+                    {
+                        "floor_id": item.get("floor_id"),
+                        "frame_start": int(item.get("frame_idx", 0)),
+                        "frame_end": int(item.get("frame_idx", 0)),
+                        "items": [item],
+                    }
+                )
+                continue
+            stable_segments[-1]["frame_end"] = int(item.get("frame_idx", 0))
+            stable_segments[-1]["items"].append(item)
+
         vertical_transitions: List[Dict[str, Any]] = []
         for idx in range(len(stable_segments) - 1):
             left = stable_segments[idx]
             right = stable_segments[idx + 1]
             if left["floor_id"] == right["floor_id"]:
                 continue
-
-            transition_items = [
-                item
-                for item in self.frame_history
-                if int(left["frame_end"]) < int(item.get("frame_idx", 0)) < int(right["frame_start"])
-            ]
-            source_support = self._room_support_summary(left["items"][-24:], room_list, floor_id=str(left["floor_id"]))
-            target_support = self._room_support_summary(right["items"][:24], room_list, floor_id=str(right["floor_id"]))
-
-            interval_items = list(left["items"][-2:]) + transition_items + list(right["items"][:2])
-            z_values = [
-                float(item.get("pose_z"))
-                for item in interval_items
-                if item.get("pose_z") is not None
-            ]
-            z_min = min(z_values) if z_values else None
-            z_max = max(z_values) if z_values else None
-            z_span = None if z_min is None or z_max is None else float(z_max - z_min)
-
-            connector_label = self._classify_vertical_transition_interval(transition_items, z_span)
-            room_association_complete = source_support.get("room_id") is not None and target_support.get("room_id") is not None
-            confidence = self._vertical_transition_confidence(
-                source_support=source_support,
-                target_support=target_support,
-                transition_items=transition_items,
-                z_span=z_span,
-                connector_label=connector_label,
-                room_association_complete=room_association_complete,
-            )
-            status = (
-                "supported"
-                if room_association_complete
-                else (
-                    "partial_room_association"
-                    if source_support.get("room_id") is not None or target_support.get("room_id") is not None
-                    else "floor_change_observed"
-                )
-            )
-            transition_frame_start = int(transition_items[0]["frame_idx"]) if transition_items else int(left["frame_end"])
-            transition_frame_end = int(transition_items[-1]["frame_idx"]) if transition_items else int(right["frame_start"])
-            supporting_frame_count = int(len(interval_items))
-            transition_frame_count = int(len(transition_items))
-            source_room_label = None if source_support.get("room_id") is None else f"R{int(source_support['room_id'])}"
-            target_room_label = None if target_support.get("room_id") is None else f"R{int(target_support['room_id'])}"
-            evidence_summary = (
-                f"{connector_label} over {transition_frame_count} transition frame(s); "
-                f"rooms={source_room_label or 'unknown'} -> {target_room_label or 'unknown'}; "
-                f"z_span={None if z_span is None else round(float(z_span), 3)}m"
+            left_room = _best_room_for_pose(left["items"][-1]["position_xy"], room_list, floor_id=left["floor_id"])
+            right_room = _best_room_for_pose(right["items"][0]["position_xy"], room_list, floor_id=right["floor_id"])
+            if left_room is None or right_room is None:
+                continue
+            confidence = min(
+                float(left["items"][-1].get("confidence", 0.0)),
+                float(right["items"][0].get("confidence", 0.0)),
             )
             vertical_transitions.append(
                 {
                     "transition_id": f"vt_{len(vertical_transitions) + 1}",
                     "type": "vertical_transition",
-                    "connector_label": connector_label,
-                    "from_room_id": None if source_support.get("room_id") is None else int(source_support["room_id"]),
-                    "to_room_id": None if target_support.get("room_id") is None else int(target_support["room_id"]),
+                    "from_room_id": int(left_room["id"]),
+                    "to_room_id": int(right_room["id"]),
                     "from_floor_id": str(left["floor_id"]),
                     "to_floor_id": str(right["floor_id"]),
-                    "from_display_floor_id": source_support.get("display_floor_id") or left.get("display_floor_id", left.get("floor_id")),
-                    "to_display_floor_id": target_support.get("display_floor_id") or right.get("display_floor_id", right.get("floor_id")),
-                    "frame_start": transition_frame_start,
-                    "frame_end": transition_frame_end,
-                    "transition_frame_start": transition_frame_start,
-                    "transition_frame_end": transition_frame_end,
-                    "entry_stable_frame": int(left["frame_end"]),
-                    "exit_stable_frame": int(right["frame_start"]),
-                    "supporting_frame_count": supporting_frame_count,
-                    "transition_frame_count": transition_frame_count,
-                    "z_min": None if z_min is None else round(float(z_min), 3),
-                    "z_max": None if z_max is None else round(float(z_max), 3),
-                    "z_span_m": None if z_span is None else round(float(z_span), 3),
-                    "from_room_support": source_support,
-                    "to_room_support": target_support,
-                    "from_position_xy": source_support.get("position_xy"),
-                    "to_position_xy": target_support.get("position_xy"),
-                    "transition_status_counts": dict(Counter(str(item.get("status")) for item in transition_items)),
-                    "transition_floor_votes": dict(Counter(str(item.get("floor_id")) for item in transition_items if item.get("floor_id") is not None)),
-                    "room_association_complete": bool(room_association_complete),
-                    "edge_eligible": bool(room_association_complete),
-                    "confidence": round(float(confidence), 3),
-                    "status": status,
-                    "evidence_summary": evidence_summary,
-                    "notes": "Cross-floor traversal inferred from transition interval plus nearby stable-room association.",
+                    "from_display_floor_id": left_room.get("display_floor_id", left.get("floor_id")),
+                    "to_display_floor_id": right_room.get("display_floor_id", right.get("floor_id")),
+                    "frame_start": int(left["frame_end"]),
+                    "frame_end": int(right["frame_start"]),
+                    "confidence": round(float(max(0.35, confidence)), 3),
+                    "status": "supported",
+                    "notes": "Cross-floor traversal inferred from stable floor-assignment change.",
                 }
             )
         return vertical_transitions
 
 
 def _display_floor_ref(floor_id: Optional[str], display_floor_id: Optional[str]) -> str:
-    return display_floor_label(
-        floor_id,
-        display_floor_id,
-        include_internal=True,
-    )
+    if floor_id is None and display_floor_id is None:
+        return "floor_unknown"
+    if display_floor_id and floor_id and display_floor_id != floor_id:
+        return f"{display_floor_id} (internal {floor_id})"
+    return str(display_floor_id or floor_id)
 
 
 def _polygon_contains(point_xy: Sequence[float], polygon: Sequence[Sequence[float]]) -> bool:
@@ -1427,27 +965,13 @@ def _best_room_for_pose(
     rooms: Sequence[Dict[str, Any]],
     floor_id: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
-    candidate = _room_candidate_for_pose(position_xy, rooms, floor_id=floor_id, max_distance=2.0)
-    return None if candidate is None else dict(candidate["room"])
-
-
-def _room_candidate_for_pose(
-    position_xy: Sequence[float],
-    rooms: Sequence[Dict[str, Any]],
-    floor_id: Optional[str] = None,
-    max_distance: float = 2.0,
-) -> Optional[Dict[str, Any]]:
     point_xy = (float(position_xy[0]), float(position_xy[1]))
     candidates = [room for room in rooms if floor_id is None or room.get("floor_id") == floor_id]
     if not candidates:
         return None
     for room in candidates:
         if _polygon_contains(point_xy, room.get("polygon", [])):
-            return {
-                "room": dict(room),
-                "match_type": "polygon_contains",
-                "distance_m": 0.0,
-            }
+            return room
     best_room = None
     best_distance = float("inf")
     for room in candidates:
@@ -1459,10 +983,6 @@ def _room_candidate_for_pose(
         if distance < best_distance:
             best_distance = distance
             best_room = room
-    if best_room is not None and best_distance <= float(max_distance):
-        return {
-            "room": dict(best_room),
-            "match_type": "nearest_centroid",
-            "distance_m": round(float(best_distance), 3),
-        }
+    if best_distance <= 2.0:
+        return best_room
     return None

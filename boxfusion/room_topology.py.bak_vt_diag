@@ -8,12 +8,6 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 import networkx as nx
 import numpy as np
 
-from boxfusion.floor_artifacts import (
-    attach_floor_metadata,
-    build_floor_lookup,
-    canonicalize_floors,
-    canonicalize_vertical_transition_record,
-)
 from boxfusion.scene_graph_builder import normalize_open_vocab_label
 
 
@@ -260,8 +254,6 @@ class RoomTopology:
             metadata=dict(payload.get("metadata") or {}),
         )
         topology.version = str(payload.get("version", topology.version))
-        canonical_floors = canonicalize_floors(payload.get("floors", []))
-        floor_lookup = build_floor_lookup(canonical_floors)
         topology.evidences = {
             str(item["evidence_id"]): dict(item)
             for item in payload.get("evidences", [])
@@ -270,7 +262,7 @@ class RoomTopology:
 
         topology.floor_records = {
             str(item.get("floor_id")): dict(item)
-            for item in canonical_floors
+            for item in payload.get("floors", [])
             if item.get("floor_id")
         }
 
@@ -282,24 +274,21 @@ class RoomTopology:
             center = room.get("center")
             if center is None:
                 center = _polygon_centroid(polygon) if polygon else (0.0, 0.0)
-            attrs = attach_floor_metadata(
-                {
-                    "id": room_id,
-                    "node_type": "room",
-                    "room_uuid": room.get("room_uuid", _room_uuid(room_id)),
-                    "room_type": room.get("room_type", "unknown"),
-                    "floor_id": _clean_optional_text(room.get("floor_id")),
-                    "floor_index": room.get("floor_index"),
-                    "display_floor_id": _clean_optional_text(room.get("display_floor_id")) or _clean_optional_text(room.get("floor_id")),
-                    "display_order": room.get("display_order"),
-                    "floor_assignment_confidence": _round_float(room.get("floor_assignment_confidence")),
-                    "status": room.get("status", "confirmed"),
-                    "polygon": polygon,
-                    "center": [float(center[0]), float(center[1])],
-                    "area_m2": _round_float(room.get("area_m2", _polygon_area(polygon))),
-                },
-                floor_lookup,
-            )
+            attrs = {
+                "id": room_id,
+                "node_type": "room",
+                "room_uuid": room.get("room_uuid", _room_uuid(room_id)),
+                "room_type": room.get("room_type", "unknown"),
+                "floor_id": _clean_optional_text(room.get("floor_id")),
+                "floor_index": room.get("floor_index"),
+                "display_floor_id": _clean_optional_text(room.get("display_floor_id")) or _clean_optional_text(room.get("floor_id")),
+                "display_order": room.get("display_order"),
+                "floor_assignment_confidence": _round_float(room.get("floor_assignment_confidence")),
+                "status": room.get("status", "confirmed"),
+                "polygon": polygon,
+                "center": [float(center[0]), float(center[1])],
+                "area_m2": _round_float(room.get("area_m2", _polygon_area(polygon))),
+            }
             topology.graph.add_node(room_id, **attrs)
 
         for edge in payload.get("edges", []):
@@ -441,16 +430,6 @@ class RoomTopology:
                 },
             )
             record["room_id"] = room_id
-        for record in topology.object_records.values():
-            room_id = _canonical_room_id(record.get("room_id"))
-            if record.get("floor_id") is None and room_id in topology.graph.nodes:
-                record["floor_id"] = topology.graph.nodes[room_id].get("floor_id")
-            record.update(attach_floor_metadata(dict(record), floor_lookup))
-        for record in topology.anchor_records.values():
-            room_id = _canonical_room_id(record.get("room_id"))
-            if record.get("floor_id") is None and room_id in topology.graph.nodes:
-                record["floor_id"] = topology.graph.nodes[room_id].get("floor_id")
-            record.update(attach_floor_metadata(dict(record), floor_lookup))
         return topology
 
     @classmethod
@@ -1044,29 +1023,25 @@ class RoomTopology:
 
     def to_dict(self, include_query_examples: bool = True) -> Dict[str, Any]:
         rooms = []
-        floors = canonicalize_floors([dict(self.floor_records[floor_id]) for floor_id in self.floor_records])
-        floor_lookup = build_floor_lookup(floors)
+        floors = [dict(self.floor_records[floor_id]) for floor_id in sorted(self.floor_records)]
         for room_id, attrs in sorted(self.graph.nodes(data=True), key=lambda item: str(item[0])):
             if attrs.get("node_type") != "room":
                 continue
             rooms.append(
-                attach_floor_metadata(
-                    {
-                        "id": room_id,
-                        "room_uuid": attrs.get("room_uuid"),
-                        "room_type": attrs.get("room_type", "unknown"),
-                        "floor_id": attrs.get("floor_id"),
-                        "floor_index": attrs.get("floor_index"),
-                        "display_floor_id": attrs.get("display_floor_id"),
-                        "display_order": attrs.get("display_order"),
-                        "floor_assignment_confidence": _round_float(attrs.get("floor_assignment_confidence")),
-                        "status": attrs.get("status", "confirmed"),
-                        "center": list(attrs.get("center", [])),
-                        "polygon": [list(map(float, pt)) for pt in attrs.get("polygon", [])],
-                        "area_m2": _round_float(attrs.get("area_m2", 0.0)),
-                    },
-                    floor_lookup,
-                )
+                {
+                    "id": room_id,
+                    "room_uuid": attrs.get("room_uuid"),
+                    "room_type": attrs.get("room_type", "unknown"),
+                    "floor_id": attrs.get("floor_id"),
+                    "floor_index": attrs.get("floor_index"),
+                    "display_floor_id": attrs.get("display_floor_id"),
+                    "display_order": attrs.get("display_order"),
+                    "floor_assignment_confidence": _round_float(attrs.get("floor_assignment_confidence")),
+                    "status": attrs.get("status", "confirmed"),
+                    "center": list(attrs.get("center", [])),
+                    "polygon": [list(map(float, pt)) for pt in attrs.get("polygon", [])],
+                    "area_m2": _round_float(attrs.get("area_m2", 0.0)),
+                }
             )
         edges: List[Dict[str, Any]] = []
         seen: Set[Tuple[str, str, str]] = set()
@@ -1104,11 +1079,11 @@ class RoomTopology:
             },
             "entities": {
                 "objects": [
-                    attach_floor_metadata(dict(self.object_records[object_id]), floor_lookup)
+                    dict(self.object_records[object_id])
                     for object_id in sorted(self.object_records)
                 ],
                 "anchors": [
-                    attach_floor_metadata(dict(self.anchor_records[anchor_id]), floor_lookup)
+                    dict(self.anchor_records[anchor_id])
                     for anchor_id in sorted(self.anchor_records)
                 ],
             },
@@ -1136,7 +1111,6 @@ class RoomTopology:
             "sample_anchor_ids": list(inspection["sample_anchor_ids"]),
             "sample_object_ids": list(inspection["sample_object_ids"]),
             "sample_object_labels": list(inspection["sample_object_labels"]),
-            "display_floor_order": canonicalize_floors([dict(item) for item in self.floor_records.values()]),
             "capabilities": dict(inspection["capabilities"]),
         }
         if not room_ids:
@@ -1239,7 +1213,6 @@ class RoomTopologyBuilder:
         topology.metadata.setdefault("builder_version", TOPOLOGY_VERSION)
         topology.metadata.setdefault("max_route_confidence_penalty", self.config["max_route_confidence_penalty"])
         world = dict(vector_map or {})
-        world["floors"] = canonicalize_floors(world.get("floors", []))
         room_lookup = self._sync_rooms(topology, world)
         self._sync_containment_indices(topology, world, room_lookup)
         edge_support = self._collect_edge_support(world, transition_history or [], room_lookup)
@@ -1304,11 +1277,9 @@ class RoomTopologyBuilder:
 
     def _sync_rooms(self, topology: RoomTopology, world: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         room_lookup: Dict[str, Dict[str, Any]] = {}
-        canonical_floors = canonicalize_floors(world.get("floors", []))
-        floor_lookup = build_floor_lookup(canonical_floors)
         topology.floor_records = {
             str(item.get("floor_id")): dict(item)
-            for item in canonical_floors
+            for item in world.get("floors", [])
             if item.get("floor_id")
         }
         for room in world.get("rooms", []):
@@ -1317,24 +1288,21 @@ class RoomTopologyBuilder:
                 continue
             polygon = [tuple(map(float, pt)) for pt in room.get("polygon", [])]
             center = _polygon_centroid(polygon) if polygon else (0.0, 0.0)
-            attrs = attach_floor_metadata(
-                {
-                    "id": room_id,
-                    "node_type": "room",
-                    "room_uuid": _room_uuid(room_id),
-                    "room_type": room.get("room_type", "unknown"),
-                    "floor_id": _clean_optional_text(room.get("floor_id")),
-                    "floor_index": room.get("floor_index"),
-                    "display_floor_id": _clean_optional_text(room.get("display_floor_id")) or _clean_optional_text(room.get("floor_id")),
-                    "display_order": room.get("display_order"),
-                    "floor_assignment_confidence": _round_float(room.get("floor_assignment_confidence")),
-                    "status": room.get("status", "confirmed"),
-                    "polygon": polygon,
-                    "center": [float(center[0]), float(center[1])],
-                    "area_m2": _round_float(_polygon_area(polygon)),
-                },
-                floor_lookup,
-            )
+            attrs = {
+                "id": room_id,
+                "node_type": "room",
+                "room_uuid": _room_uuid(room_id),
+                "room_type": room.get("room_type", "unknown"),
+                "floor_id": _clean_optional_text(room.get("floor_id")),
+                "floor_index": room.get("floor_index"),
+                "display_floor_id": _clean_optional_text(room.get("display_floor_id")) or _clean_optional_text(room.get("floor_id")),
+                "display_order": room.get("display_order"),
+                "floor_assignment_confidence": _round_float(room.get("floor_assignment_confidence")),
+                "status": room.get("status", "confirmed"),
+                "polygon": polygon,
+                "center": [float(center[0]), float(center[1])],
+                "area_m2": _round_float(_polygon_area(polygon)),
+            }
             topology.graph.add_node(room_id, **attrs)
             room_lookup[room_id] = attrs
         return room_lookup
@@ -1358,22 +1326,19 @@ class RoomTopologyBuilder:
             if object_id is None:
                 continue
             label = _clean_optional_text(obj.get("label")) or _clean_optional_text(obj.get("category"))
-            topology.object_records[object_id] = attach_floor_metadata(
-                {
-                    "id": object_id,
-                    "label": label,
-                    "normalized_label": normalize_open_vocab_label(label),
-                    "category": obj.get("category"),
-                    "room_id": room_id,
-                    "score": _round_float(obj.get("score")),
-                    "detection_confidence": _round_float(obj.get("detection_confidence")),
-                    "semantic_confidence": _round_float(obj.get("semantic_confidence")),
-                    "floor_id": _clean_optional_text(obj.get("floor_id")) or room_lookup.get(room_id, {}).get("floor_id"),
-                    "display_floor_id": _clean_optional_text(obj.get("display_floor_id")) or _clean_optional_text(obj.get("floor_id")),
-                    "display_order": obj.get("display_order"),
-                },
-                build_floor_lookup(world.get("floors", [])),
-            )
+            topology.object_records[object_id] = {
+                "id": object_id,
+                "label": label,
+                "normalized_label": normalize_open_vocab_label(label),
+                "category": obj.get("category"),
+                "room_id": room_id,
+                "score": _round_float(obj.get("score")),
+                "detection_confidence": _round_float(obj.get("detection_confidence")),
+                "semantic_confidence": _round_float(obj.get("semantic_confidence")),
+                "floor_id": _clean_optional_text(obj.get("floor_id")),
+                "display_floor_id": _clean_optional_text(obj.get("display_floor_id")) or _clean_optional_text(obj.get("floor_id")),
+                "display_order": obj.get("display_order"),
+            }
             if room_id is None or room_id not in room_lookup:
                 continue
             topology.object_to_room[object_id] = room_id
@@ -1384,20 +1349,17 @@ class RoomTopologyBuilder:
             if anchor_id is None:
                 continue
             room_id = self._resolve_anchor_room_id(anchor, topology.object_to_room)
-            topology.anchor_records[anchor_id] = attach_floor_metadata(
-                {
-                    "id": anchor_id,
-                    "anchor_type": anchor.get("anchor_type"),
-                    "room_id": room_id,
-                    "target_id": anchor.get("target_id"),
-                    "valid": bool(anchor.get("valid", True)),
-                    "score": _round_float(anchor.get("score")),
-                    "floor_id": _clean_optional_text(anchor.get("floor_id")) or room_lookup.get(room_id, {}).get("floor_id"),
-                    "display_floor_id": _clean_optional_text(anchor.get("display_floor_id")) or _clean_optional_text(anchor.get("floor_id")),
-                    "display_order": anchor.get("display_order"),
-                },
-                build_floor_lookup(world.get("floors", [])),
-            )
+            topology.anchor_records[anchor_id] = {
+                "id": anchor_id,
+                "anchor_type": anchor.get("anchor_type"),
+                "room_id": room_id,
+                "target_id": anchor.get("target_id"),
+                "valid": bool(anchor.get("valid", True)),
+                "score": _round_float(anchor.get("score")),
+                "floor_id": _clean_optional_text(anchor.get("floor_id")),
+                "display_floor_id": _clean_optional_text(anchor.get("display_floor_id")) or _clean_optional_text(anchor.get("floor_id")),
+                "display_order": anchor.get("display_order"),
+            }
             if room_id is None or room_id not in room_lookup:
                 continue
             topology.anchor_to_room[anchor_id] = room_id
@@ -1631,11 +1593,7 @@ class RoomTopologyBuilder:
         room_lookup: Dict[str, Dict[str, Any]],
     ) -> None:
         pair_events: Dict[Tuple[str, str], List[Dict[str, Any]]] = {}
-        floor_lookup = build_floor_lookup(world.get("floors", []))
-        for raw_item in world.get("vertical_transitions", []):
-            item = canonicalize_vertical_transition_record(dict(raw_item), floor_lookup)
-            if item.get("edge_eligible") is False:
-                continue
+        for item in world.get("vertical_transitions", []):
             room_a = _canonical_room_id(item.get("from_room_id"))
             room_b = _canonical_room_id(item.get("to_room_id"))
             if room_a is None or room_b is None or room_a == room_b:
@@ -1645,73 +1603,24 @@ class RoomTopologyBuilder:
             if room_lookup[room_a].get("floor_id") == room_lookup[room_b].get("floor_id"):
                 continue
             pair = tuple(sorted((room_a, room_b)))
-            pair_events.setdefault(pair, []).append(item)
+            pair_events.setdefault(pair, []).append(dict(item))
 
         for pair, events in pair_events.items():
             score = min(1.0, max(float(event.get("confidence", 0.0)) for event in events))
-            connector_label_counts: Dict[str, int] = {}
-            transition_records = []
-            supporting_frame_total = 0
-            for event in events:
-                connector_label = str(event.get("connector_label", "unknown_vertical_connector"))
-                connector_label_counts[connector_label] = connector_label_counts.get(connector_label, 0) + 1
-                supporting_frame_total += int(event.get("supporting_frame_count", 0) or 0)
-                transition_records.append(
-                    {
-                        "transition_id": event.get("transition_id"),
-                        "from_floor_id": event.get("from_floor_id"),
-                        "to_floor_id": event.get("to_floor_id"),
-                        "from_display_floor_id": event.get("from_display_floor_id"),
-                        "to_display_floor_id": event.get("to_display_floor_id"),
-                        "from_room_id": _canonical_room_id(event.get("from_room_id")),
-                        "to_room_id": _canonical_room_id(event.get("to_room_id")),
-                        "transition_frame_start": event.get("transition_frame_start", event.get("frame_start")),
-                        "transition_frame_end": event.get("transition_frame_end", event.get("frame_end")),
-                        "entry_stable_frame": event.get("entry_stable_frame"),
-                        "exit_stable_frame": event.get("exit_stable_frame"),
-                        "connector_label": connector_label,
-                        "confidence": _round_float(event.get("confidence", 0.0)),
-                        "status": event.get("status"),
-                        "evidence_summary": event.get("evidence_summary"),
-                    }
-                )
             evidence = self._make_evidence(
                 "vertical_transition_observation",
                 score=score,
-                step_start=min(int(event.get("transition_frame_start", event.get("frame_start", 0)) or 0) for event in events),
-                step_end=max(int(event.get("transition_frame_end", event.get("frame_end", 0)) or 0) for event in events),
+                step_start=min(int(event.get("frame_start", 0)) for event in events),
+                step_end=max(int(event.get("frame_end", 0)) for event in events),
                 source_ref=",".join(str(event.get("transition_id", "vt")) for event in events),
                 notes="explicit cross-floor room transition exported by the world model",
                 metadata={
                     "transition_count": int(len(events)),
                     "from_floor_ids": sorted({str(event.get("from_floor_id")) for event in events}),
                     "to_floor_ids": sorted({str(event.get("to_floor_id")) for event in events}),
-                    "display_floor_pairs": sorted({str(event.get("display_floor_pair")) for event in events if event.get("display_floor_pair") is not None}),
-                    "connector_label_counts": connector_label_counts,
-                    "supporting_frame_count_total": int(supporting_frame_total),
-                    "transition_records": transition_records,
                 },
             )
             self._attach_evidence(edge_support, pair, "vertical_transition", evidence)
-            relation_payload = edge_support.setdefault(pair, {}).setdefault(
-                "vertical_transition",
-                {
-                    "evidence_records": [],
-                    "metadata": {},
-                },
-            )
-            relation_payload["metadata"].update(
-                {
-                    "transition_ids": [event.get("transition_id") for event in events],
-                    "from_floor_ids": sorted({str(event.get("from_floor_id")) for event in events}),
-                    "to_floor_ids": sorted({str(event.get("to_floor_id")) for event in events}),
-                    "display_floor_pairs": sorted({str(event.get("display_floor_pair")) for event in events if event.get("display_floor_pair") is not None}),
-                    "connector_label_counts": connector_label_counts,
-                    "supporting_frame_count_total": int(supporting_frame_total),
-                    "transition_records": transition_records,
-                    "evidence_summary": [event.get("evidence_summary") for event in events if event.get("evidence_summary")],
-                }
-            )
 
     def _promote_possible_connections(
         self,

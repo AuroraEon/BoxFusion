@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import cv2
 import numpy as np
 
-from boxfusion.floor_artifacts import display_floor_label as canonical_display_floor_label
 from boxfusion.room_topology import RoomTopologyBuilder
 
 
@@ -179,14 +178,14 @@ def _display_floor_label(
     vector_map: Optional[Dict[str, Any]] = None,
     floor_lookup: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> str:
+    if floor_id is None:
+        return "floor_unknown"
     lookup = floor_lookup if floor_lookup is not None else _floor_display_lookup(vector_map)
-    floor_meta = dict(lookup.get(str(floor_id)) or {}) if floor_id is not None else {}
-    return canonical_display_floor_label(
-        floor_id,
-        floor_meta.get("display_floor_id"),
-        floor_lookup=lookup,
-        include_internal=True,
-    )
+    floor_meta = dict(lookup.get(str(floor_id)) or {})
+    display_floor_id = floor_meta.get("display_floor_id", floor_id)
+    if display_floor_id != floor_id:
+        return f"{display_floor_id} (internal {floor_id})"
+    return str(display_floor_id)
 
 
 def _best_room_for_pose_floor_aware(
@@ -2750,10 +2749,8 @@ class ClosedLoopDemoRecorder:
 
         for idx, transition in enumerate(vertical_transitions, start=1):
             transition_label = _transition_display_id(transition, idx)
-            raw_from_room_id = transition.get("from_room_id")
-            raw_to_room_id = transition.get("to_room_id")
-            from_room_id = int(raw_from_room_id) if raw_from_room_id is not None else -1
-            to_room_id = int(raw_to_room_id) if raw_to_room_id is not None else -1
+            from_room_id = int(transition.get("from_room_id", -1))
+            to_room_id = int(transition.get("to_room_id", -1))
             source_pt = room_centers_canvas.get(from_room_id) if from_room_id >= 0 else None
             target_pt = room_centers_canvas.get(to_room_id) if to_room_id >= 0 else None
             if source_pt is None:

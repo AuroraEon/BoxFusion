@@ -4,6 +4,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from boxfusion.floor_artifacts import display_floor_label
 from boxfusion.room_topology import (
     RoomTopology,
     _canonical_anchor_id,
@@ -98,10 +99,13 @@ class RoomTopologyQueryAPI:
                 failure_reason="anchor_has_no_resolved_room",
                 notes=[f"Anchor {canonical_anchor_id} exists but does not map to a valid room node."],
             )
+        room_record = self.topology.get_room(room_id) or {}
         return self._finalize_resolution(
             resolution,
             resolved=True,
             resolved_room_id=room_id,
+            resolved_floor_id=room_record.get("floor_id"),
+            resolved_display_floor_id=room_record.get("display_floor_id"),
             notes=[f"Anchor {canonical_anchor_id} resolves to {room_id}."],
         )
 
@@ -221,13 +225,48 @@ class RoomTopologyQueryAPI:
             }
 
         relation_summary = " -> ".join(route.get("used_relation_types", [])) or "same_room"
-        hop_summaries = [
-            (
-                f"{edge['source_room_id']} -> {edge['target_room_id']} via "
-                f"{edge['relation_type']} (conf={edge['confidence']}, cost={edge['edge_cost']})"
+        floor_switches = []
+        hop_summaries = []
+        for edge in route.get("edges", []):
+            source_room = self.topology.get_room(edge["source_room_id"]) or {}
+            target_room = self.topology.get_room(edge["target_room_id"]) or {}
+            source_floor_label = display_floor_label(
+                source_room.get("floor_id"),
+                source_room.get("display_floor_id"),
             )
-            for edge in route.get("edges", [])
-        ]
+            target_floor_label = display_floor_label(
+                target_room.get("floor_id"),
+                target_room.get("display_floor_id"),
+            )
+            if edge.get("relation_type") == "vertical_transition" or source_room.get("floor_id") != target_room.get("floor_id"):
+                switch_payload = {
+                    "source_room_id": edge["source_room_id"],
+                    "target_room_id": edge["target_room_id"],
+                    "from_floor_id": source_room.get("floor_id"),
+                    "to_floor_id": target_room.get("floor_id"),
+                    "from_display_floor_id": source_room.get("display_floor_id"),
+                    "to_display_floor_id": target_room.get("display_floor_id"),
+                    "relation_type": edge.get("relation_type"),
+                    "transition_ids": list((edge.get("metadata") or {}).get("transition_ids", [])),
+                }
+                floor_switches.append(switch_payload)
+                hop_summaries.append(
+                    f"{edge['source_room_id']} -> {edge['target_room_id']} via {edge['relation_type']} "
+                    f"(floor switch {source_floor_label} -> {target_floor_label}, conf={edge['confidence']}, cost={edge['edge_cost']})"
+                )
+            else:
+                hop_summaries.append(
+                    f"{edge['source_room_id']} -> {edge['target_room_id']} via {edge['relation_type']} "
+                    f"({source_floor_label}, conf={edge['confidence']}, cost={edge['edge_cost']})"
+                )
+        floor_switch_summary = (
+            " no floor switches."
+            if not floor_switches
+            else " floor switches=" + "; ".join(
+                f"{item['source_room_id']}->{item['target_room_id']} ({display_floor_label(item.get('from_floor_id'), item.get('from_display_floor_id'))} -> {display_floor_label(item.get('to_floor_id'), item.get('to_display_floor_id'))} via {item['relation_type']})"
+                for item in floor_switches
+            )
+        )
         return {
             "summary": (
                 f"Route from {start_room_id} to {resolved_goal_room_id} found under the "
@@ -237,8 +276,10 @@ class RoomTopologyQueryAPI:
             "route_summary": (
                 f"{route.get('hop_count', 0)} hop(s), relations={relation_summary}, "
                 f"route_confidence={route.get('route_confidence')}, total_cost={route.get('total_cost')}."
+                f"{floor_switch_summary}"
             ),
             "hop_summaries": hop_summaries,
+            "floor_switches": floor_switches,
             "notes": list(target_summary.get("notes", [])),
         }
 
@@ -273,10 +314,18 @@ class RoomTopologyQueryAPI:
                     f"Object label {input_payload.get('object_label')!r} resolved to "
                     f"{resolved_room_id} via {', '.join(resolution.get('matched_entity_ids', []))}."
                 )
+            floor_ref = display_floor_label(
+                resolution.get("resolved_floor_id"),
+                resolution.get("resolved_display_floor_id"),
+            )
+            if resolution.get("resolved_floor_id") is not None:
+                summary = f"{summary.rstrip('.')} on {floor_ref}."
             return {
                 "summary": summary,
                 "target_type": target_type,
                 "resolved_room_id": resolved_room_id,
+                "resolved_floor_id": resolution.get("resolved_floor_id"),
+                "resolved_display_floor_id": resolution.get("resolved_display_floor_id"),
                 "matched_entity_ids": list(resolution.get("matched_entity_ids", [])),
                 "notes": notes,
             }
@@ -297,6 +346,8 @@ class RoomTopologyQueryAPI:
             "summary": summary,
             "target_type": target_type,
             "resolved_room_id": resolution.get("resolved_room_id"),
+            "resolved_floor_id": resolution.get("resolved_floor_id"),
+            "resolved_display_floor_id": resolution.get("resolved_display_floor_id"),
             "matched_entity_ids": list(resolution.get("matched_entity_ids", [])),
             "notes": notes,
         }
@@ -324,10 +375,13 @@ class RoomTopologyQueryAPI:
                 failure_reason="goal_room_not_in_topology",
                 notes=[f"Room {canonical_room_id} is not present in the topology graph."],
             )
+        room_record = self.topology.get_room(canonical_room_id) or {}
         return self._finalize_resolution(
             resolution,
             resolved=True,
             resolved_room_id=canonical_room_id,
+            resolved_floor_id=room_record.get("floor_id"),
+            resolved_display_floor_id=room_record.get("display_floor_id"),
             notes=[f"Goal room {canonical_room_id} can be used directly for routing."],
         )
 
@@ -366,10 +420,13 @@ class RoomTopologyQueryAPI:
                 failure_reason="object_has_no_resolved_room",
                 notes=[f"Object {canonical_object_id} exists but does not map to a valid room node."],
             )
+        room_record = self.topology.get_room(room_id) or {}
         return self._finalize_resolution(
             resolution,
             resolved=True,
             resolved_room_id=room_id,
+            resolved_floor_id=room_record.get("floor_id"),
+            resolved_display_floor_id=room_record.get("display_floor_id"),
             notes=[f"Object {canonical_object_id} resolves to {room_id}."],
         )
 
@@ -480,10 +537,13 @@ class RoomTopologyQueryAPI:
             )
         else:
             notes.append(f"Object label {object_label!r} resolved via {candidates[0]['record']['id']}.")
+        room_record = self.topology.get_room(resolved_room_ids[0]) or {}
         return self._finalize_resolution(
             resolution,
             resolved=True,
             resolved_room_id=resolved_room_ids[0],
+            resolved_floor_id=room_record.get("floor_id"),
+            resolved_display_floor_id=room_record.get("display_floor_id"),
             notes=notes,
         )
 
@@ -610,6 +670,8 @@ class RoomTopologyQueryAPI:
             "target_type": str(target_type),
             "input": dict(input_payload),
             "resolved_room_id": None,
+            "resolved_floor_id": None,
+            "resolved_display_floor_id": None,
             "matched_entity_ids": list(matched_entity_ids),
             "candidate_matches": list(candidate_matches),
             "ambiguity": None,
@@ -622,6 +684,8 @@ class RoomTopologyQueryAPI:
         resolution: Dict[str, Any],
         resolved: bool,
         resolved_room_id: Optional[str] = None,
+        resolved_floor_id: Optional[str] = None,
+        resolved_display_floor_id: Optional[str] = None,
         failure_reason: Optional[str] = None,
         notes: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
@@ -629,6 +693,8 @@ class RoomTopologyQueryAPI:
         payload["resolved"] = bool(resolved)
         payload["success"] = bool(resolved)
         payload["resolved_room_id"] = resolved_room_id
+        payload["resolved_floor_id"] = resolved_floor_id
+        payload["resolved_display_floor_id"] = resolved_display_floor_id
         payload["failure_reason"] = None if resolved else failure_reason
         payload["notes"] = list(notes or [])
         return payload
@@ -685,6 +751,9 @@ class RoomTopologyQueryAPI:
             "normalized_label": record.get("normalized_label"),
             "category": record.get("category"),
             "room_id": record.get("room_id"),
+            "floor_id": record.get("floor_id"),
+            "display_floor_id": record.get("display_floor_id"),
+            "display_order": record.get("display_order"),
             "score": record.get("score"),
             "detection_confidence": record.get("detection_confidence"),
             "semantic_confidence": record.get("semantic_confidence"),
@@ -698,6 +767,9 @@ class RoomTopologyQueryAPI:
             "entity_id": record.get("id"),
             "anchor_type": record.get("anchor_type"),
             "room_id": record.get("room_id"),
+            "floor_id": record.get("floor_id"),
+            "display_floor_id": record.get("display_floor_id"),
+            "display_order": record.get("display_order"),
             "target_id": record.get("target_id"),
             "valid": record.get("valid"),
             "score": record.get("score"),
