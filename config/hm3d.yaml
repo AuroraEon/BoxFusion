@@ -1,7 +1,7 @@
 dataset: hm3d
 
 data:
-  datadir: /home/aurora/workspace1/HOV-SG/data/hm3dsem_walks/val/00824-Dd4bFSTQ8gi
+  datadir: /media/aurora/Program/dataset/hm3dsem_walks/val/00824-Dd4bFSTQ8gi
   start: 0 
   output_dir: ./results
   gap: 25

@@ -53,7 +53,7 @@ PRESENTATION_CATEGORY_PRIORITY = {
     "presentation_conservative": 2,
     "no_duplicate_warning": 3,
 }
-DEFAULT_TARGET_SEQUENCES = ["00847-bCPU9suPUw9", "00843-DYehNKdT76V"]
+DEFAULT_TARGET_SEQUENCES = ["00843-DYehNKdT76V", "00824-Dd4bFSTQ8gi"]
 
 
 def _load_json(path: Path) -> Any:

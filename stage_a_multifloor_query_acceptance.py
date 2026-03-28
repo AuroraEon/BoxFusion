@@ -15,8 +15,8 @@ from boxfusion.room_topology import RoomTopology, RoomTopologyBuilder, _canonica
 
 
 DEFAULT_SEQUENCE_DIRS = [
-    "stage_a_outputs_vt_fallback_v01_rerun2/00843-DYehNKdT76V",
-    "stage_a_outputs_vt_fallback_v01_rerun2/00847-bCPU9suPUw9",
+    "world_model_backend_outputs_v0_1/scenes/00843-DYehNKdT76V",
+    "world_model_backend_outputs_v0_1/scenes/00824-Dd4bFSTQ8gi",
 ]
 
 
@@ -459,7 +459,7 @@ def main() -> None:
     parser.add_argument("--sequence-dir", action="append", default=None, help="Stage A sequence directory; can be provided multiple times")
     parser.add_argument(
         "--output-dir",
-        default="stage_a_outputs_vt_fallback_v01_rerun2/multifloor_query_acceptance_v0_1",
+        default="world_model_backend_outputs_v0_1/eval/backend_eval_v0_1/multifloor_query_acceptance_v0_1",
         help="Directory for combined acceptance artifacts",
     )
     args = parser.parse_args()

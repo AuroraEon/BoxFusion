@@ -11,8 +11,8 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 from PIL import Image, ImageDraw, ImageFont
 
 
-DEFAULT_OUTPUT_ROOT = Path("stage_a_outputs_vt_fallback_v01_rerun2")
-DEFAULT_SEQUENCE_IDS = ("00843-DYehNKdT76V", "00847-bCPU9suPUw9")
+DEFAULT_OUTPUT_ROOT = Path("world_model_backend_outputs_v0_1/scenes")
+DEFAULT_SEQUENCE_IDS = ("00843-DYehNKdT76V", "00824-Dd4bFSTQ8gi")
 
 
 def load_json(path: Path) -> Any:

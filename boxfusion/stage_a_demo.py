@@ -33,6 +33,22 @@ def _round_float(value: Any, digits: int = 3) -> Optional[float]:
     return round(float(value), digits)
 
 
+def _safe_ratio(numerator: Any, denominator: Any, digits: int = 3) -> Optional[float]:
+    if numerator is None or denominator is None:
+        return None
+    denominator_value = float(denominator)
+    if abs(denominator_value) < 1e-9:
+        return None
+    return round(float(numerator) / denominator_value, digits)
+
+
+def _mean_or_none(values: Sequence[Any], digits: int = 4) -> Optional[float]:
+    cleaned = [float(value) for value in values if value is not None]
+    if not cleaned:
+        return None
+    return round(sum(cleaned) / float(len(cleaned)), digits)
+
+
 def _join_ints(values: Sequence[int]) -> str:
     return ",".join(str(int(v)) for v in values)
 
@@ -653,6 +669,7 @@ class ClosedLoopDemoRecorder:
         self,
         output_root: str,
         sequence_id: str,
+        dataset_root: Optional[str] = None,
         capture_stride_frames: int = 20,
         video_fps: int = 12,
         canvas_size: Tuple[int, int] = (1600, 900),
@@ -662,18 +679,30 @@ class ClosedLoopDemoRecorder:
         max_frames: Optional[int] = None,
         full_rgb_replay: bool = False,
         per_frame_pose_overlay: bool = True,
+        core_only: bool = False,
+        runtime_profile_interval: Optional[int] = None,
     ):
         self.output_root = Path(output_root) / str(sequence_id)
         self.sequence_id = str(sequence_id)
+        self.dataset_root = None if dataset_root is None else str(Path(dataset_root))
         self.capture_stride_frames = max(1, int(capture_stride_frames))
         self.video_fps = int(video_fps)
         self.canvas_size = canvas_size
-        self.save_scene_graph_vis = bool(save_scene_graph_vis)
-        self.spotlight_count = max(0, int(spotlight_count))
+        self.core_only = bool(core_only)
+        self.output_mode = "core_only" if self.core_only else "full"
+        self.runtime_profile_interval = max(1, int(runtime_profile_interval or self.capture_stride_frames))
+        self.enable_optional_demo_artifacts = not self.core_only
+        self.save_scene_graph_vis = bool(save_scene_graph_vis and self.enable_optional_demo_artifacts)
+        self.spotlight_count = max(0, int(spotlight_count if self.enable_optional_demo_artifacts else 0))
         self.room_seg_interval = None if room_seg_interval is None else int(room_seg_interval)
         self.max_frames = None if max_frames is None else int(max_frames)
-        self.full_rgb_replay = bool(full_rgb_replay)
-        self.per_frame_pose_overlay = bool(per_frame_pose_overlay)
+        self.full_rgb_replay = bool(full_rgb_replay and self.enable_optional_demo_artifacts)
+        self.per_frame_pose_overlay = bool(per_frame_pose_overlay and self.enable_optional_demo_artifacts)
+        self.write_rgb_frames = bool(self.enable_optional_demo_artifacts)
+        self.write_vector_map_snapshots = bool(self.enable_optional_demo_artifacts)
+        self.write_graphml = bool(self.enable_optional_demo_artifacts)
+        self.write_room_segmentation_diagnostics = bool(self.enable_optional_demo_artifacts)
+        self.write_report_md = bool(self.enable_optional_demo_artifacts)
 
         self.rgb_dir = self.output_root / "rgb_frames"
         self.render_dir = self.output_root / "rendered_frames"
@@ -701,8 +730,12 @@ class ClosedLoopDemoRecorder:
         self.last_captured_frame: Optional[int] = None
         self.latest_vector_map_path: Optional[str] = None
         self.latest_vector_map: Optional[Dict[str, Any]] = None
+        self.runtime_growth_records: List[Dict[str, Any]] = []
+        self.runtime_growth_summary: Dict[str, Any] = {}
 
     def _write_rgb_frame(self, frame_idx: int, image_rgb: np.ndarray) -> str:
+        if not self.write_rgb_frames:
+            return ""
         image_rgb = _to_uint8_rgb(image_rgb)
         rgb_path = self.rgb_dir / f"frame_{int(frame_idx):06d}.jpg"
         cv2.imwrite(str(rgb_path), cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
@@ -737,10 +770,13 @@ class ClosedLoopDemoRecorder:
 
         vector_map_path = None
         if vector_map:
-            vector_map_path = self.snapshot_dir / f"vector_map_{int(frame_idx):06d}.json"
-            with open(vector_map_path, "w", encoding="utf-8") as f:
-                json.dump(vector_map, f, indent=2)
-            self.latest_vector_map_path = str(vector_map_path)
+            if self.write_vector_map_snapshots:
+                vector_map_path = self.snapshot_dir / f"vector_map_{int(frame_idx):06d}.json"
+                with open(vector_map_path, "w", encoding="utf-8") as f:
+                    json.dump(vector_map, f, indent=2)
+                self.latest_vector_map_path = str(vector_map_path)
+            else:
+                self.latest_vector_map_path = None
             self.latest_vector_map = vector_map
         else:
             vector_map = self.latest_vector_map
@@ -838,6 +874,169 @@ class ClosedLoopDemoRecorder:
                 break
         return chosen
 
+    def _runtime_growth_fieldnames(self) -> List[str]:
+        return [
+            "frame_idx",
+            "cumulative_processed_frames",
+            "sample_kind",
+            "is_keyframe",
+            "segmentation_updated",
+            "global_box_count",
+            "room_count",
+            "object_count",
+            "anchor_count",
+            "gateway_count",
+            "adjacency_edge_count",
+            "graph_node_count",
+            "graph_edge_count",
+            "vertical_transition_count",
+            "data_preprocess_sec",
+            "model_bbox_inference_sec",
+            "topology_room_segmentation_sec",
+            "rerun_visualization_sec",
+            "feature_boxfusion_sec",
+            "total_step_sec",
+        ]
+
+    def record_runtime_growth(
+        self,
+        *,
+        frame_idx: int,
+        cumulative_processed_frames: int,
+        vector_map: Optional[Dict[str, Any]],
+        global_box_count: Optional[int],
+        stage_timings: Optional[Dict[str, Any]],
+        is_keyframe: bool,
+        segmentation_updated: bool,
+        force: bool = False,
+    ) -> None:
+        if not force and not (bool(is_keyframe) or bool(segmentation_updated)):
+            return
+        if (
+            not force
+            and self.runtime_growth_records
+            and not bool(segmentation_updated)
+            and (int(frame_idx) - int(self.runtime_growth_records[-1]["frame_idx"])) < int(self.runtime_profile_interval)
+        ):
+            return
+
+        vector_map_payload = dict(vector_map or self.latest_vector_map or {})
+        topology = _topology_summary(vector_map_payload) if vector_map_payload else {
+            "gateway_count": None,
+            "adjacency_edge_count": None,
+        }
+        room_count = None
+        object_count = None
+        anchor_count = None
+        graph_node_count = None
+        graph_edge_count = None
+        vertical_transition_count = None
+        if vector_map_payload:
+            room_count = int(len(vector_map_payload.get("rooms", [])))
+            object_count = int(len(vector_map_payload.get("objects", [])))
+            anchor_count = int(len(vector_map_payload.get("anchors", [])))
+            graph_node_count = int(room_count + object_count + anchor_count)
+            graph_edge_count = int(topology.get("adjacency_edge_count", 0))
+            vertical_summary = dict(vector_map_payload.get("vertical_transition_summary") or {})
+            vertical_transition_count = int(
+                vertical_summary.get("count", len(vector_map_payload.get("vertical_transitions", [])))
+            )
+
+        stage_timings = dict(stage_timings or {})
+        record = {
+            "frame_idx": int(frame_idx),
+            "cumulative_processed_frames": int(cumulative_processed_frames),
+            "sample_kind": "final" if force else ("segmentation_refresh" if segmentation_updated else "keyframe"),
+            "is_keyframe": bool(is_keyframe),
+            "segmentation_updated": bool(segmentation_updated),
+            "global_box_count": None if global_box_count is None else int(global_box_count),
+            "room_count": room_count,
+            "object_count": object_count,
+            "anchor_count": anchor_count,
+            "gateway_count": None if topology.get("gateway_count") is None else int(topology["gateway_count"]),
+            "adjacency_edge_count": None if topology.get("adjacency_edge_count") is None else int(topology["adjacency_edge_count"]),
+            "graph_node_count": graph_node_count,
+            "graph_edge_count": graph_edge_count,
+            "vertical_transition_count": vertical_transition_count,
+            "data_preprocess_sec": _round_float(stage_timings.get("data_preprocess_sec"), digits=6),
+            "model_bbox_inference_sec": _round_float(stage_timings.get("model_bbox_inference_sec"), digits=6),
+            "topology_room_segmentation_sec": _round_float(stage_timings.get("topology_room_segmentation_sec"), digits=6),
+            "rerun_visualization_sec": _round_float(stage_timings.get("rerun_visualization_sec"), digits=6),
+            "feature_boxfusion_sec": _round_float(stage_timings.get("feature_boxfusion_sec"), digits=6),
+            "total_step_sec": _round_float(stage_timings.get("total_step_sec"), digits=6),
+        }
+        if self.runtime_growth_records and int(self.runtime_growth_records[-1]["frame_idx"]) == int(frame_idx):
+            self.runtime_growth_records[-1] = record
+        else:
+            self.runtime_growth_records.append(record)
+
+    def _runtime_window_summary(self, rows: Sequence[Dict[str, Any]], key: str) -> Dict[str, Optional[float]]:
+        early_count = max(1, len(rows) // 3)
+        mid_half = max(1, len(rows) // 6)
+        mid_center = len(rows) // 2
+        return {
+            "early_avg_sec": _mean_or_none([row.get(key) for row in rows[:early_count]], digits=6),
+            "mid_avg_sec": _mean_or_none(
+                [row.get(key) for row in rows[max(0, mid_center - mid_half): min(len(rows), mid_center + mid_half + 1)]],
+                digits=6,
+            ),
+            "late_avg_sec": _mean_or_none([row.get(key) for row in rows[-early_count:]], digits=6),
+        }
+
+    def _build_runtime_growth_summary(self) -> Dict[str, Any]:
+        rows = list(self.runtime_growth_records)
+        if not rows:
+            return {
+                "sample_count": 0,
+                "profile_interval_frames": int(self.runtime_profile_interval),
+                "runtime_risk_flag": False,
+                "runtime_risk_reasons": [],
+                "stage_windows_sec": {},
+                "growth_ratios": {},
+            }
+
+        stage_keys = (
+            "model_bbox_inference_sec",
+            "topology_room_segmentation_sec",
+            "feature_boxfusion_sec",
+            "total_step_sec",
+        )
+        stage_windows = {
+            key: self._runtime_window_summary(rows, key)
+            for key in stage_keys
+        }
+        growth_ratios = {
+            key: _safe_ratio(
+                stage_windows[key].get("late_avg_sec"),
+                stage_windows[key].get("early_avg_sec"),
+                digits=3,
+            )
+            for key in stage_keys
+        }
+
+        runtime_risk_reasons: List[str] = []
+        if (growth_ratios.get("feature_boxfusion_sec") or 0.0) >= 1.5:
+            runtime_risk_reasons.append("feature_boxfusion_growth")
+        if (growth_ratios.get("topology_room_segmentation_sec") or 0.0) >= 1.5:
+            runtime_risk_reasons.append("topology_room_segmentation_growth")
+        if (growth_ratios.get("total_step_sec") or 0.0) >= 1.6:
+            runtime_risk_reasons.append("total_step_growth")
+
+        return {
+            "sample_count": int(len(rows)),
+            "profile_interval_frames": int(self.runtime_profile_interval),
+            "first_frame_idx": int(rows[0]["frame_idx"]),
+            "last_frame_idx": int(rows[-1]["frame_idx"]),
+            "segmentation_refresh_sample_count": int(sum(1 for row in rows if row.get("segmentation_updated"))),
+            "max_room_count": max((row["room_count"] for row in rows if row.get("room_count") is not None), default=None),
+            "max_object_count": max((row["object_count"] for row in rows if row.get("object_count") is not None), default=None),
+            "max_anchor_count": max((row["anchor_count"] for row in rows if row.get("anchor_count") is not None), default=None),
+            "stage_windows_sec": stage_windows,
+            "growth_ratios": growth_ratios,
+            "runtime_risk_flag": bool(runtime_risk_reasons),
+            "runtime_risk_reasons": runtime_risk_reasons,
+        }
+
     def _map_display_context(
         self,
         frame_idx: int,
@@ -881,102 +1080,132 @@ class ClosedLoopDemoRecorder:
                 "report_path": None,
             }
 
-        bounds = _collect_map_bounds(self.snapshots)
-        revisit_diagnostics = self._build_revisit_diagnostics()
+        runtime_growth_profile_csv = self.log_dir / "runtime_growth_profile.csv"
+        runtime_growth_profile_json = self.log_dir / "runtime_growth_profile.json"
+        self.runtime_growth_summary = self._build_runtime_growth_summary()
+        with open(runtime_growth_profile_csv, "w", encoding="utf-8", newline="") as f:
+            writer_csv = csv.DictWriter(f, fieldnames=self._runtime_growth_fieldnames())
+            writer_csv.writeheader()
+            writer_csv.writerows(self.runtime_growth_records)
+        with open(runtime_growth_profile_json, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "sequence_id": self.sequence_id,
+                    "output_mode": self.output_mode,
+                    "records": self.runtime_growth_records,
+                    "summary": self.runtime_growth_summary,
+                },
+                f,
+                indent=2,
+            )
+
+        revisit_diagnostics = self._build_revisit_diagnostics() if self.enable_optional_demo_artifacts else []
         diagnostics_by_frame = {int(item["frame_idx"]): item for item in revisit_diagnostics}
-
-        video_path = self.final_dir / f"{self.sequence_id}_closed_loop_demo.mp4"
-        final_map_png = self.final_dir / f"{self.sequence_id}_final_bev.png"
-        final_split_png = self.final_dir / f"{self.sequence_id}_final_split.png"
-
-        width, height = self.canvas_size
-        writer = cv2.VideoWriter(
-            str(video_path),
-            cv2.VideoWriter_fourcc(*"mp4v"),
-            float(self.video_fps),
-            (width, height),
-        )
-
         render_records: Sequence[Any] = self.replay_frames if self.full_rgb_replay and self.replay_frames else self.snapshots
 
-        for record in render_records:
-            if isinstance(record, ReplayFrameRecord):
-                map_snapshot = self._map_snapshot_for_replay_frame(record)
-            else:
-                map_snapshot = record
-            map_context = self._map_display_context(record.frame_idx, map_snapshot, diagnostics_by_frame)
-            frame = self._render_split_frame(
-                record,
-                bounds,
-                diagnostics_by_frame.get(record.frame_idx),
-                map_snapshot=map_snapshot,
-                map_context=map_context,
+        video_path = None
+        final_map_png = None
+        final_split_png = None
+        spotlight_paths: Dict[int, Dict[str, str]] = {}
+        timeline_json = None
+        timeline_csv = None
+        revisit_json = None
+        revisit_diagnostics_json = None
+        revisit_diagnostics_csv = None
+        revisit_summary_md = None
+        presentation_note_md = None
+        report_md = self.output_root / "report.md" if self.write_report_md else None
+
+        if self.enable_optional_demo_artifacts:
+            bounds = _collect_map_bounds(self.snapshots)
+            video_path = self.final_dir / f"{self.sequence_id}_closed_loop_demo.mp4"
+            final_map_png = self.final_dir / f"{self.sequence_id}_final_bev.png"
+            final_split_png = self.final_dir / f"{self.sequence_id}_final_split.png"
+
+            width, height = self.canvas_size
+            writer = cv2.VideoWriter(
+                str(video_path),
+                cv2.VideoWriter_fourcc(*"mp4v"),
+                float(self.video_fps),
+                (width, height),
             )
-            cv2.imwrite(str(self.render_dir / f"render_{record.frame_idx:06d}.jpg"), frame)
-            writer.write(frame)
-            if int(record.index) == len(render_records) - 1:
-                cv2.imwrite(str(final_split_png), frame)
-                bev = self._render_bev(
+
+            for record in render_records:
+                if isinstance(record, ReplayFrameRecord):
+                    map_snapshot = self._map_snapshot_for_replay_frame(record)
+                else:
+                    map_snapshot = record
+                map_context = self._map_display_context(record.frame_idx, map_snapshot, diagnostics_by_frame)
+                frame = self._render_split_frame(
                     record,
                     bounds,
-                    width=width // 2,
-                    height=height,
-                    diagnostic=diagnostics_by_frame.get(record.frame_idx) or map_context.get("refresh_diagnostic"),
+                    diagnostics_by_frame.get(record.frame_idx),
                     map_snapshot=map_snapshot,
+                    map_context=map_context,
                 )
-                cv2.imwrite(str(final_map_png), bev)
+                cv2.imwrite(str(self.render_dir / f"render_{record.frame_idx:06d}.jpg"), frame)
+                writer.write(frame)
+                if int(record.index) == len(render_records) - 1:
+                    cv2.imwrite(str(final_split_png), frame)
+                    bev = self._render_bev(
+                        record,
+                        bounds,
+                        width=width // 2,
+                        height=height,
+                        diagnostic=diagnostics_by_frame.get(record.frame_idx) or map_context.get("refresh_diagnostic"),
+                        map_snapshot=map_snapshot,
+                    )
+                    cv2.imwrite(str(final_map_png), bev)
 
-        writer.release()
+            writer.release()
+            spotlight_paths = self._export_spotlights(bounds, revisit_diagnostics, diagnostics_by_frame)
 
-        spotlight_paths = self._export_spotlights(bounds, revisit_diagnostics, diagnostics_by_frame)
+            timeline_json = self.log_dir / "timeline.json"
+            timeline_csv = self.log_dir / "timeline.csv"
+            revisit_json = self.log_dir / "revisit_events.json"
+            revisit_diagnostics_json = self.log_dir / "revisit_diagnostics.json"
+            revisit_diagnostics_csv = self.log_dir / "revisit_diagnostics.csv"
+            revisit_summary_md = self.log_dir / "revisit_summary.md"
+            presentation_note_md = self.log_dir / "presentation_note.md"
 
-        timeline_json = self.log_dir / "timeline.json"
-        timeline_csv = self.log_dir / "timeline.csv"
-        revisit_json = self.log_dir / "revisit_events.json"
-        revisit_diagnostics_json = self.log_dir / "revisit_diagnostics.json"
-        revisit_diagnostics_csv = self.log_dir / "revisit_diagnostics.csv"
-        revisit_summary_md = self.log_dir / "revisit_summary.md"
-        presentation_note_md = self.log_dir / "presentation_note.md"
+            for diagnostic in revisit_diagnostics:
+                diagnostic["spotlight_paths"] = spotlight_paths.get(int(diagnostic["event_id"]), {})
+
+            timeline_rows = self._build_timeline_rows(diagnostics_by_frame)
+            with open(timeline_json, "w", encoding="utf-8") as f:
+                json.dump(timeline_rows, f, indent=2)
+            with open(timeline_csv, "w", encoding="utf-8", newline="") as f:
+                writer_csv = csv.DictWriter(f, fieldnames=list(timeline_rows[0].keys()))
+                writer_csv.writeheader()
+                writer_csv.writerows(timeline_rows)
+            with open(revisit_json, "w", encoding="utf-8") as f:
+                json.dump(self.revisit_events, f, indent=2)
+            with open(revisit_diagnostics_json, "w", encoding="utf-8") as f:
+                json.dump(revisit_diagnostics, f, indent=2)
+            with open(revisit_diagnostics_csv, "w", encoding="utf-8", newline="") as f:
+                rows = self._flatten_revisit_diagnostics_for_csv(revisit_diagnostics)
+                writer_csv = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+                writer_csv.writeheader()
+                writer_csv.writerows(rows)
+            with open(revisit_summary_md, "w", encoding="utf-8") as f:
+                f.write(self._build_revisit_summary_markdown(revisit_diagnostics))
+            with open(presentation_note_md, "w", encoding="utf-8") as f:
+                params = self._presentation_parameters()
+                quality = self._presentation_quality_note()
+                f.write("# Presentation Note\n\n")
+                f.write(f"- room_seg_interval: {params.get('room_seg_interval')}\n")
+                f.write(f"- capture_stride_frames: {params.get('capture_stride_frames')}\n")
+                f.write(f"- replay_mode: {params.get('replay_mode')}\n")
+                f.write(f"- full_rgb_replay: {params.get('full_rgb_replay')}\n")
+                f.write(f"- per_frame_pose_overlay: {params.get('per_frame_pose_overlay')}\n")
+                f.write(f"- map_refresh_frame_count: {len(self.snapshots)}\n")
+                f.write(f"- video_fps: {params.get('video_fps')}\n")
+                f.write(f"- spotlight_count_requested: {params.get('spotlight_count_requested')}\n")
+                f.write(f"- max_frames: {params.get('max_frames')}\n")
+                f.write(f"- assessment: {quality.get('assessment')}\n")
+                f.write(f"- note: {quality.get('note')}\n")
+
         summary_json = self.log_dir / "summary.json"
-        report_md = self.output_root / "report.md"
-
-        for diagnostic in revisit_diagnostics:
-            diagnostic["spotlight_paths"] = spotlight_paths.get(int(diagnostic["event_id"]), {})
-
-        timeline_rows = self._build_timeline_rows(diagnostics_by_frame)
-        with open(timeline_json, "w", encoding="utf-8") as f:
-            json.dump(timeline_rows, f, indent=2)
-        with open(timeline_csv, "w", encoding="utf-8", newline="") as f:
-            writer_csv = csv.DictWriter(f, fieldnames=list(timeline_rows[0].keys()))
-            writer_csv.writeheader()
-            writer_csv.writerows(timeline_rows)
-        with open(revisit_json, "w", encoding="utf-8") as f:
-            json.dump(self.revisit_events, f, indent=2)
-        with open(revisit_diagnostics_json, "w", encoding="utf-8") as f:
-            json.dump(revisit_diagnostics, f, indent=2)
-        with open(revisit_diagnostics_csv, "w", encoding="utf-8", newline="") as f:
-            rows = self._flatten_revisit_diagnostics_for_csv(revisit_diagnostics)
-            writer_csv = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-            writer_csv.writeheader()
-            writer_csv.writerows(rows)
-        with open(revisit_summary_md, "w", encoding="utf-8") as f:
-            f.write(self._build_revisit_summary_markdown(revisit_diagnostics))
-        with open(presentation_note_md, "w", encoding="utf-8") as f:
-            params = self._presentation_parameters()
-            quality = self._presentation_quality_note()
-            f.write("# Presentation Note\n\n")
-            f.write(f"- room_seg_interval: {params.get('room_seg_interval')}\n")
-            f.write(f"- capture_stride_frames: {params.get('capture_stride_frames')}\n")
-            f.write(f"- replay_mode: {params.get('replay_mode')}\n")
-            f.write(f"- full_rgb_replay: {params.get('full_rgb_replay')}\n")
-            f.write(f"- per_frame_pose_overlay: {params.get('per_frame_pose_overlay')}\n")
-            f.write(f"- map_refresh_frame_count: {len(self.snapshots)}\n")
-            f.write(f"- video_fps: {params.get('video_fps')}\n")
-            f.write(f"- spotlight_count_requested: {params.get('spotlight_count_requested')}\n")
-            f.write(f"- max_frames: {params.get('max_frames')}\n")
-            f.write(f"- assessment: {quality.get('assessment')}\n")
-            f.write(f"- note: {quality.get('note')}\n")
-
         final_snapshot = self.snapshots[-1]
         final_vector_map = final_snapshot.vector_map or {}
         final_topology = _topology_summary(final_vector_map)
@@ -985,9 +1214,9 @@ class ClosedLoopDemoRecorder:
         floor_diagnostics_summary = dict(final_vector_map.get("floor_debug") or {})
         topology_json = self.log_dir / "topology_v0_1.json"
         topology_query_report_json = self.log_dir / "topology_query_report.json"
-        topology_graphml = self.log_dir / "topology_v0_1.graphml"
+        topology_graphml = self.log_dir / "topology_v0_1.graphml" if self.write_graphml else None
         vertical_transition_evidence_json = self.log_dir / "vertical_transition_evidence.json"
-        room_segmentation_diagnostics_json = self.log_dir / "room_segmentation_diagnostics.json"
+        room_segmentation_diagnostics_json = self.log_dir / "room_segmentation_diagnostics.json" if self.write_room_segmentation_diagnostics else None
         floor_diagnostics_summary_json = self.log_dir / "floor_diagnostics_summary.json"
         topology_export_error = None
         try:
@@ -1005,7 +1234,8 @@ class ClosedLoopDemoRecorder:
             )
             room_topology.export_json(topology_json)
             room_topology.export_query_report(topology_query_report_json)
-            room_topology.export_graphml(topology_graphml)
+            if topology_graphml is not None:
+                room_topology.export_graphml(topology_graphml)
         except Exception as exc:
             topology_export_error = str(exc)
         with open(vertical_transition_evidence_json, "w", encoding="utf-8") as f:
@@ -1018,8 +1248,9 @@ class ClosedLoopDemoRecorder:
                 f,
                 indent=2,
             )
-        with open(room_segmentation_diagnostics_json, "w", encoding="utf-8") as f:
-            json.dump(room_segmentation_diagnostics, f, indent=2)
+        if room_segmentation_diagnostics_json is not None:
+            with open(room_segmentation_diagnostics_json, "w", encoding="utf-8") as f:
+                json.dump(room_segmentation_diagnostics, f, indent=2)
         floor_diagnostics_payload = dict(floor_diagnostics_summary)
         floor_diagnostics_payload["sequence_id"] = self.sequence_id
         with open(floor_diagnostics_summary_json, "w", encoding="utf-8") as f:
@@ -1030,6 +1261,9 @@ class ClosedLoopDemoRecorder:
         summary_payload.update(
             {
                 "sequence_id": self.sequence_id,
+                "output_mode": self.output_mode,
+                "core_only_mode": bool(self.core_only),
+                "optional_demo_artifacts_enabled": bool(self.enable_optional_demo_artifacts),
                 "snapshot_count": int(len(self.snapshots)),
                 "replay_frame_count": int(len(render_records)),
                 "segmentation_cycle_count": int(max(snapshot.segmentation_cycle_idx for snapshot in self.snapshots)),
@@ -1042,20 +1276,23 @@ class ClosedLoopDemoRecorder:
                 "final_adjacency_edge_count": int(final_topology["adjacency_edge_count"]),
                 "final_vertical_transition_count": int(vertical_transition_summary.get("count", len(final_vector_map.get("vertical_transitions", [])))),
                 "final_fallback_run_count": int(room_segmentation_diagnostics.get("fallback_run_count", 0)),
-                "video_path": str(video_path),
-                "final_map_png": str(final_map_png),
-                "final_split_png": str(final_split_png),
-                "timeline_json": str(timeline_json),
-                "timeline_csv": str(timeline_csv),
-                "revisit_events_json": str(revisit_json),
-                "revisit_diagnostics_json": str(revisit_diagnostics_json),
-                "revisit_diagnostics_csv": str(revisit_diagnostics_csv),
-                "revisit_summary_md": str(revisit_summary_md),
-                "presentation_note_md": str(presentation_note_md),
+                "video_path": None if video_path is None else str(video_path),
+                "final_map_png": None if final_map_png is None else str(final_map_png),
+                "final_split_png": None if final_split_png is None else str(final_split_png),
+                "timeline_json": None if timeline_json is None else str(timeline_json),
+                "timeline_csv": None if timeline_csv is None else str(timeline_csv),
+                "revisit_events_json": None if revisit_json is None else str(revisit_json),
+                "revisit_diagnostics_json": None if revisit_diagnostics_json is None else str(revisit_diagnostics_json),
+                "revisit_diagnostics_csv": None if revisit_diagnostics_csv is None else str(revisit_diagnostics_csv),
+                "revisit_summary_md": None if revisit_summary_md is None else str(revisit_summary_md),
+                "presentation_note_md": None if presentation_note_md is None else str(presentation_note_md),
                 "vertical_transition_evidence_json": str(vertical_transition_evidence_json),
-                "room_segmentation_diagnostics_json": str(room_segmentation_diagnostics_json),
+                "room_segmentation_diagnostics_json": None if room_segmentation_diagnostics_json is None else str(room_segmentation_diagnostics_json),
                 "floor_diagnostics_summary_json": str(floor_diagnostics_summary_json),
-                "spotlight_dir": str(self.spotlight_dir),
+                "runtime_growth_profile_csv": str(runtime_growth_profile_csv),
+                "runtime_growth_profile_json": str(runtime_growth_profile_json),
+                "runtime_growth_summary": self.runtime_growth_summary,
+                "spotlight_dir": None if not spotlight_paths else str(self.spotlight_dir),
                 "spotlight_count": int(len(spotlight_paths)),
                 "presentation_parameters": presentation_parameters,
                 "presentation_quality_note": presentation_quality_note,
@@ -1067,35 +1304,45 @@ class ClosedLoopDemoRecorder:
                 "map_refresh_frame_indices": [int(snapshot.frame_idx) for snapshot in self.snapshots],
                 "topology_v0_1_json": None if topology_export_error else str(topology_json),
                 "topology_query_report_json": None if topology_export_error else str(topology_query_report_json),
-                "topology_v0_1_graphml": None if topology_export_error else str(topology_graphml),
+                "topology_v0_1_graphml": None if topology_export_error or topology_graphml is None else str(topology_graphml),
                 "topology_export_error": topology_export_error,
             }
         )
         with open(summary_json, "w", encoding="utf-8") as f:
             json.dump(summary_payload, f, indent=2)
-        with open(report_md, "w", encoding="utf-8") as f:
-            f.write(self._build_report(summary_payload, final_snapshot, revisit_diagnostics, spotlight_paths))
+        if report_md is not None:
+            with open(report_md, "w", encoding="utf-8") as f:
+                f.write(self._build_report(summary_payload, final_snapshot, revisit_diagnostics, spotlight_paths))
+        from boxfusion.backend_eval_scaffold import write_scene_manifest
+
+        write_scene_manifest(
+            self.output_root,
+            dataset_root=None if self.dataset_root is None else Path(self.dataset_root),
+            sequence_name=self.sequence_id,
+        )
 
         return {
             "output_root": str(self.output_root),
             "summary_json": str(summary_json),
-            "video_path": str(video_path),
-            "final_map_png": str(final_map_png),
-            "final_split_png": str(final_split_png),
-            "report_path": str(report_md),
-            "timeline_json": str(timeline_json),
-            "timeline_csv": str(timeline_csv),
-            "revisit_events_json": str(revisit_json),
-            "revisit_diagnostics_json": str(revisit_diagnostics_json),
-            "revisit_diagnostics_csv": str(revisit_diagnostics_csv),
-            "revisit_summary_md": str(revisit_summary_md),
+            "video_path": None if video_path is None else str(video_path),
+            "final_map_png": None if final_map_png is None else str(final_map_png),
+            "final_split_png": None if final_split_png is None else str(final_split_png),
+            "report_path": None if report_md is None else str(report_md),
+            "timeline_json": None if timeline_json is None else str(timeline_json),
+            "timeline_csv": None if timeline_csv is None else str(timeline_csv),
+            "revisit_events_json": None if revisit_json is None else str(revisit_json),
+            "revisit_diagnostics_json": None if revisit_diagnostics_json is None else str(revisit_diagnostics_json),
+            "revisit_diagnostics_csv": None if revisit_diagnostics_csv is None else str(revisit_diagnostics_csv),
+            "revisit_summary_md": None if revisit_summary_md is None else str(revisit_summary_md),
             "vertical_transition_evidence_json": str(vertical_transition_evidence_json),
-            "room_segmentation_diagnostics_json": str(room_segmentation_diagnostics_json),
+            "room_segmentation_diagnostics_json": None if room_segmentation_diagnostics_json is None else str(room_segmentation_diagnostics_json),
             "floor_diagnostics_summary_json": str(floor_diagnostics_summary_json),
-            "spotlight_dir": str(self.spotlight_dir),
+            "runtime_growth_profile_csv": str(runtime_growth_profile_csv),
+            "runtime_growth_profile_json": str(runtime_growth_profile_json),
+            "spotlight_dir": None if not spotlight_paths else str(self.spotlight_dir),
             "topology_v0_1_json": None if topology_export_error else str(topology_json),
             "topology_query_report_json": None if topology_export_error else str(topology_query_report_json),
-            "topology_v0_1_graphml": None if topology_export_error else str(topology_graphml),
+            "topology_v0_1_graphml": None if topology_export_error or topology_graphml is None else str(topology_graphml),
         }
 
     def _snapshot_metric_summary(self, snapshot: SnapshotRecord) -> Dict[str, Any]:

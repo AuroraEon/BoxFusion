@@ -1,0 +1,69 @@
+{
+  "version": "0.2_final",
+  "canonical_output_root": "world_model_backend_outputs_v0_2_final/scenes",
+  "canonical_eval_root": "world_model_backend_outputs_v0_2_final/eval/backend_eval_v0_1",
+  "dataset_root": "/media/aurora/Program/dataset/hm3dsem_walks/val",
+  "notes": [
+    "This plan defines the final retention policy for the 8 active HM3D overlap scenes.",
+    "All 8 scenes belong in the canonical backend dataset.",
+    "Only 00873-bxsVRursffK, 00843-DYehNKdT76V, and 00829-QaLdnwvtxbs keep Tier 2 showcase outputs."
+  ],
+  "scenes": [
+    {
+      "sequence_name": "00824-Dd4bFSTQ8gi",
+      "retention_tier": "core_only",
+      "keep_tier2": false,
+      "role": "backup",
+      "notes": "Keep for benchmark coverage and backend support. Do not retain heavy demo assets."
+    },
+    {
+      "sequence_name": "00829-QaLdnwvtxbs",
+      "retention_tier": "full",
+      "keep_tier2": true,
+      "role": "single_floor_clean",
+      "notes": "Clean single-floor showcase scene. Retain Tier 1 plus Tier 2 outputs."
+    },
+    {
+      "sequence_name": "00843-DYehNKdT76V",
+      "retention_tier": "full",
+      "keep_tier2": true,
+      "role": "backend_anchor",
+      "notes": "Best balanced multi-floor backend example. Retain Tier 1 plus Tier 2 outputs."
+    },
+    {
+      "sequence_name": "00861-GLAQ4DNUx5U",
+      "retention_tier": "core_only",
+      "keep_tier2": false,
+      "role": "coverage",
+      "notes": "Keep for benchmark coverage and backend support. Do not retain heavy demo assets."
+    },
+    {
+      "sequence_name": "00862-LT9Jq6dN3Ea",
+      "retention_tier": "difficult_core_only",
+      "keep_tier2": false,
+      "role": "difficult_case",
+      "notes": "Unique 3-floor overlap scene. Preserve as a difficult runtime-risk coverage case, but not as a Tier 2 showcase."
+    },
+    {
+      "sequence_name": "00873-bxsVRursffK",
+      "retention_tier": "full",
+      "keep_tier2": true,
+      "role": "showcase",
+      "notes": "Best teacher-facing showcase scene. Retain Tier 1 plus Tier 2 outputs."
+    },
+    {
+      "sequence_name": "00877-4ok3usBNeis",
+      "retention_tier": "core_only",
+      "keep_tier2": false,
+      "role": "backup",
+      "notes": "Keep for benchmark coverage and backend support. Do not retain heavy demo assets."
+    },
+    {
+      "sequence_name": "00890-6s7QHgap2fW",
+      "retention_tier": "core_only",
+      "keep_tier2": false,
+      "role": "coverage",
+      "notes": "Keep for benchmark coverage and backend support. Do not retain heavy demo assets."
+    }
+  ]
+}

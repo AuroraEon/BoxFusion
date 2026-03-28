@@ -258,6 +258,16 @@ python stage_a_topology_acceptance.py \
 
 That acceptance utility is intentionally small and practical. It:
 
+### Canonical HM3D Backend Root
+
+For the current HM3D overlap backend benchmark stage, the recommended canonical output root is:
+
+```bash
+./world_model_backend_outputs_v0_2_final/
+```
+
+The final retention plan lives at [`stage_a_eval/scene_retention_plan.json`](/home/aurora/workspace1/BoxFusion/stage_a_eval/scene_retention_plan.json), and the backend refresh / prune guidance is summarized in [`docs/backend_eval_v0_1.md`](/home/aurora/workspace1/BoxFusion/docs/backend_eval_v0_1.md).
+
 - lists inspectable room ids, anchor ids, object ids, and object labels from the topology JSON
 - reports counts and sample ids/labels
 - exercises `query_route_to_anchor`, `query_route_to_object(object_id=...)`, and `query_route_to_object(object_label=...)` on real exported targets when available

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
-DEFAULT_OUTPUT_ROOT = Path("stage_a_outputs_vt_fallback_v01_rerun2")
+DEFAULT_OUTPUT_ROOT = Path("world_model_backend_outputs_v0_2_final/scenes")
 DEFAULT_REPORT_DIR_NAME = "world_model_backend_eval_v0_2"
 DEFAULT_TASK_SHEET = Path("evaluation/world_model_backend/tasks/multifloor_paper_eval_v0_2.json")
 TASK_SHEET_VERSION = "0.2"

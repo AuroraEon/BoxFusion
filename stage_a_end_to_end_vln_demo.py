@@ -13,8 +13,8 @@ from boxfusion.vln_closed_loop import VLNClosedLoopExecutor, extract_room_transi
 from boxfusion.vln_end_to_end_demo import VLNEndToEndDemoOrchestrator
 
 
-DEFAULT_OUTPUT_ROOT = Path("stage_a_outputs_vt_fallback_v01_rerun2")
-DEFAULT_SEQUENCE_IDS = ("00843-DYehNKdT76V", "00847-bCPU9suPUw9")
+DEFAULT_OUTPUT_ROOT = Path("world_model_backend_outputs_v0_1/scenes")
+DEFAULT_SEQUENCE_IDS = ("00843-DYehNKdT76V", "00824-Dd4bFSTQ8gi")
 DEFAULT_REPORT_DIR_NAME = "end_to_end_vln_demo_v0_1"
 REPORT_VERSION = "0.1"
 IMPLEMENTATION_FILES = [
@@ -597,7 +597,7 @@ def build_report_payload(
             "Natural-language request intake through the existing constrained tool-use adapter.",
             "Structured task handoff into the existing Query API and closed-loop executor without moving planning logic upward.",
             "Unified teacher-facing records that show interpreted request, resolved target, route summary, floor switches, vertical transitions, and execution outcome.",
-            "A real-export harness on 00843-DYehNKdT76V and 00847-bCPU9suPUw9 with honest ambiguous, unresolved, and unsupported coverage.",
+            "A real-export harness on 00843-DYehNKdT76V and 00824-Dd4bFSTQ8gi with honest ambiguous, unresolved, and unsupported coverage.",
         ],
         "architecture_flow": [
             "NL request -> constrained interpretation / tool-use",

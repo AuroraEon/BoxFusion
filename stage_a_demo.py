@@ -70,6 +70,15 @@ def _infer_sequence_id(cfg: dict, seq: Optional[str]) -> str:
     return datadir.name.rstrip("/")
 
 
+def _infer_dataset_root_for_manifest(cfg: dict, sequence_id: str) -> Optional[str]:
+    datadir = Path(cfg["data"]["datadir"])
+    if datadir.name == "frames" and datadir.parent.name == sequence_id:
+        return str(datadir.parent.parent)
+    if datadir.name == sequence_id:
+        return str(datadir.parent)
+    return None
+
+
 def _diagnostic_sort_key(item: dict) -> Tuple[float, float, int]:
     return (
         -float(item.get("teacher_evidence_score", 0.0)),
@@ -113,15 +122,18 @@ def _run_single_sequence(
     recorder = ClosedLoopDemoRecorder(
         output_root=args.output_root,
         sequence_id=sequence_id,
+        dataset_root=_infer_dataset_root_for_manifest(cfg, sequence_id),
         capture_stride_frames=args.capture_stride or int(cfg["data"]["gap"]),
         video_fps=args.video_fps,
         canvas_size=(args.canvas_width, args.canvas_height),
-        save_scene_graph_vis=args.save_scene_graph_vis,
-        spotlight_count=args.spotlight_count,
+        save_scene_graph_vis=bool(args.save_scene_graph_vis and not args.core_only),
+        spotlight_count=0 if args.core_only else args.spotlight_count,
         room_seg_interval=args.room_seg_interval,
         max_frames=args.max_frames,
-        full_rgb_replay=args.full_rgb_replay,
+        full_rgb_replay=bool(args.full_rgb_replay and not args.core_only),
         per_frame_pose_overlay=True,
+        core_only=args.core_only,
+        runtime_profile_interval=args.runtime_profile_interval,
     )
 
     result = run(
@@ -141,9 +153,11 @@ def _run_single_sequence(
         room_seg_interval=args.room_seg_interval,
         demo_recorder=recorder,
         debug_room_dir=str(recorder.output_root / "debug_room"),
-        save_scene_graph_vis=args.save_scene_graph_vis,
+        save_scene_graph_vis=bool(args.save_scene_graph_vis and not args.core_only),
         max_frames=args.max_frames,
         total_frames=raw_total_frames,
+        save_point_cloud=not args.core_only,
+        write_debug_room_artifacts=not args.core_only,
     )
 
     summary_payload = None
@@ -360,12 +374,19 @@ def main() -> None:
     parser.add_argument("--keyframe-gap", default=None, type=int)
     parser.add_argument("--room-seg-interval", default=100, type=int)
     parser.add_argument("--capture-stride", default=None, type=int, help="Snapshot stride in frames")
+    parser.add_argument("--runtime-profile-interval", default=None, type=int, help="Frame interval used for runtime-growth profile sampling")
+    parser.add_argument("--core-only", action="store_true", help="Keep Tier 1 backend artifacts only and suppress optional demo/showcase outputs")
     parser.add_argument(
         "--full-rgb-replay",
         action="store_true",
         help="Export one video frame per processed dataset frame while holding the BEV semantic map between real snapshot refreshes",
     )
-    parser.add_argument("--output-root", default="./stage_a_outputs", type=str)
+    parser.add_argument(
+        "--output-root",
+        default="./world_model_backend_outputs_v0_2_final/scenes",
+        type=str,
+        help="Per-scene output root. Defaults to the canonical final backend dataset root.",
+    )
     parser.add_argument("--video-fps", default=12, type=int)
     parser.add_argument("--canvas-width", default=1600, type=int)
     parser.add_argument("--canvas-height", default=900, type=int)

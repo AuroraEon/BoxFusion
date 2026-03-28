@@ -63,6 +63,8 @@ def run(
     save_scene_graph_vis=True,
     max_frames=None,
     total_frames=None,
+    save_point_cloud=True,
+    write_debug_room_artifacts=True,
 ):
     if re_vis and (rerun is None or rrb is None):
         raise ImportError("rerun is required when visualization is enabled. Install rerun or set re_vis=False.")
@@ -127,7 +129,8 @@ def run(
     last_segmentation_frame_idx = None
     last_demo_frame = None
 
-    os.makedirs(debug_room_dir, exist_ok=True)
+    if write_debug_room_artifacts:
+        os.makedirs(debug_room_dir, exist_ok=True)
 
     def maybe_capture_demo_snapshot(frame_idx, timestamp, image_frame, pose_matrix, segmentation_updated=False):
         nonlocal latest_vector_map
@@ -189,6 +192,12 @@ def run(
 
         # -> channels last.
         image = np.moveaxis(sample["wide"]["image"][-1].numpy(), 0, -1)  #[H,W,3]
+        last_demo_frame = {
+            "frame_idx": int(count),
+            "timestamp": float(sample_timestamp),
+            "image_rgb": np.asarray(image).copy(),
+            "pose": np.asarray(RT, dtype=np.float32).copy(),
+        }
 
         if re_vis:
             color_camera = rerun.Pinhole(
@@ -310,7 +319,7 @@ def run(
 
                 markers = room_segmenter.perform_segmentation(
                     all_pred_box=all_pred_box,
-                    debug_path=debug_room_dir,
+                    debug_path=debug_room_dir if write_debug_room_artifacts else None,
                     count=count,
                 )
 
@@ -322,8 +331,9 @@ def run(
                         scene_graph_vis_dir=debug_room_dir,
                     )
                     latest_vector_map = vector_map
-                    with open(os.path.join(debug_room_dir, f"vector_map_{count}.json"), 'w') as f:
-                        json.dump(vector_map, f, indent=2)
+                    if write_debug_room_artifacts:
+                        with open(os.path.join(debug_room_dir, f"vector_map_{count}.json"), 'w') as f:
+                            json.dump(vector_map, f, indent=2)
                     print(f"[{count}] Vector Map 及拓扑数据已更新！")
                     segmentation_updated = True
                     segmentation_cycle_idx += 1
@@ -557,7 +567,24 @@ def run(
                 segmentation_cycle_idx=segmentation_cycle_idx,
                 last_segmentation_frame_idx=last_segmentation_frame_idx,
             )
-        
+
+            demo_recorder.record_runtime_growth(
+                frame_idx=count,
+                cumulative_processed_frames=count + 1,
+                vector_map=latest_vector_map,
+                global_box_count=None if all_pred_box is None else len(all_pred_box),
+                stage_timings={
+                    "data_preprocess_sec": t_data_end - t_loop_start,
+                    "model_bbox_inference_sec": t_infer_end - t_infer_start,
+                    "topology_room_segmentation_sec": t_seg_end - t_seg_start,
+                    "rerun_visualization_sec": t_rerun_end - t_rerun_start,
+                    "feature_boxfusion_sec": t_fusion_end - t_fusion_start,
+                    "total_step_sec": t_fusion_end - t_loop_start,
+                },
+                is_keyframe=bool(count % gap == 0 or is_last_frame),
+                segmentation_updated=bool(segmentation_updated),
+            )
+
         # --- 打印本帧耗时统计（仅在关键帧打印） ---
         if count % gap == 0:
             print(f"\n=== 关键帧 [{count}] 耗时分析 (单位: 秒) ===")
@@ -596,10 +623,11 @@ def run(
 
     print("正在保存点云文件...")
     save_path = "./exported_pc/"
-    os.makedirs(save_path, exist_ok=True)
+    if save_point_cloud:
+        os.makedirs(save_path, exist_ok=True)
     pc_save_name = None
     # --- 新增开始：将收集到的点云列表合并并保存为 PLY ---
-    if len(accumulated_all_pts) > 0 and vid_str is not None:
+    if save_point_cloud and len(accumulated_all_pts) > 0 and vid_str is not None:
         all_pts_merged = np.concatenate(accumulated_all_pts, axis=0)
 
         pcd = o3d.geometry.PointCloud()
@@ -621,7 +649,7 @@ def run(
     final_frame_idx = max(count - 1, 0)
     final_flush_report = room_segmenter.flush_pending_floor_segments(
         all_pred_box=all_pred_box,
-        debug_path=debug_room_dir,
+        debug_path=debug_room_dir if write_debug_room_artifacts else None,
         count=final_frame_idx,
     )
     if final_flush_report.get("segmented_floor_count", 0) > 0:
@@ -639,19 +667,20 @@ def run(
             save_scene_graph_vis=False,
             scene_graph_vis_dir=str(getattr(demo_recorder, "scene_graph_dir", debug_room_dir)) if demo_recorder is not None else debug_room_dir,
         )
-        if final_flush_report.get("segmented_floor_count", 0) > 0:
+        if final_flush_report.get("segmented_floor_count", 0) > 0 and write_debug_room_artifacts:
             with open(os.path.join(debug_room_dir, f"vector_map_{final_frame_idx}_final_flush.json"), 'w') as f:
                 json.dump(latest_vector_map, f, indent=2)
 
-    diagnostics_dir = os.path.join(debug_room_dir, "floor_diagnostics")
-    room_segmenter.save_floor_diagnostics(
-        output_dir=diagnostics_dir,
-        vector_map=latest_vector_map,
-        total_frames=count,
-        last_segmentation_frame_idx=last_segmentation_frame_idx,
-        room_seg_interval=room_seg_interval,
-        sequence_id=vid_str,
-    )
+    if write_debug_room_artifacts:
+        diagnostics_dir = os.path.join(debug_room_dir, "floor_diagnostics")
+        room_segmenter.save_floor_diagnostics(
+            output_dir=diagnostics_dir,
+            vector_map=latest_vector_map,
+            total_frames=count,
+            last_segmentation_frame_idx=last_segmentation_frame_idx,
+            room_seg_interval=room_seg_interval,
+            sequence_id=vid_str,
+        )
 
     demo_outputs = None
     if demo_recorder is not None:

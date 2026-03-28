@@ -13,8 +13,8 @@ from boxfusion.vln_closed_loop import VLNClosedLoopExecutor, extract_room_transi
 from boxfusion.vln_tool_use import MinimalVLNToolUseAdapter, render_teacher_brief
 
 
-DEFAULT_OUTPUT_ROOT = Path("stage_a_outputs_vt_fallback_v01_rerun2")
-DEFAULT_SEQUENCE_IDS = ("00843-DYehNKdT76V", "00847-bCPU9suPUw9")
+DEFAULT_OUTPUT_ROOT = Path("world_model_backend_outputs_v0_1/scenes")
+DEFAULT_SEQUENCE_IDS = ("00843-DYehNKdT76V", "00824-Dd4bFSTQ8gi")
 REPORT_VERSION = "0.1"
 IMPLEMENTATION_FILES = [
     "boxfusion/vln_tool_use.py",
