@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import time
+from collections import Counter
 from pathlib import Path
 from statistics import mean
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -55,6 +56,22 @@ def task_expected_outcome(task: Dict[str, Any]) -> str:
     if "expected_outcome" in task:
         return str(task.get("expected_outcome"))
     return "success" if bool(task.get("expected_success", True)) else "failure"
+
+
+def task_expected_statuses(task: Dict[str, Any]) -> List[str]:
+    raw = task.get("expected_statuses")
+    if isinstance(raw, str):
+        items = [item.strip() for item in raw.split("|") if item.strip()]
+        if items:
+            return items
+    if isinstance(raw, Sequence) and not isinstance(raw, (str, bytes)):
+        items = [str(item).strip() for item in raw if str(item).strip()]
+        if items:
+            return items
+    expected_outcome = task_expected_outcome(task)
+    if expected_outcome == "success":
+        return ["success"]
+    return ["failure"]
 
 
 def safe_rate(numerator: int, denominator: int) -> Optional[float]:
@@ -200,6 +217,7 @@ def normalize_task_result(task: Dict[str, Any], raw_result: Dict[str, Any], late
     task_type = str(task.get("task_type"))
     route_policy = task_policy(task)
     expected_outcome = task_expected_outcome(task)
+    expected_statuses = task_expected_statuses(task)
 
     if task_type.startswith("resolve_"):
         target_resolution = dict(raw_result)
@@ -251,9 +269,12 @@ def normalize_task_result(task: Dict[str, Any], raw_result: Dict[str, Any], late
         "expected_floor_sensitive": task.get("expected_floor_sensitive"),
         "expected_room_sensitive": task.get("expected_room_sensitive"),
         "expected_outcome": expected_outcome,
+        "expected_statuses": "|".join(expected_statuses),
         "expected_success": task.get("expected_success"),
         "actual_status": actual_status,
-        "task_success": bool(actual_status == expected_outcome),
+        "task_success": bool(actual_status in expected_statuses),
+        "probe_slice": task.get("probe_slice", "positive_seeded"),
+        "probe_case_kind": task.get("probe_case_kind"),
         "expected_target_room": expected_room,
         "actual_resolved_room": actual_room,
         "expected_floor_id": expected_floor,
@@ -306,6 +327,31 @@ def scene_runtime_row(sequence_name: str, manifest: Dict[str, Any]) -> Dict[str,
     }
 
 
+def summarize_task_group(rows: Sequence[Dict[str, Any]], group_key: str, group_value: Any) -> Dict[str, Any]:
+    success_count = sum(1 for row in rows if row.get("task_success"))
+    room_num, room_den, room_rate = rate_for(rows, "exact_room_hit")
+    floor_num, floor_den, floor_rate = rate_for(rows, "exact_floor_hit")
+    route_num, route_den, route_rate = rate_for(rows, "route_found")
+    latency_values = [float(row["latency_ms"]) for row in rows if row.get("latency_ms") is not None]
+    expected_failure_count = sum(1 for row in rows if str(row.get("expected_outcome")) != "success")
+    status_histogram = Counter(str(row.get("actual_status") or "unknown") for row in rows)
+    return {
+        group_key: group_value,
+        "task_count": len(rows),
+        "expected_failure_task_count": expected_failure_count,
+        "task_success_rate": safe_rate(success_count, len(rows)),
+        "task_success_raw": f"{success_count}/{len(rows)}" if rows else "0/0",
+        "exact_room_hit_rate": room_rate,
+        "exact_room_hit_raw": f"{room_num}/{room_den}" if room_den else "n/a",
+        "exact_floor_hit_rate": floor_rate,
+        "exact_floor_hit_raw": f"{floor_num}/{floor_den}" if floor_den else "n/a",
+        "route_found_rate": route_rate,
+        "route_found_raw": f"{route_num}/{route_den}" if route_den else "n/a",
+        "latency_mean_ms": round(mean(latency_values), 3) if latency_values else None,
+        "actual_status_histogram": json.dumps(dict(sorted(status_histogram.items())), sort_keys=True),
+    }
+
+
 def summarize_results(
     *,
     task_results: Sequence[Dict[str, Any]],
@@ -355,6 +401,15 @@ def summarize_results(
             }
         )
 
+    probe_slice_breakdown = [
+        summarize_task_group(
+            [row for row in task_results if str(row.get("probe_slice", "positive_seeded")) == probe_slice],
+            "probe_slice",
+            probe_slice,
+        )
+        for probe_slice in sorted({str(row.get("probe_slice", "positive_seeded")) for row in task_results})
+    ]
+
     scene_rows = [
         scene_runtime_row(sequence_name, manifest)
         for sequence_name, manifest in sorted(scene_manifests.items())
@@ -388,6 +443,7 @@ def summarize_results(
         "aggregate_optional_demo_artifact_size_bytes": aggregate_optional_demo_artifact_bytes,
         "policy_breakdown": policy_breakdown,
         "task_type_breakdown": task_type_breakdown,
+        "probe_slice_breakdown": probe_slice_breakdown,
         "scene_runtime_summary": scene_rows,
     }
 
@@ -400,6 +456,7 @@ def render_outputs(report_root: Path, payload: Dict[str, Any]) -> Dict[str, str]
     scene_rows = list(aggregate.get("scene_runtime_summary") or [])
     policy_rows = list(aggregate.get("policy_breakdown") or [])
     task_type_rows = list(aggregate.get("task_type_breakdown") or [])
+    probe_slice_rows = list(aggregate.get("probe_slice_breakdown") or [])
 
     results_json = report_root / RESULTS_JSON_NAME
     aggregate_json = report_root / "aggregate_summary.json"
@@ -409,6 +466,7 @@ def render_outputs(report_root: Path, payload: Dict[str, Any]) -> Dict[str, str]
     scene_runtime_csv = report_root / "scene_runtime_summary.csv"
     policy_csv = report_root / "policy_breakdown.csv"
     task_type_csv = report_root / "task_type_breakdown.csv"
+    probe_slice_csv = report_root / "probe_slice_breakdown.csv"
 
     dump_json(results_json, payload)
     dump_json(aggregate_json, aggregate)
@@ -460,9 +518,12 @@ def render_outputs(report_root: Path, payload: Dict[str, Any]) -> Dict[str, str]
                 "expected_floor_sensitive",
                 "expected_room_sensitive",
                 "expected_outcome",
+                "expected_statuses",
                 "expected_success",
                 "actual_status",
                 "task_success",
+                "probe_slice",
+                "probe_case_kind",
                 "expected_target_room",
                 "actual_resolved_room",
                 "expected_floor_id",
@@ -486,6 +547,12 @@ def render_outputs(report_root: Path, payload: Dict[str, Any]) -> Dict[str, str]
         write_csv(policy_csv, policy_rows, list(policy_rows[0].keys()))
     if task_type_rows:
         write_csv(task_type_csv, task_type_rows, list(task_type_rows[0].keys()))
+    if probe_slice_rows:
+        write_csv(probe_slice_csv, probe_slice_rows, list(probe_slice_rows[0].keys()))
+        for row in probe_slice_rows:
+            slice_name = str(row.get("probe_slice") or "unknown")
+            slice_summary_csv = report_root / f"slice_{slice_name}_summary.csv"
+            write_csv(slice_summary_csv, [row], list(row.keys()))
 
     lines = [
         "# Backend Evaluation Summary",
@@ -510,11 +577,25 @@ def render_outputs(report_root: Path, payload: Dict[str, Any]) -> Dict[str, str]
         f"- Aggregate Tier 1 backend artifact bytes: {aggregate.get('aggregate_backend_artifact_size_bytes')}",
         f"- Aggregate Tier 2 optional demo artifact bytes: {aggregate.get('aggregate_optional_demo_artifact_size_bytes')}",
         "",
+        "## Probe Slice Breakdown",
+        "",
+        "| Slice | Tasks | Expected-Failure Tasks | Success Rate | Room Hit | Floor Hit | Route Found | Mean Latency (ms) | Status Histogram |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+    ]
+    for row in probe_slice_rows:
+        lines.append(
+            f"| {row.get('probe_slice')} | {row.get('task_count')} | {row.get('expected_failure_task_count')} | {format_rate(row.get('task_success_rate'))} | {format_rate(row.get('exact_room_hit_rate'))} | {format_rate(row.get('exact_floor_hit_rate'))} | {format_rate(row.get('route_found_rate'))} | {row.get('latency_mean_ms')} | {row.get('actual_status_histogram')} |"
+        )
+
+    lines.extend(
+        [
+        "",
         "## Policy Breakdown",
         "",
         "| Policy | Tasks | Success Rate | Route-Found Rate | Mean Latency (ms) |",
         "| --- | ---: | ---: | ---: | ---: |",
-    ]
+        ]
+    )
     for row in policy_rows:
         lines.append(
             f"| {row.get('route_policy')} | {row.get('task_count')} | {format_rate(row.get('task_success_rate'))} | {format_rate(row.get('route_found_rate'))} | {row.get('latency_mean_ms')} |"
@@ -542,6 +623,7 @@ def render_outputs(report_root: Path, payload: Dict[str, Any]) -> Dict[str, str]
         "scene_runtime_csv": str(scene_runtime_csv),
         "policy_csv": str(policy_csv),
         "task_type_csv": str(task_type_csv),
+        "probe_slice_csv": str(probe_slice_csv),
     }
 
 
@@ -585,9 +667,12 @@ def run_evaluation(
                     "expected_floor_sensitive": task.get("expected_floor_sensitive"),
                     "expected_room_sensitive": task.get("expected_room_sensitive"),
                     "expected_outcome": task_expected_outcome(task),
+                    "expected_statuses": "|".join(task_expected_statuses(task)),
                     "expected_success": task.get("expected_success"),
                     "actual_status": "skipped_missing_scene_artifacts",
                     "task_success": False,
+                    "probe_slice": task.get("probe_slice", "positive_seeded"),
+                    "probe_case_kind": task.get("probe_case_kind"),
                     "expected_target_room": task.get("expected_target_room"),
                     "actual_resolved_room": None,
                     "expected_floor_id": task.get("expected_floor_id"),
