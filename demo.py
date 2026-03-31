@@ -41,6 +41,7 @@ from boxfusion.box_manager import BoxManager
 from boxfusion.box_fusion import BoxFusion
 
 from boxfusion.floor_aware_room_segmenter import FloorAwareRoomSegmenter
+from boxfusion.runtime_instrumentation import RuntimeInstrumentation
 
 
 def run(
@@ -132,20 +133,95 @@ def run(
     if write_debug_room_artifacts:
         os.makedirs(debug_room_dir, exist_ok=True)
 
+    instrumentation_output_dir = (
+        Path(getattr(demo_recorder, "log_dir", debug_room_dir)) / "runtime_instrumentation"
+    )
+    runtime_profiler = RuntimeInstrumentation(
+        sequence_id=str(getattr(demo_recorder, "sequence_id", "runtime_session")),
+        output_dir=instrumentation_output_dir,
+    )
+
+    def apply_topology_status(frame_idx, pose_matrix):
+        topology_status = room_segmenter.describe_topology_status(pose_matrix=pose_matrix)
+        runtime_profiler.add_values(
+            frame_idx,
+            {
+                "active_floor_id": topology_status.get("active_floor_id"),
+                "active_floor_status": topology_status.get("active_floor_status"),
+                "active_room_id": topology_status.get("active_room_id"),
+                "active_room_available": bool(topology_status.get("active_room_available")),
+                "room_leave_signal_exists": bool(topology_status.get("room_leave_signal_exists")),
+                "topology_incremental_online": bool(topology_status.get("topology_incremental_online")),
+                "topology_update_mode": topology_status.get("topology_update_mode"),
+                "topology_missing_online_trigger_structures": "|".join(
+                    str(item) for item in topology_status.get("topology_missing_online_trigger_structures", [])
+                ),
+            },
+        )
+
+    def log_export_profile(frame_idx, *, call_context, call_origin, segmentation_refresh_frame, stage_bucket=None):
+        export_metrics = dict(room_segmenter.last_export_profile or {})
+        if not export_metrics:
+            return {}
+        runtime_profiler.log_export_call(
+            frame_idx,
+            call_context=call_context,
+            call_origin=call_origin,
+            segmentation_refresh_frame=bool(segmentation_refresh_frame),
+            metrics=export_metrics,
+        )
+        if stage_bucket == "stage3":
+            runtime_profiler.add_values(
+                frame_idx,
+                {
+                    "vector_map_export_after_segmentation_sec": float(export_metrics.get("total_sec", 0.0)),
+                    "vertical_transition_export_sec": float(export_metrics.get("vertical_transition_export_sec", 0.0)),
+                    "room_export_sec": float(export_metrics.get("room_export_sec", 0.0)),
+                    "object_export_sec": float(export_metrics.get("object_export_sec", 0.0)),
+                    "diagnostics_export_sec": float(export_metrics.get("diagnostics_export_sec", 0.0)),
+                },
+            )
+            room_segmenter.update_latest_segmentation_export_metrics(frame_idx)
+        elif stage_bucket == "stage5":
+            runtime_profiler.add_values(
+                frame_idx,
+                {
+                    "snapshot_export_sec": float(export_metrics.get("total_sec", 0.0)),
+                    "vector_map_export_sec": float(export_metrics.get("total_sec", 0.0)),
+                    "scene_graph_build_sec": float(export_metrics.get("scene_graph_build_sec", 0.0)),
+                    "spatial_relations_sec": float(export_metrics.get("spatial_relations_sec", 0.0)),
+                    "anchor_build_sec": float(export_metrics.get("anchor_build_sec", 0.0)),
+                },
+            )
+        elif stage_bucket == "final":
+            room_segmenter.update_latest_segmentation_export_metrics(frame_idx)
+        return export_metrics
+
     def maybe_capture_demo_snapshot(frame_idx, timestamp, image_frame, pose_matrix, segmentation_updated=False):
         nonlocal latest_vector_map
+        capture_t0 = time.perf_counter()
         if demo_recorder is None or not demo_recorder.should_capture(frame_idx, segmentation_updated):
-            return
+            return {"captured": False, "capture_total_sec": 0.0, "snapshot_export_sec": 0.0}
 
         snapshot_vector_map = latest_vector_map
+        snapshot_export_sec = 0.0
         if room_segmenter.last_room_markers is not None:
             snapshot_vector_map = room_segmenter.get_vector_map_data(
                 all_pred_box,
                 count=frame_idx,
                 save_scene_graph_vis=bool(save_scene_graph_vis and getattr(demo_recorder, "save_scene_graph_vis", False)),
                 scene_graph_vis_dir=str(getattr(demo_recorder, "scene_graph_dir", debug_room_dir)),
+                instrumentation_context="stage5_snapshot_capture",
             )
             latest_vector_map = snapshot_vector_map
+            export_metrics = log_export_profile(
+                frame_idx,
+                call_context="stage5_snapshot_capture",
+                call_origin="maybe_capture_demo_snapshot",
+                segmentation_refresh_frame=bool(segmentation_updated),
+                stage_bucket="stage5",
+            )
+            snapshot_export_sec = float(export_metrics.get("total_sec", 0.0))
 
         demo_recorder.record_snapshot(
             frame_idx=frame_idx,
@@ -159,6 +235,14 @@ def run(
             segmentation_cycle_idx=segmentation_cycle_idx,
             last_segmentation_frame_idx=last_segmentation_frame_idx,
         )
+        return {
+            "captured": True,
+            "capture_total_sec": float(time.perf_counter() - capture_t0),
+            "snapshot_export_sec": float(snapshot_export_sec),
+        }
+
+    def sync_segmentation_run_logs():
+        runtime_profiler.sync_segmentation_runs(room_segmenter.export_segmentation_runs())
     
     # 在循环外初始化起点
     t_loop_start = time.time()
@@ -167,6 +251,14 @@ def run(
         if max_frames is not None and count >= max_frames:
             break
         is_last_frame = total_frames is not None and count == total_frames - 1
+        is_keyframe = bool(count % gap == 0 or is_last_frame)
+        runtime_profiler.mark_frame(
+            count,
+            sample_kind="frame",
+            profiled_frame=bool(is_keyframe),
+            is_keyframe=bool(is_keyframe),
+            segmentation_refresh_frame=False,
+        )
         # ---------------------------------------------------------
         # 阶段 1: 数据加载与预处理 (Data Loading & Preprocessing)
         # ---------------------------------------------------------
@@ -276,16 +368,19 @@ def run(
                 
                 xyzrgb_down = np.concatenate([np.asarray(pcd_frame.points), np.asarray(pcd_frame.colors)], axis=1)
                 accumulated_all_pts.append(xyzrgb_down)
-                room_segmenter.observe_frame(
-                    frame_idx=count,
-                    timestamp=sample_timestamp,
-                    pose_matrix=RT,
-                    points_xyzrgb=xyzrgb_down,
-                    is_keyframe=True,
-                )
+                with runtime_profiler.timer(count, "observe_frame_sec"):
+                    room_segmenter.observe_frame(
+                        frame_idx=count,
+                        timestamp=sample_timestamp,
+                        pose_matrix=RT,
+                        points_xyzrgb=xyzrgb_down,
+                        is_keyframe=True,
+                    )
                 frame_floor_observed = True
                 
         t_infer_end = time.time()
+        if is_keyframe:
+            runtime_profiler.set_value(count, "pred_instance_count", int(len(pred_instances)))
 
         # ---------------------------------------------------------
         # 阶段 3: 房间拓扑分割 (Room Segmentation)
@@ -293,13 +388,14 @@ def run(
         t_seg_start = time.time()
 
         if not frame_floor_observed:
-            room_segmenter.observe_frame(
-                frame_idx=count,
-                timestamp=sample_timestamp,
-                pose_matrix=RT,
-                points_xyzrgb=None,
-                is_keyframe=False,
-            )
+            with runtime_profiler.timer(count, "observe_frame_sec"):
+                room_segmenter.observe_frame(
+                    frame_idx=count,
+                    timestamp=sample_timestamp,
+                    pose_matrix=RT,
+                    points_xyzrgb=None,
+                    is_keyframe=False,
+                )
 
         # 将分割触发逻辑提出来，只要是 100 的整数倍帧就会检查，不再受 gap 限制
         segmentation_updated = False
@@ -322,6 +418,50 @@ def run(
                     debug_path=debug_room_dir if write_debug_room_artifacts else None,
                     count=count,
                 )
+                runtime_profiler.add_values(
+                    count,
+                    {
+                        "floor_merge_sec": float(room_segmenter.last_merge_profile.get("floor_merge_sec", 0.0)),
+                        "floor_downsample_sec": float(room_segmenter.last_merge_profile.get("floor_downsample_sec", 0.0)),
+                    },
+                )
+                runtime_profiler.add_values(
+                    count,
+                    {
+                        "merged_point_count_before_merge": int(room_segmenter.last_merge_profile.get("merged_point_count_before_merge", 0)),
+                        "merged_point_count_after_downsample": int(room_segmenter.last_merge_profile.get("merged_point_count_after_downsample", 0)),
+                    },
+                )
+                active_floor_id_for_seg = (room_segmenter.last_floor_observation or {}).get("floor_id")
+                active_floor_state = None if active_floor_id_for_seg is None else room_segmenter.floor_states.get(str(active_floor_id_for_seg))
+                seg_profile = {} if active_floor_state is None else dict(active_floor_state.segmenter.last_segmentation_profile or {})
+                runtime_profiler.add_values(
+                    count,
+                    {
+                        "segmentation_total_sec": float(
+                            room_segmenter.last_merge_profile.get("floor_merge_sec", 0.0)
+                            + room_segmenter.last_merge_profile.get("floor_downsample_sec", 0.0)
+                            + seg_profile.get("histogram_build_sec", 0.0)
+                            + seg_profile.get("segmentation_state_build_sec", 0.0)
+                            + seg_profile.get("room_tracking_sec", 0.0)
+                            + seg_profile.get("gateway_extraction_sec", 0.0)
+                        ),
+                        "histogram_build_sec": float(seg_profile.get("histogram_build_sec", 0.0)),
+                        "segmentation_state_build_sec": float(seg_profile.get("segmentation_state_build_sec", 0.0)),
+                        "room_tracking_sec": float(seg_profile.get("room_tracking_sec", 0.0)),
+                        "gateway_extraction_sec": float(seg_profile.get("gateway_extraction_sec", 0.0)),
+                        "wall_slice_point_count": int(seg_profile.get("wall_slice_point_count", 0)),
+                        "full_slice_point_count": int(seg_profile.get("full_slice_point_count", 0)),
+                        "grid_width": int(seg_profile.get("grid_width", 0)),
+                        "grid_height": int(seg_profile.get("grid_height", 0)),
+                        "grid_area": int(seg_profile.get("grid_area", 0)),
+                        "room_count_before_tracking": int(seg_profile.get("room_count_before_tracking", 0)),
+                        "room_count_after_tracking": int(seg_profile.get("room_count_after_tracking", 0)),
+                        "tracked_room_count": int(seg_profile.get("tracked_room_count", 0)),
+                        "gateway_room_pair_checks": int(seg_profile.get("gateway_room_pair_checks", 0)),
+                        "gateway_count": int(seg_profile.get("gateway_count", 0)),
+                    },
+                )
 
                 if markers is not None:
                     vector_map = room_segmenter.get_vector_map_data(
@@ -329,6 +469,14 @@ def run(
                         count=count,
                         save_scene_graph_vis=save_scene_graph_vis,
                         scene_graph_vis_dir=debug_room_dir,
+                        instrumentation_context="stage3_post_segmentation_refresh",
+                    )
+                    log_export_profile(
+                        count,
+                        call_context="stage3_post_segmentation_refresh",
+                        call_origin="segmentation_refresh",
+                        segmentation_refresh_frame=True,
+                        stage_bucket="stage3",
                     )
                     latest_vector_map = vector_map
                     if write_debug_room_artifacts:
@@ -338,10 +486,23 @@ def run(
                     segmentation_updated = True
                     segmentation_cycle_idx += 1
                     last_segmentation_frame_idx = int(count)
+                    runtime_profiler.mark_frame(
+                        count,
+                        sample_kind="segmentation_refresh" if not is_keyframe else "keyframe_segmentation_refresh",
+                        profiled_frame=True,
+                        segmentation_refresh_frame=True,
+                    )
+                    runtime_profiler.set_value(
+                        count,
+                        "current_vertical_transition_count",
+                        int(room_segmenter.last_export_profile.get("vertical_transition_count", 0)),
+                    )
+                sync_segmentation_run_logs()
             else:
                 print(f"[{count}] 警告: 没有收集到有效点云，无法执行房间分割！")
                 
         t_seg_end = time.time()
+        runtime_profiler.set_value(count, "stage3_total_sec", float(t_seg_end - t_seg_start))
 
         # ---------------------------------------------------------
         # 阶段 4: Rerun 可视化发送 (Visualization)
@@ -381,7 +542,7 @@ def run(
         t_fusion_start = time.time()
         
         # only process keyframes
-        if count % gap == 0 or is_last_frame:
+        if is_keyframe:
             
             all_kf_pose[count] = pose_np
             pose_np = np.expand_dims(pose_np,axis=0)
@@ -392,12 +553,37 @@ def run(
                 all_poses = all_poses
                 box_count += len(pred_instances)
                 box_manager.num_record[count] = box_count
-                maybe_capture_demo_snapshot(
+                capture_result = maybe_capture_demo_snapshot(
                     frame_idx=count,
                     timestamp=sample_timestamp,
                     image_frame=image,
                     pose_matrix=RT,
                     segmentation_updated=segmentation_updated,
+                )
+                runtime_profiler.add_values(
+                    count,
+                    {
+                        "snapshot_capture_sec": float(capture_result.get("capture_total_sec", 0.0)),
+                        "stage5_total_sec": float(time.time() - t_fusion_start),
+                        "data_preprocess_sec": float(t_data_end - t_loop_start),
+                        "model_bbox_inference_sec": float(t_infer_end - t_infer_start),
+                        "rerun_visualization_sec": float(t_rerun_end - t_rerun_start),
+                        "total_step_sec": float(time.time() - t_loop_start),
+                    },
+                )
+                if not segmentation_updated:
+                    runtime_profiler.mark_frame(count, sample_kind="keyframe", profiled_frame=True, segmentation_refresh_frame=False)
+                apply_topology_status(count, RT)
+                runtime_profiler.add_values(
+                    count,
+                    {
+                        "all_pred_box_after_association_count": None if all_pred_box is None else int(len(all_pred_box)),
+                        "total_retained_object_count": None if all_pred_box is None else int(len(all_pred_box)),
+                        "total_floor_count": int(len(room_segmenter.floor_manager.export_floors())),
+                        "total_room_count": None if latest_vector_map is None else int(len(latest_vector_map.get("rooms", []))),
+                        "total_retained_anchor_count": None if latest_vector_map is None else int(len(latest_vector_map.get("anchors", []))),
+                        "current_vertical_transition_count": None if latest_vector_map is None else int(len(latest_vector_map.get("vertical_transitions", []))),
+                    },
                 )
                 if demo_recorder is not None:
                     demo_recorder.record_frame(
@@ -408,6 +594,22 @@ def run(
                         trajectory_xy=[(float(pt[0]), float(pt[1])) for pt in traj_xyz],
                         segmentation_cycle_idx=segmentation_cycle_idx,
                         last_segmentation_frame_idx=last_segmentation_frame_idx,
+                    )
+                    demo_recorder.record_runtime_growth(
+                        frame_idx=count,
+                        cumulative_processed_frames=count + 1,
+                        vector_map=latest_vector_map,
+                        global_box_count=None if all_pred_box is None else len(all_pred_box),
+                        stage_timings={
+                            "data_preprocess_sec": t_data_end - t_loop_start,
+                            "model_bbox_inference_sec": t_infer_end - t_infer_start,
+                            "topology_room_segmentation_sec": t_seg_end - t_seg_start,
+                            "rerun_visualization_sec": t_rerun_end - t_rerun_start,
+                            "feature_boxfusion_sec": time.time() - t_fusion_start,
+                            "total_step_sec": time.time() - t_loop_start,
+                        },
+                        is_keyframe=bool(is_keyframe),
+                        segmentation_updated=bool(segmentation_updated),
                     )
                 count+=1
                 t_loop_start = time.time()
@@ -435,7 +637,9 @@ def run(
                 #scale the boxes by
                 boxes = scale_boxes(boxes,image.shape[0],image.shape[1],scale=1.5)
 
+                clip_t0 = time.perf_counter()
                 class_results, box_features = text_prompt(boxes, tokenized_text, text_features, image, clip_model, preprocess) #[N_box]
+                runtime_profiler.add_value(count, "clip_classification_sec", time.perf_counter() - clip_t0)
                 pred_instances.categories = class_results
 
                 # --- [修改点 1：将特征挂载到实例上] ---
@@ -449,6 +653,38 @@ def run(
  
                 #record the current frame boxes info
                 box_manager.init_new_predictions(len(pred_instances),0)
+                runtime_profiler.add_values(
+                    count,
+                    {
+                        "all_pred_box_before_association_count": 0,
+                        "all_pred_box_after_concat_count": int(len(pred_instances)),
+                        "all_pred_box_after_association_count": int(len(pred_instances)),
+                        "per_frame_ins_count": int(len(per_frame_ins)),
+                        "cur_keep_idx_count": 0,
+                        "cur_success_nms_count": 0,
+                        "small_object_candidate_count": 0,
+                        "boxfusion_candidates_scanned": 0,
+                        "boxfusion_candidates_eligible": 0,
+                        "boxfusion_candidates_optimized": 0,
+                        "boxfusion_candidates_updated": 0,
+                        "fusion_list_count": int(len(box_manager.fusion_list)),
+                        "fusion_list_ge3_count": 0,
+                        "fusion_list_len_mean": 1.0 if len(box_manager.fusion_list) > 0 else 0.0,
+                        "fusion_list_len_p50": 1.0 if len(box_manager.fusion_list) > 0 else 0.0,
+                        "fusion_list_len_p95": 1.0 if len(box_manager.fusion_list) > 0 else 0.0,
+                        "fusion_list_len_max": 1.0 if len(box_manager.fusion_list) > 0 else 0.0,
+                    },
+                )
+                runtime_profiler.log_history_scope(
+                    count,
+                    step_name="initial_keyframe_bootstrap",
+                    scope_label="current_frame_only",
+                    candidate_pool_before=0,
+                    candidate_pool_after=len(pred_instances),
+                    retained_history_pool=len(pred_instances),
+                    filter_description="no retained history yet; initialize global object store from current frame",
+                    notes="bootstrap frame initializes the retained object history",
+                )
 
             else:
                 
@@ -456,9 +692,12 @@ def run(
 
                 num_before_cat = len(all_pred_box)
                 cur_global_pred_box = all_pred_box
+                runtime_profiler.set_value(count, "all_pred_box_before_association_count", int(num_before_cat))
 
                 all_pred_box = Instances3D.cat([all_pred_box,pred_instances])
                 per_frame_ins = Instances3D.cat([per_frame_ins,pred_instances])
+                runtime_profiler.set_value(count, "all_pred_box_after_concat_count", int(len(all_pred_box)))
+                runtime_profiler.set_value(count, "per_frame_ins_count", int(len(per_frame_ins)))
 
                 all_poses = np.concatenate((all_poses, pose_np), axis=0)  
 
@@ -466,10 +705,30 @@ def run(
                 '''
                 STEP1: spatial association using 3D OBB NMS
                 '''
+                spatial_t0 = time.perf_counter()
                 mask, success_mask = Instances3D.spatial_association(all_pred_box,cfg["box_fusion"]["nms_threshold"],box_manager,per_frame_ins.cam_pose)
+                runtime_profiler.add_value(count, "spatial_association_sec", time.perf_counter() - spatial_t0)
                 
                 cur_keep_idx = [i-num_before_cat for i in mask if i>=num_before_cat]
                 cur_success_nms = [i-num_before_cat for i in success_mask if i>=num_before_cat]
+                runtime_profiler.add_values(
+                    count,
+                    {
+                        "cur_keep_idx_count": int(len(cur_keep_idx)),
+                        "cur_success_nms_count": int(len(cur_success_nms)),
+                        "small_object_candidate_count": int(len(cur_keep_idx)),
+                    },
+                )
+                runtime_profiler.log_history_scope(
+                    count,
+                    step_name="spatial_association",
+                    scope_label="global_retained_history",
+                    candidate_pool_before=int(num_before_cat),
+                    candidate_pool_after=int(len(mask)),
+                    retained_history_pool=int(num_before_cat),
+                    filter_description="3D OBB NMS over all retained global objects plus current-frame boxes",
+                    notes="no floor/room/window filter is applied before spatial association",
+                )
                 
  
                 keep_idx = np.asarray(mask)
@@ -477,6 +736,7 @@ def run(
                     '''
                     STEP2: correspondence association for small objects
                     '''
+                    corr_t0 = time.perf_counter()
                     all_pred_box,all_poses,keep_idx = Instances3D.correspondence_association(
                         cfg, 
                         box_manager, 
@@ -494,6 +754,17 @@ def run(
                         H=image.shape[0],
                         W=image.shape[1]
                         )
+                    runtime_profiler.add_value(count, "correspondence_association_sec", time.perf_counter() - corr_t0)
+                    runtime_profiler.log_history_scope(
+                        count,
+                        step_name="correspondence_association",
+                        scope_label="global_retained_history",
+                        candidate_pool_before=int(num_before_cat),
+                        candidate_pool_after=int(len(keep_idx)),
+                        retained_history_pool=int(num_before_cat),
+                        filter_description="small-object correspondence check is seeded by current-frame keep set but still compares against retained global history",
+                        notes=f"small_object_candidate_count={len(cur_keep_idx)}",
+                    )
 
                     # update the fusion list based on keep_idx
                     box_manager.update(keep_idx)
@@ -509,7 +780,35 @@ def run(
                     '''
                     print("frame_id:box_num",box_manager.num_record)
                     if cfg['box_fusion']['use']:
-                        Box_Fuser.boxfusion(all_pred_box, per_frame_ins, box_manager)
+                        boxfusion_profile = Box_Fuser.boxfusion(all_pred_box, per_frame_ins, box_manager)
+                        runtime_profiler.add_values(
+                            count,
+                            {
+                                "boxfusion_candidate_scan_sec": float(boxfusion_profile.get("boxfusion_candidate_scan_sec", 0.0)),
+                                "boxfusion_optimization_sec": float(boxfusion_profile.get("boxfusion_optimization_sec", 0.0)),
+                                "boxfusion_total_sec": float(boxfusion_profile.get("boxfusion_total_sec", 0.0)),
+                                "boxfusion_candidates_scanned": int(boxfusion_profile.get("boxfusion_candidates_scanned", 0)),
+                                "boxfusion_candidates_eligible": int(boxfusion_profile.get("boxfusion_candidates_eligible", 0)),
+                                "boxfusion_candidates_optimized": int(boxfusion_profile.get("boxfusion_candidates_optimized", 0)),
+                                "boxfusion_candidates_updated": int(boxfusion_profile.get("boxfusion_candidates_updated", 0)),
+                                "fusion_list_count": int(boxfusion_profile.get("fusion_list_count", 0)),
+                                "fusion_list_ge3_count": int(boxfusion_profile.get("fusion_list_ge3_count", 0)),
+                                "fusion_list_len_mean": float(boxfusion_profile.get("fusion_list_len_mean", 0.0)),
+                                "fusion_list_len_p50": float(boxfusion_profile.get("fusion_list_len_p50", 0.0)),
+                                "fusion_list_len_p95": float(boxfusion_profile.get("fusion_list_len_p95", 0.0)),
+                                "fusion_list_len_max": float(boxfusion_profile.get("fusion_list_len_max", 0.0)),
+                            },
+                        )
+                        runtime_profiler.log_history_scope(
+                            count,
+                            step_name="boxfusion",
+                            scope_label="near_global_retained_history",
+                            candidate_pool_before=int(boxfusion_profile.get("boxfusion_candidates_scanned", 0)),
+                            candidate_pool_after=int(boxfusion_profile.get("boxfusion_candidates_optimized", 0)),
+                            retained_history_pool=int(boxfusion_profile.get("retained_history_pool", 0)),
+                            filter_description="scan every retained object; optimize only fusion lists with >=3 retained observations and not already fused",
+                            notes="historical per_frame_ins store is cumulative and not window-pruned",
+                        )
                 
                     #predict the semantic classes of remaining new boxes
                     cur_keep_idx = [i-num_before_cat for i in keep_idx if i>=num_before_cat]
@@ -521,7 +820,9 @@ def run(
                         # scale the boxes
                         boxes = scale_boxes(boxes,image.shape[0],image.shape[1],scale=cfg['detection']['scale_box'])
                         # if len(pred_instances)>0:
+                        clip_t0 = time.perf_counter()
                         class_results, box_features = text_prompt(boxes, tokenized_text, text_features, image, clip_model, preprocess) #[N_box]
+                        runtime_profiler.add_value(count, "clip_classification_sec", time.perf_counter() - clip_t0)
                         all_pred_box.categories[cur_keep_idx_in_all] = class_results
                         # --- [修改点 2：同步更新增量特征] ---
                         if not hasattr(all_pred_box, 'embeddings'):
@@ -534,28 +835,86 @@ def run(
                     all_poses = all_poses[mask]
                     box_manager.update(keep_idx)
                     print(count, "new boxes have all been nms"," box_manager",box_manager.fusion_list)
+                    runtime_profiler.log_history_scope(
+                        count,
+                        step_name="spatial_association",
+                        scope_label="global_retained_history",
+                        candidate_pool_before=int(num_before_cat),
+                        candidate_pool_after=int(len(mask)),
+                        retained_history_pool=int(num_before_cat),
+                        filter_description="all current-frame boxes suppressed by global NMS against retained history",
+                        notes="no remaining candidates reached correspondence or boxfusion",
+                    )
+                runtime_profiler.set_value(count, "all_pred_box_after_association_count", int(len(all_pred_box)))
+                fusion_lengths = [len(item) for item in box_manager.fusion_list]
+                if fusion_lengths:
+                    fusion_lengths_sorted = sorted(fusion_lengths)
+                    p50_idx = int(round((len(fusion_lengths_sorted) - 1) * 0.50))
+                    p95_idx = int(round((len(fusion_lengths_sorted) - 1) * 0.95))
+                    runtime_profiler.add_values(
+                        count,
+                        {
+                            "fusion_list_count": int(len(fusion_lengths)),
+                            "fusion_list_ge3_count": int(sum(1 for value in fusion_lengths if value >= 3)),
+                            "fusion_list_len_mean": float(sum(fusion_lengths) / len(fusion_lengths)),
+                            "fusion_list_len_p50": float(fusion_lengths_sorted[p50_idx]),
+                            "fusion_list_len_p95": float(fusion_lengths_sorted[p95_idx]),
+                            "fusion_list_len_max": float(max(fusion_lengths)),
+                        },
+                    )
 
             if re_vis:
                 visualize_online_boxes(all_pred_box, prefix="/device/wide", boxes_3d_name="pred_boxes_3d", log_instances_name="pred_instances",count=count,save=False,show_class=cfg["vis"]["show_class"],show_label=cfg["vis"]["show_label"]) 
 
-            maybe_capture_demo_snapshot(
+            capture_result = maybe_capture_demo_snapshot(
                 frame_idx=count,
                 timestamp=sample_timestamp,
                 image_frame=image,
                 pose_matrix=RT,
                 segmentation_updated=segmentation_updated,
             )
+            runtime_profiler.add_value(count, "snapshot_capture_sec", float(capture_result.get("capture_total_sec", 0.0)))
                 
         t_fusion_end = time.time()
+        runtime_profiler.set_value(count, "stage5_total_sec", float(t_fusion_end - t_fusion_start))
 
-        if segmentation_updated and not (count % gap == 0 or is_last_frame):
-            maybe_capture_demo_snapshot(
+        if segmentation_updated and not is_keyframe:
+            capture_result = maybe_capture_demo_snapshot(
                 frame_idx=count,
                 timestamp=sample_timestamp,
                 image_frame=image,
                 pose_matrix=RT,
                 segmentation_updated=True,
             )
+            runtime_profiler.add_value(count, "snapshot_capture_sec", float(capture_result.get("capture_total_sec", 0.0)))
+
+        if is_keyframe and not segmentation_updated:
+            runtime_profiler.mark_frame(count, sample_kind="keyframe", profiled_frame=True, segmentation_refresh_frame=False)
+
+        runtime_profiler.add_values(
+            count,
+            {
+                "data_preprocess_sec": float(t_data_end - t_loop_start),
+                "model_bbox_inference_sec": float(t_infer_end - t_infer_start),
+                "rerun_visualization_sec": float(t_rerun_end - t_rerun_start),
+                "total_step_sec": float(t_fusion_end - t_loop_start),
+                "total_floor_count": int(len(room_segmenter.floor_manager.export_floors())),
+                "total_retained_object_count": None if all_pred_box is None else int(len(all_pred_box)),
+                "all_pred_box_after_association_count": None if all_pred_box is None else int(len(all_pred_box)),
+            },
+        )
+        if latest_vector_map is not None:
+            runtime_profiler.add_values(
+                count,
+                {
+                    "total_room_count": int(len(latest_vector_map.get("rooms", []))),
+                    "total_retained_anchor_count": int(len(latest_vector_map.get("anchors", []))),
+                    "current_vertical_transition_count": int(
+                        len(latest_vector_map.get("vertical_transitions", []))
+                    ),
+                },
+            )
+        apply_topology_status(count, RT)
 
         if demo_recorder is not None:
             demo_recorder.record_frame(
@@ -581,12 +940,12 @@ def run(
                     "feature_boxfusion_sec": t_fusion_end - t_fusion_start,
                     "total_step_sec": t_fusion_end - t_loop_start,
                 },
-                is_keyframe=bool(count % gap == 0 or is_last_frame),
+                is_keyframe=bool(is_keyframe),
                 segmentation_updated=bool(segmentation_updated),
             )
 
         # --- 打印本帧耗时统计（仅在关键帧打印） ---
-        if count % gap == 0:
+        if is_keyframe:
             print(f"\n=== 关键帧 [{count}] 耗时分析 (单位: 秒) ===")
             print(f"数据加载与预处理: {t_data_end - t_loop_start:.4f}")
             print(f"主模型与边界框推理: {t_infer_end - t_infer_start:.4f}")
@@ -666,10 +1025,19 @@ def run(
             count=final_frame_idx,
             save_scene_graph_vis=False,
             scene_graph_vis_dir=str(getattr(demo_recorder, "scene_graph_dir", debug_room_dir)) if demo_recorder is not None else debug_room_dir,
+            instrumentation_context="finalization_export",
+        )
+        log_export_profile(
+            final_frame_idx,
+            call_context="finalization_export",
+            call_origin="run_finalize",
+            segmentation_refresh_frame=bool(final_flush_report.get("segmented_floor_count", 0) > 0),
+            stage_bucket="final",
         )
         if final_flush_report.get("segmented_floor_count", 0) > 0 and write_debug_room_artifacts:
             with open(os.path.join(debug_room_dir, f"vector_map_{final_frame_idx}_final_flush.json"), 'w') as f:
                 json.dump(latest_vector_map, f, indent=2)
+    sync_segmentation_run_logs()
 
     if write_debug_room_artifacts:
         diagnostics_dir = os.path.join(debug_room_dir, "floor_diagnostics")
@@ -683,6 +1051,15 @@ def run(
         )
 
     demo_outputs = None
+    runtime_instrumentation_summary = runtime_profiler.finalize()
+    runtime_instrumentation_paths = {
+        "runtime_instrumentation_dir": str(instrumentation_output_dir),
+        "runtime_instrumentation_frame_csv": str(instrumentation_output_dir / "per_profiled_frame.csv"),
+        "runtime_instrumentation_export_csv": str(instrumentation_output_dir / "vector_map_export_calls.csv"),
+        "runtime_instrumentation_history_csv": str(instrumentation_output_dir / "history_scope.csv"),
+        "runtime_instrumentation_segmentation_csv": str(instrumentation_output_dir / "segmentation_runs.csv"),
+        "runtime_instrumentation_summary_json": str(instrumentation_output_dir / "summary.json"),
+    }
     if demo_recorder is not None:
         if final_flush_report.get("segmented_floor_count", 0) > 0 and last_demo_frame is not None:
             demo_recorder.record_snapshot(
@@ -705,6 +1082,8 @@ def run(
                 "sequence_id": vid_str,
                 "point_cloud_path": pc_save_name,
                 "final_vector_map_path": demo_recorder.latest_vector_map_path,
+                "runtime_instrumentation_summary": runtime_instrumentation_summary,
+                **runtime_instrumentation_paths,
             }
         )
 
@@ -715,6 +1094,8 @@ def run(
         "sequence_id": vid_str,
         "point_cloud_path": pc_save_name,
         "demo_outputs": demo_outputs,
+        "runtime_instrumentation_summary": runtime_instrumentation_summary,
+        **runtime_instrumentation_paths,
     }
 
 if __name__ == "__main__":

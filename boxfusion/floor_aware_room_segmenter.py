@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -60,6 +61,8 @@ class FloorAwareRoomSegmenter:
         self.last_room_markers: Optional[bool] = None
         self.last_floor_diagnostics: Dict[str, Any] = {}
         self.last_finalization_report: Dict[str, Any] = {}
+        self.last_merge_profile: Dict[str, Any] = {}
+        self.last_export_profile: Dict[str, Any] = {}
         self._next_world_room_id = 1
 
     def observe_frame(
@@ -212,7 +215,9 @@ class FloorAwareRoomSegmenter:
         floor_state = self._get_or_create_floor_state(floor_id)
         pending_chunk_count = self._pending_chunk_count(floor_state)
         pending_chunk_frame_indices = [int(item) for item in floor_state.pending_chunk_frame_indices]
+        merge_t0 = time.perf_counter()
         merged_points = self._merge_floor_points(floor_state)
+        merge_total_sec = time.perf_counter() - merge_t0
         if merged_points is None or len(merged_points) == 0:
             if update_last_tracking:
                 self.last_tracking_report = {
@@ -246,6 +251,7 @@ class FloorAwareRoomSegmenter:
             pending_chunk_frame_indices=pending_chunk_frame_indices,
             merged_point_count=0 if merged_points is None else int(len(merged_points)),
             success=markers is not None,
+            merge_total_sec=merge_total_sec,
         )
         if markers is None:
             if update_last_tracking:
@@ -285,7 +291,9 @@ class FloorAwareRoomSegmenter:
         count: Optional[int] = None,
         save_scene_graph_vis: bool = True,
         scene_graph_vis_dir: str = "./debug_room",
+        instrumentation_context: str = "unspecified",
     ) -> Dict[str, Any]:
+        export_t0 = time.perf_counter()
         floors = canonicalize_floors(self.floor_manager.export_floors())
         vector_data: Dict[str, Any] = {
             "map_info": {
@@ -306,8 +314,11 @@ class FloorAwareRoomSegmenter:
         }
 
         floor_lookup = build_floor_lookup(floors)
+        room_export_t0 = time.perf_counter()
         room_records, room_lookup = self._export_rooms_and_gateways(vector_data, floor_lookup)
+        room_export_sec = time.perf_counter() - room_export_t0
         vector_data["room_floor_validation"] = self._build_room_floor_validation(room_records)
+        vt_export_t0 = time.perf_counter()
         vector_data["vertical_transitions"] = canonicalize_vertical_transitions(
             self._build_vertical_transitions(room_records),
             floor_lookup,
@@ -316,8 +327,12 @@ class FloorAwareRoomSegmenter:
             vector_data["vertical_transitions"],
             floor_lookup,
         )
+        vertical_transition_export_sec = time.perf_counter() - vt_export_t0
+        object_export_t0 = time.perf_counter()
         vector_data["objects"], embedding_lookup = self._build_object_exports(all_pred_box, floor_lookup, room_lookup)
+        object_export_sec = time.perf_counter() - object_export_t0
 
+        sg_build_t0 = time.perf_counter()
         sg = SemanticSceneGraph()
         for floor in floors:
             sg.add_floor_node(
@@ -376,9 +391,14 @@ class FloorAwareRoomSegmenter:
             sg.add_object_node(o_node)
             if room_id in sg.graph.nodes:
                 sg.add_inside_relation(o_node.id, room_id)
+        scene_graph_build_sec = time.perf_counter() - sg_build_t0
 
+        spatial_rel_t0 = time.perf_counter()
         sg.compute_spatial_relations(dist_threshold=1.0, z_tolerance=0.2)
+        spatial_relations_sec = time.perf_counter() - spatial_rel_t0
+        anchor_t0 = time.perf_counter()
         sg.build_anchor_layer(debug=False)
+        anchor_build_sec = time.perf_counter() - anchor_t0
 
         for source, target, data in sg.graph.edges(data=True):
             vector_data["relationships"].append(
@@ -389,8 +409,10 @@ class FloorAwareRoomSegmenter:
                 }
             )
         vector_data["anchors"] = self._attach_display_floor_metadata(sg.export_anchor_data(), floor_lookup)
+        diagnostics_t0 = time.perf_counter()
         vector_data["room_segmentation_diagnostics"] = self._build_segmentation_diagnostics(floors)
         vector_data["floor_debug"] = self._build_floor_debug_summary(vector_data)
+        diagnostics_export_sec = time.perf_counter() - diagnostics_t0
         self.last_floor_diagnostics = vector_data["floor_debug"]
 
         if save_scene_graph_vis:
@@ -404,7 +426,85 @@ class FloorAwareRoomSegmenter:
             except Exception:
                 pass
 
+        self.last_export_profile = {
+            "frame_idx": None if count is None else int(count),
+            "instrumentation_context": str(instrumentation_context),
+            "total_sec": float(time.perf_counter() - export_t0),
+            "room_export_sec": float(room_export_sec),
+            "vertical_transition_export_sec": float(vertical_transition_export_sec),
+            "object_export_sec": float(object_export_sec),
+            "scene_graph_build_sec": float(scene_graph_build_sec),
+            "spatial_relations_sec": float(spatial_relations_sec),
+            "anchor_build_sec": float(anchor_build_sec),
+            "diagnostics_export_sec": float(diagnostics_export_sec),
+            "room_count": int(len(vector_data.get("rooms", []))),
+            "gateway_count": int(len(vector_data.get("gateways", []))),
+            "vertical_transition_count": int(len(vector_data.get("vertical_transitions", []))),
+            "object_count": int(len(vector_data.get("objects", []))),
+            "anchor_count": int(len(vector_data.get("anchors", []))),
+        }
+
         return vector_data
+
+    def update_latest_segmentation_export_metrics(self, frame_idx: int) -> None:
+        if not self.last_export_profile:
+            return
+        for floor_state in self.floor_states.values():
+            if not floor_state.segmentation_reports:
+                continue
+            latest = floor_state.segmentation_reports[-1]
+            if int(latest.get("frame_idx", -1)) != int(frame_idx):
+                continue
+            latest["vector_map_export_after_segmentation_sec"] = float(self.last_export_profile.get("total_sec", 0.0))
+            latest["vertical_transition_export_sec"] = float(self.last_export_profile.get("vertical_transition_export_sec", 0.0))
+            latest["room_export_sec"] = float(self.last_export_profile.get("room_export_sec", 0.0))
+            latest["object_export_sec"] = float(self.last_export_profile.get("object_export_sec", 0.0))
+            latest["diagnostics_export_sec"] = float(self.last_export_profile.get("diagnostics_export_sec", 0.0))
+            latest["current_vertical_transition_count"] = int(self.last_export_profile.get("vertical_transition_count", 0))
+            break
+
+    def export_segmentation_runs(self) -> List[Dict[str, Any]]:
+        floors = canonicalize_floors(self.floor_manager.export_floors())
+        floor_lookup = build_floor_lookup(floors)
+        runs: List[Dict[str, Any]] = []
+        for floor_id in self.floor_manager._ordered_floor_ids():
+            floor_state = self.floor_states.get(str(floor_id))
+            if floor_state is None:
+                continue
+            for report in floor_state.segmentation_reports:
+                runs.append(attach_floor_metadata(dict(report), floor_lookup))
+        return runs
+
+    def describe_topology_status(self, pose_matrix: Optional[np.ndarray] = None) -> Dict[str, Any]:
+        observation = dict(self.last_floor_observation or {})
+        active_floor_id = observation.get("floor_id")
+        active_room_id = None
+        if pose_matrix is not None and active_floor_id is not None:
+            floor_state = self.floor_states.get(str(active_floor_id))
+            segmenter = None if floor_state is None else floor_state.segmenter
+            if segmenter is not None and segmenter.last_room_markers is not None:
+                pose = np.asarray(pose_matrix, dtype=np.float32)
+                u_arr, v_arr, valid_mask = segmenter._world_to_grid(np.asarray([[pose[0, 3], pose[1, 3]]], dtype=np.float32))
+                if bool(valid_mask[0]):
+                    label = int(segmenter.last_room_markers[v_arr[0], u_arr[0]])
+                    if label > 0 and label in segmenter.label_to_global:
+                        local_room_id = int(segmenter.label_to_global[label])
+                        active_room_id = floor_state.local_to_world_room_id.get(local_room_id)
+        return {
+            "active_floor_id": active_floor_id,
+            "active_floor_status": observation.get("status"),
+            "active_room_id": active_room_id,
+            "active_room_available": active_room_id is not None,
+            "room_leave_signal_exists": False,
+            "topology_incremental_online": False,
+            "topology_update_mode": "scheduled_segmentation_refresh_plus_full_export_rebuild",
+            "topology_missing_online_trigger_structures": [
+                "current_room_state",
+                "room_exit_or_completion_signal",
+                "incremental_room_buffer",
+                "topology_delta_update_queue",
+            ],
+        }
 
     def _get_or_create_floor_state(self, floor_id: str) -> FloorState:
         floor_state = self.floor_states.get(floor_id)
@@ -419,22 +519,44 @@ class FloorAwareRoomSegmenter:
 
     def _merge_floor_points(self, floor_state: FloorState) -> Optional[np.ndarray]:
         chunks = []
+        existing_count = 0 if floor_state.merged_points_xyzrgb is None else int(len(floor_state.merged_points_xyzrgb))
         if floor_state.merged_points_xyzrgb is not None:
             chunks.append(floor_state.merged_points_xyzrgb)
         chunks.extend(chunk for chunk in floor_state.pending_chunks if len(chunk) > 0)
+        pending_point_count = int(sum(len(chunk) for chunk in floor_state.pending_chunks if len(chunk) > 0))
         floor_state.pending_chunks = []
         floor_state.pending_chunk_frame_indices = []
         if not chunks:
+            self.last_merge_profile = {
+                "existing_point_count": int(existing_count),
+                "pending_point_count": int(pending_point_count),
+                "merged_point_count_before_merge": int(existing_count + pending_point_count),
+                "merged_point_count_after_downsample": 0 if floor_state.merged_points_xyzrgb is None else int(len(floor_state.merged_points_xyzrgb)),
+                "floor_merge_sec": 0.0,
+                "floor_downsample_sec": 0.0,
+            }
             return floor_state.merged_points_xyzrgb
+        merge_t0 = time.perf_counter()
         merged = np.concatenate(chunks, axis=0)
+        floor_merge_sec = time.perf_counter() - merge_t0
+        downsample_t0 = time.perf_counter()
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(np.ascontiguousarray(merged[:, :3], dtype=np.float64))
         if merged.shape[1] >= 6:
             pcd.colors = o3d.utility.Vector3dVector(np.ascontiguousarray(merged[:, 3:6], dtype=np.float64))
         pcd = pcd.voxel_down_sample(voxel_size=self.resolution)
+        floor_downsample_sec = time.perf_counter() - downsample_t0
         points = np.asarray(pcd.points)
         colors = np.asarray(pcd.colors) if pcd.has_colors() else np.zeros((len(points), 3), dtype=np.float64)
         floor_state.merged_points_xyzrgb = np.concatenate([points, colors], axis=1) if len(points) else None
+        self.last_merge_profile = {
+            "existing_point_count": int(existing_count),
+            "pending_point_count": int(pending_point_count),
+            "merged_point_count_before_merge": int(len(merged)),
+            "merged_point_count_after_downsample": 0 if floor_state.merged_points_xyzrgb is None else int(len(floor_state.merged_points_xyzrgb)),
+            "floor_merge_sec": float(floor_merge_sec),
+            "floor_downsample_sec": float(floor_downsample_sec),
+        }
         return floor_state.merged_points_xyzrgb
 
     def _map_tracking_report(self, floor_id: str, local_report: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -836,11 +958,14 @@ class FloorAwareRoomSegmenter:
         pending_chunk_frame_indices: Sequence[int],
         merged_point_count: int,
         success: bool,
+        merge_total_sec: float = 0.0,
     ) -> Dict[str, Any]:
         segmenter = floor_state.segmenter
         height_slice = dict(segmenter.last_height_slice_debug or {})
         failure_debug = dict(segmenter.last_failure_debug or {})
         tracking_report = dict(segmenter.last_tracking_report or {})
+        segmentation_profile = dict(segmenter.last_segmentation_profile or {})
+        merge_profile = dict(self.last_merge_profile or {})
 
         slice_mode = str(height_slice.get("mode", "unknown"))
         slice_mode_label = "default_slice" if slice_mode == "default" else slice_mode
@@ -884,6 +1009,34 @@ class FloorAwareRoomSegmenter:
             "pending_chunk_frame_count": int(len(pending_chunk_frame_indices)),
             "pending_chunk_frame_indices": [int(item) for item in pending_chunk_frame_indices],
             "merged_point_count": int(merged_point_count),
+            "merged_point_count_before_merge": int(merge_profile.get("merged_point_count_before_merge", merged_point_count)),
+            "merged_point_count_after_downsample": int(merge_profile.get("merged_point_count_after_downsample", merged_point_count)),
+            "wall_slice_point_count": int(segmentation_profile.get("wall_slice_point_count", 0)),
+            "full_slice_point_count": int(segmentation_profile.get("full_slice_point_count", 0)),
+            "grid_width": int(segmentation_profile.get("grid_width", 0)),
+            "grid_height": int(segmentation_profile.get("grid_height", 0)),
+            "grid_area": int(segmentation_profile.get("grid_area", 0)),
+            "room_count_before_tracking": int(segmentation_profile.get("room_count_before_tracking", 0)),
+            "room_count_after_tracking": int(segmentation_profile.get("room_count_after_tracking", 0)),
+            "tracked_room_count": int(segmentation_profile.get("tracked_room_count", 0)),
+            "gateway_room_pair_checks": int(segmentation_profile.get("gateway_room_pair_checks", 0)),
+            "gateway_count": int(segmentation_profile.get("gateway_count", 0)),
+            "current_vertical_transition_count": None,
+            "floor_merge_sec": float(merge_profile.get("floor_merge_sec", merge_total_sec)),
+            "floor_downsample_sec": float(merge_profile.get("floor_downsample_sec", 0.0)),
+            "segmentation_total_sec": float(segmentation_profile.get("histogram_build_sec", 0.0))
+            + float(segmentation_profile.get("segmentation_state_build_sec", 0.0))
+            + float(segmentation_profile.get("room_tracking_sec", 0.0))
+            + float(segmentation_profile.get("gateway_extraction_sec", 0.0)),
+            "histogram_build_sec": float(segmentation_profile.get("histogram_build_sec", 0.0)),
+            "segmentation_state_build_sec": float(segmentation_profile.get("segmentation_state_build_sec", 0.0)),
+            "room_tracking_sec": float(segmentation_profile.get("room_tracking_sec", 0.0)),
+            "gateway_extraction_sec": float(segmentation_profile.get("gateway_extraction_sec", 0.0)),
+            "vector_map_export_after_segmentation_sec": 0.0,
+            "vertical_transition_export_sec": 0.0,
+            "room_export_sec": 0.0,
+            "object_export_sec": 0.0,
+            "diagnostics_export_sec": 0.0,
             "slice_mode": slice_mode_label,
             "adaptive_applied": bool(adaptive_applied),
             "fallback_used": bool(fallback_modes),

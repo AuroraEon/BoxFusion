@@ -3,6 +3,7 @@ import csv
 import numpy as np
 import cv2
 import os
+import time
 import yaml
 from typing import Dict, List, Optional, Tuple
 from boxfusion.scene_graph_builder import SemanticSceneGraph, RoomNode, ObjectNode
@@ -45,6 +46,7 @@ class DynamicRoomSegmenter:
         self.label_to_global = {}
         self.last_tracking_report = {}
         self.last_door_debug = {}
+        self.last_segmentation_profile = {}
         self.tier2_policy_base_decision = evaluate_tier2_enablement(config)
         self.tier2_policy_runtime_decision = dict(self.tier2_policy_base_decision)
         self.tier2_cfg = {
@@ -833,11 +835,32 @@ class DynamicRoomSegmenter:
 
     def perform_segmentation(self, all_pts_merged, all_pred_box=None, debug_path=None, count=0):
         all_pts_np = np.asarray(all_pts_merged)
+        self.last_segmentation_profile = {
+            "frame_idx": int(count),
+            "input_point_count": int(len(all_pts_np)),
+            "wall_slice_point_count": 0,
+            "full_slice_point_count": 0,
+            "grid_width": int(self.grid_width),
+            "grid_height": int(self.grid_height),
+            "grid_area": int(self.grid_width * self.grid_height),
+            "histogram_build_sec": 0.0,
+            "segmentation_state_build_sec": 0.0,
+            "room_tracking_sec": 0.0,
+            "gateway_extraction_sec": 0.0,
+            "room_count_before_tracking": 0,
+            "room_count_after_tracking": 0,
+            "tracked_room_count": int(len(self.tracked_rooms)),
+            "gateway_room_pair_checks": 0,
+            "gateway_count": 0,
+            "success": False,
+            "failure_reason": None,
+        }
         if len(all_pts_np) == 0:
             self.last_failure_debug = {
                 "reason": "empty_point_cloud",
                 "frame_id": int(count),
             }
+            self.last_segmentation_profile["failure_reason"] = "empty_point_cloud"
             return None
 
         self.last_failure_debug = {}
@@ -907,11 +930,16 @@ class DynamicRoomSegmenter:
 
         pts_walls = all_pts_np[z_mask_walls][:, [0, 1]]
         pts_full = all_pts_np[z_mask_full][:, [0, 1]]
+        self.last_segmentation_profile["wall_slice_point_count"] = int(len(pts_walls))
+        self.last_segmentation_profile["full_slice_point_count"] = int(len(pts_full))
 
         # 计算网格 Bin 数量时，直接使用当前的 grid_width 和 grid_height
         num_bins = (self.grid_width, self.grid_height)
         hist_range = [[self.origin_x, self.origin_x + self.grid_width * self.resolution],
                       [self.origin_y, self.origin_y + self.grid_height * self.resolution]]
+        self.last_segmentation_profile["grid_width"] = int(self.grid_width)
+        self.last_segmentation_profile["grid_height"] = int(self.grid_height)
+        self.last_segmentation_profile["grid_area"] = int(self.grid_width * self.grid_height)
 
         # ---------------------------------------------------------
         # 步骤 A: 提取强化的墙壁骨架 (Walls Skeleton)
@@ -925,10 +953,12 @@ class DynamicRoomSegmenter:
                 "full_point_count": int(len(pts_full)),
                 "height_slice": dict(self.last_height_slice_debug),
             }
+            self.last_segmentation_profile["failure_reason"] = "empty_wall_slice"
             if debug_path:
                 self._save_failure_debug(debug_path, count, self.last_failure_debug)
             return None
 
+        hist_t0 = time.perf_counter()
         hist, _, _ = np.histogram2d(pts_walls[:, 0], pts_walls[:, 1], bins=num_bins, range=hist_range)
         hist = hist.T  # <--- 【千万别漏】：必须转置，把 (W, H) 变成图像需要的 (H, W)！
 
@@ -940,6 +970,7 @@ class DynamicRoomSegmenter:
 
         hist = cv2.normalize(hist, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
         hist = cv2.GaussianBlur(hist, (5, 5), 1)
+        self.last_segmentation_profile["histogram_build_sec"] = float(time.perf_counter() - hist_t0)
 
         hist_threshold = 0.15 * np.max(hist)
         _, walls_skeleton = cv2.threshold(hist, hist_threshold, 255, cv2.THRESH_BINARY)
@@ -960,6 +991,7 @@ class DynamicRoomSegmenter:
                 "full_point_count": 0,
                 "height_slice": dict(self.last_height_slice_debug),
             }
+            self.last_segmentation_profile["failure_reason"] = "empty_full_slice"
             if debug_path:
                 self._save_failure_debug(debug_path, count, self.last_failure_debug)
             return None
@@ -1015,7 +1047,9 @@ class DynamicRoomSegmenter:
         # ---------------------------------------------------------
         # 步骤 D: 距离变换与分水岭
         # ---------------------------------------------------------
+        seg_state_t0 = time.perf_counter()
         segmentation_state = self._build_segmentation_state(full_map, frame_id=count)
+        self.last_segmentation_profile["segmentation_state_build_sec"] = float(time.perf_counter() - seg_state_t0)
         print(
             f"[RoomSegmenter] 距离变换最大值: {segmentation_state['max_dist']:.2f} 像素 "
             f"(约 {segmentation_state['max_dist'] * self.resolution:.2f} 米)"
@@ -1041,6 +1075,7 @@ class DynamicRoomSegmenter:
                     "min_area_m": float(segmentation_state.get("min_area_m", 0.0)),
                 },
             }
+            self.last_segmentation_profile["failure_reason"] = "no_valid_seed_points"
             if debug_path:
                 self._save_failure_debug(debug_path, count, self.last_failure_debug)
             return None
@@ -1062,11 +1097,24 @@ class DynamicRoomSegmenter:
         # =========================================================
         # --- [新增：Room Tracking (IoU 掩码匹配)] ---
         # =========================================================
+        track_t0 = time.perf_counter()
         tracking_report = self._update_room_tracking(markers, wall_label)
+        self.last_segmentation_profile["room_tracking_sec"] = float(time.perf_counter() - track_t0)
         # =========================================================
 
         self.last_room_markers = markers
-        self._extract_gateways(markers, wall_label, all_pred_box)
+        gateway_t0 = time.perf_counter()
+        gateway_profile = self._extract_gateways(markers, wall_label, all_pred_box)
+        self.last_segmentation_profile["gateway_extraction_sec"] = float(time.perf_counter() - gateway_t0)
+        self.last_segmentation_profile["gateway_room_pair_checks"] = int(gateway_profile.get("room_pair_checks", 0))
+        self.last_segmentation_profile["gateway_count"] = int(gateway_profile.get("gateway_count", 0))
+        self.last_segmentation_profile["room_count_before_tracking"] = int(segmentation_state.get("room_count", 0))
+        self.last_segmentation_profile["room_count_after_tracking"] = int(
+            len(tracking_report.get("matched", [])) + len(tracking_report.get("new_rooms", []))
+        )
+        self.last_segmentation_profile["tracked_room_count"] = int(len(self.tracked_rooms))
+        self.last_segmentation_profile["success"] = True
+        self.last_segmentation_profile["failure_reason"] = None
 
         self.last_door_debug = {}
         if door_boxes_present:
@@ -1107,6 +1155,7 @@ class DynamicRoomSegmenter:
 
     def _extract_gateways(self, markers, wall_label, all_pred_box):
         self.last_gateways = []
+        room_pair_checks = 0
         unique_labels = np.unique(markers)
         unique_labels = unique_labels[(unique_labels > 0) & (unique_labels != wall_label)] 
         
@@ -1126,6 +1175,7 @@ class DynamicRoomSegmenter:
         
         for i in range(len(unique_labels)):
             for j in range(i + 1, len(unique_labels)):
+                room_pair_checks += 1
                 id1 = unique_labels[i]
                 id2 = unique_labels[j]
                 
@@ -1196,6 +1246,10 @@ class DynamicRoomSegmenter:
                             "width_m": round(float(width_m), 3),
                             "yaw": round(float(yaw), 3)
                         })
+        return {
+            "room_pair_checks": int(room_pair_checks),
+            "gateway_count": int(len(self.last_gateways)),
+        }
 
     def get_vector_map_data(
         self,

@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 
 import os
+import time
 
 try:
   import pycuda.driver as cuda
@@ -61,6 +62,7 @@ class BoxFusion(object):
         self.center_scaling_coefficient = cfg["box_fusion"]["random_opt"]["center_scaling_coefficient"]
         self.shape_init_size = cfg["box_fusion"]["random_opt"]["shape_init_size"]
         self.shape_scaling_coefficient = cfg["box_fusion"]["random_opt"]["shape_scaling_coefficient"]
+        self.last_runtime_profile = {}
 
 
 
@@ -624,6 +626,7 @@ class BoxFusion(object):
 
     
     def boxfusion(self, all_pred_box, per_frame_box, box_manager, beta=0.9, verbose=False):
+        total_t0 = time.perf_counter()
         N_box = len(all_pred_box)
         per_cam_pose = per_frame_box.cam_pose.cpu().numpy()
         per_boxes_3d = per_frame_box.pred_boxes_3d.tensor.cpu().numpy()
@@ -632,16 +635,24 @@ class BoxFusion(object):
 
         per_boxes_2d = per_frame_box.pred_boxes.cpu().numpy()
         per_boxes_2d_cor = per_frame_box.projected_boxes.cpu().numpy()
+        candidate_scan_sec = 0.0
+        optimization_sec = 0.0
+        candidate_eligible = 0
+        candidate_updated = 0
         for i in range(N_box):
+            scan_t0 = time.perf_counter()
+            fusion_idx = box_manager.fusion_list[i]
+            already_fused = box_manager.check_if_fusion(fusion_idx)
+            candidate_scan_sec += time.perf_counter() - scan_t0
 
-            
-            if len(box_manager.fusion_list[i])<3 or box_manager.check_if_fusion(box_manager.fusion_list[i]): 
+            if len(fusion_idx) < 3 or already_fused:
                 continue
+            candidate_eligible += 1
+            optimization_t0 = time.perf_counter()
 
             '''
             prepare the data used for fusion
             '''
-            fusion_idx = box_manager.fusion_list[i]
             num_of_boxes = len(fusion_idx)
             print(f"fusing {i} box, fusion list is ",fusion_idx, 'len:', num_of_boxes)
 
@@ -726,3 +737,39 @@ class BoxFusion(object):
                 # update fusion flag
                 box_manager.update_fusion_flag(i)
                 box_manager.add_fusion_ind(fusion_idx)
+                candidate_updated += 1
+            optimization_sec += time.perf_counter() - optimization_t0
+
+        fusion_lengths = [len(item) for item in getattr(box_manager, "fusion_list", [])]
+        fusion_lengths_sorted = sorted(fusion_lengths)
+
+        def _percentile(values, pct):
+            if not values:
+                return 0.0
+            if len(values) == 1:
+                return float(values[0])
+            position = (len(values) - 1) * pct
+            lower = int(np.floor(position))
+            upper = int(np.ceil(position))
+            if lower == upper:
+                return float(values[lower])
+            alpha = position - lower
+            return float((1.0 - alpha) * values[lower] + alpha * values[upper])
+
+        self.last_runtime_profile = {
+            "boxfusion_candidate_scan_sec": float(candidate_scan_sec),
+            "boxfusion_optimization_sec": float(optimization_sec),
+            "boxfusion_total_sec": float(time.perf_counter() - total_t0),
+            "boxfusion_candidates_scanned": int(N_box),
+            "boxfusion_candidates_eligible": int(candidate_eligible),
+            "boxfusion_candidates_optimized": int(candidate_eligible),
+            "boxfusion_candidates_updated": int(candidate_updated),
+            "fusion_list_count": int(len(fusion_lengths)),
+            "fusion_list_ge3_count": int(sum(1 for value in fusion_lengths if value >= 3)),
+            "fusion_list_len_mean": 0.0 if not fusion_lengths else float(sum(fusion_lengths) / len(fusion_lengths)),
+            "fusion_list_len_p50": _percentile(fusion_lengths_sorted, 0.50),
+            "fusion_list_len_p95": _percentile(fusion_lengths_sorted, 0.95),
+            "fusion_list_len_max": 0.0 if not fusion_lengths else float(max(fusion_lengths)),
+            "retained_history_pool": int(len(per_frame_box)),
+        }
+        return self.last_runtime_profile
