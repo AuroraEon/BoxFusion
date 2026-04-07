@@ -115,11 +115,87 @@ class RuntimeInstrumentation:
         "scene_graph_build_sec",
         "spatial_relations_sec",
         "anchor_build_sec",
+        "stage5_candidate_mask_prep_sec",
+        "stage5_assoc_reference_mask_prep_sec",
+        "stage5_assoc_candidate_mask_prep_sec",
+        "stage5_boxfusion_mask_prep_sec",
+        "stage5_pre_assoc_clone_sec",
+        "stage5_bookkeeping_sec",
+        "stage5_tail_reference_audit_sec",
         "total_step_sec",
         "pred_instance_count",
         "all_pred_box_before_association_count",
         "all_pred_box_after_concat_count",
         "all_pred_box_after_association_count",
+        "object_floor_pruning_active",
+        "object_floor_pruning_active_floor_id",
+        "object_floor_pruning_reason",
+        "object_floor_pruning_retained_before_count",
+        "object_floor_pruning_retained_after_count",
+        "object_floor_pruning_retained_pruned_count",
+        "object_floor_pruning_retained_ambiguous_count",
+        "object_within_floor_filter_active",
+        "object_within_floor_same_floor_stable_count",
+        "object_within_floor_recent_kept_count",
+        "object_within_floor_near_kept_count",
+        "object_within_floor_recent_or_near_kept_count",
+        "object_within_floor_fallback_kept_count",
+        "object_within_floor_pruned_count",
+        "object_within_floor_missing_recency_count",
+        "object_within_floor_missing_xy_count",
+        "object_cheap_room_pruning_active",
+        "object_cheap_room_pruning_reason",
+        "object_cheap_room_pruning_active_room_id",
+        "object_cheap_room_pruning_tail_candidate_count",
+        "object_cheap_room_pruning_ambiguous_candidate_count",
+        "object_cheap_room_pruning_fallback_candidate_count",
+        "object_cheap_room_pruning_trusted_candidate_count",
+        "object_cheap_room_pruning_pruned_count",
+        "object_cheap_room_pruning_tail_retained_count",
+        "object_cheap_room_pruning_same_room_kept_count",
+        "object_cheap_room_pruning_untrusted_kept_count",
+        "assoc_readonly_tail_reference_compared",
+        "assoc_readonly_tail_reference_reason",
+        "assoc_readonly_tail_reference_pruned_object_count",
+        "assoc_readonly_tail_reference_pruned_object_ids",
+        "assoc_readonly_tail_reference_object_count",
+        "assoc_readonly_tail_candidate_object_count",
+        "assoc_readonly_tail_object_count_delta",
+        "assoc_readonly_tail_reference_diverged",
+        "assoc_readonly_tail_candidate_only_count",
+        "assoc_readonly_tail_candidate_only_ids",
+        "assoc_readonly_tail_reference_only_count",
+        "assoc_readonly_tail_reference_only_ids",
+        "assoc_readonly_tail_candidate_only_current_frame_count",
+        "assoc_readonly_tail_reference_only_pruned_tail_count",
+        "assoc_readonly_tail_reference_only_pruned_tail_ids",
+        "boxfusion_floor_pruning_active",
+        "boxfusion_floor_pruning_active_floor_id",
+        "boxfusion_floor_pruning_reason",
+        "boxfusion_floor_pruning_retained_before_count",
+        "boxfusion_floor_pruning_retained_after_count",
+        "boxfusion_floor_pruning_retained_pruned_count",
+        "boxfusion_floor_pruning_retained_ambiguous_count",
+        "boxfusion_within_floor_filter_active",
+        "boxfusion_within_floor_same_floor_stable_count",
+        "boxfusion_within_floor_recent_kept_count",
+        "boxfusion_within_floor_near_kept_count",
+        "boxfusion_within_floor_recent_or_near_kept_count",
+        "boxfusion_within_floor_fallback_kept_count",
+        "boxfusion_within_floor_pruned_count",
+        "boxfusion_within_floor_missing_recency_count",
+        "boxfusion_within_floor_missing_xy_count",
+        "boxfusion_cheap_room_pruning_active",
+        "boxfusion_cheap_room_pruning_reason",
+        "boxfusion_cheap_room_pruning_active_room_id",
+        "boxfusion_cheap_room_pruning_tail_candidate_count",
+        "boxfusion_cheap_room_pruning_ambiguous_candidate_count",
+        "boxfusion_cheap_room_pruning_fallback_candidate_count",
+        "boxfusion_cheap_room_pruning_trusted_candidate_count",
+        "boxfusion_cheap_room_pruning_pruned_count",
+        "boxfusion_cheap_room_pruning_tail_retained_count",
+        "boxfusion_cheap_room_pruning_same_room_kept_count",
+        "boxfusion_cheap_room_pruning_untrusted_kept_count",
         "per_frame_ins_count",
         "cur_keep_idx_count",
         "cur_success_nms_count",
@@ -157,6 +233,10 @@ class RuntimeInstrumentation:
         "vector_map_export_call_count",
         "vector_map_export_call_contexts",
         "vector_map_export_duplicate_same_frame",
+        "vector_map_export_cache_hit_count",
+        "vector_map_export_same_frame_full_reuse_count",
+        "vector_map_export_same_frame_fallback_rebuild_count",
+        "vector_map_export_same_frame_reuse_blockers",
         "history_scope_step_count",
         "history_scope_labels",
     ]
@@ -170,13 +250,55 @@ class RuntimeInstrumentation:
         "call_origin",
         "segmentation_refresh_frame",
         "duplicate_same_frame",
+        "cache_hit",
+        "build_executed",
+        "cache_hit_kind",
+        "same_frame_cache_available",
+        "same_frame_cache_frame_match",
+        "same_frame_segmentation_token_match",
+        "same_frame_object_state_match",
+        "same_frame_visualization_match",
+        "same_frame_reuse_eligible",
+        "same_frame_reuse_blocker",
         "duration_sec",
         "room_export_sec",
         "vertical_transition_export_sec",
         "object_export_sec",
+        "object_export_reused_count",
+        "object_export_rebuilt_count",
+        "room_local_delta_export_used",
+        "room_local_delta_changed_room_count",
+        "room_local_delta_reused_room_count",
+        "room_local_delta_rebuilt_room_count",
+        "room_local_delta_unassigned_bucket_rebuilt",
+        "changed_room_count",
+        "changed_room_ids",
+        "changed_room_structure_changed_count",
+        "changed_room_structure_changed_ids",
+        "changed_room_object_delta_count",
+        "changed_room_object_delta_ids",
+        "changed_room_removed_count",
+        "changed_room_removed_ids",
+        "changed_room_local_rebuild_used",
+        "changed_room_locality_confident",
+        "full_fallback_rebuild_used",
+        "rebuilt_object_in_changed_rooms_count",
         "scene_graph_build_sec",
         "spatial_relations_sec",
         "anchor_build_sec",
+        "anchor_rebuild_room_anchor_sec",
+        "anchor_rebuild_object_anchor_sec",
+        "anchor_rebuild_candidate_generation_sec",
+        "anchor_rebuild_validate_sec",
+        "anchor_rebuild_score_sec",
+        "anchor_rebuild_fallback_sec",
+        "anchor_rebuild_insert_sec",
+        "anchor_rebuild_room_candidate_count",
+        "anchor_rebuild_object_candidate_count",
+        "anchor_rebuild_valid_candidate_count",
+        "anchor_rebuild_fallback_candidate_count",
+        "anchor_reuse_room_count",
+        "anchor_rebuild_room_count",
         "diagnostics_export_sec",
         "room_count",
         "gateway_count",
@@ -273,6 +395,10 @@ class RuntimeInstrumentation:
                 "vector_map_export_call_count": 0,
                 "vector_map_export_call_contexts": "",
                 "vector_map_export_duplicate_same_frame": False,
+                "vector_map_export_cache_hit_count": 0,
+                "vector_map_export_same_frame_full_reuse_count": 0,
+                "vector_map_export_same_frame_fallback_rebuild_count": 0,
+                "vector_map_export_same_frame_reuse_blockers": "",
                 "history_scope_step_count": 0,
                 "history_scope_labels": "",
             }
@@ -342,13 +468,55 @@ class RuntimeInstrumentation:
             "call_origin": str(call_origin),
             "segmentation_refresh_frame": bool(segmentation_refresh_frame),
             "duplicate_same_frame": bool(duplicate),
+            "cache_hit": bool(metrics.get("cache_hit")),
+            "build_executed": bool(metrics.get("build_executed", not bool(metrics.get("cache_hit")))),
+            "cache_hit_kind": metrics.get("cache_hit_kind"),
+            "same_frame_cache_available": bool(metrics.get("same_frame_cache_available")),
+            "same_frame_cache_frame_match": bool(metrics.get("same_frame_cache_frame_match")),
+            "same_frame_segmentation_token_match": bool(metrics.get("same_frame_segmentation_token_match")),
+            "same_frame_object_state_match": bool(metrics.get("same_frame_object_state_match")),
+            "same_frame_visualization_match": bool(metrics.get("same_frame_visualization_match")),
+            "same_frame_reuse_eligible": bool(metrics.get("same_frame_reuse_eligible")),
+            "same_frame_reuse_blocker": metrics.get("same_frame_reuse_blocker"),
             "duration_sec": _round_float(metrics.get("total_sec")),
             "room_export_sec": _round_float(metrics.get("room_export_sec")),
             "vertical_transition_export_sec": _round_float(metrics.get("vertical_transition_export_sec")),
             "object_export_sec": _round_float(metrics.get("object_export_sec")),
+            "object_export_reused_count": _safe_int(metrics.get("object_export_reused_count")),
+            "object_export_rebuilt_count": _safe_int(metrics.get("object_export_rebuilt_count")),
+            "room_local_delta_export_used": bool(metrics.get("room_local_delta_export_used")),
+            "room_local_delta_changed_room_count": _safe_int(metrics.get("room_local_delta_changed_room_count")),
+            "room_local_delta_reused_room_count": _safe_int(metrics.get("room_local_delta_reused_room_count")),
+            "room_local_delta_rebuilt_room_count": _safe_int(metrics.get("room_local_delta_rebuilt_room_count")),
+            "room_local_delta_unassigned_bucket_rebuilt": bool(metrics.get("room_local_delta_unassigned_bucket_rebuilt")),
+            "changed_room_count": _safe_int(metrics.get("changed_room_count")),
+            "changed_room_ids": metrics.get("changed_room_ids"),
+            "changed_room_structure_changed_count": _safe_int(metrics.get("changed_room_structure_changed_count")),
+            "changed_room_structure_changed_ids": metrics.get("changed_room_structure_changed_ids"),
+            "changed_room_object_delta_count": _safe_int(metrics.get("changed_room_object_delta_count")),
+            "changed_room_object_delta_ids": metrics.get("changed_room_object_delta_ids"),
+            "changed_room_removed_count": _safe_int(metrics.get("changed_room_removed_count")),
+            "changed_room_removed_ids": metrics.get("changed_room_removed_ids"),
+            "changed_room_local_rebuild_used": bool(metrics.get("changed_room_local_rebuild_used")),
+            "changed_room_locality_confident": bool(metrics.get("changed_room_locality_confident")),
+            "full_fallback_rebuild_used": bool(metrics.get("full_fallback_rebuild_used")),
+            "rebuilt_object_in_changed_rooms_count": _safe_int(metrics.get("rebuilt_object_in_changed_rooms_count")),
             "scene_graph_build_sec": _round_float(metrics.get("scene_graph_build_sec")),
             "spatial_relations_sec": _round_float(metrics.get("spatial_relations_sec")),
             "anchor_build_sec": _round_float(metrics.get("anchor_build_sec")),
+            "anchor_rebuild_room_anchor_sec": _round_float(metrics.get("anchor_rebuild_room_anchor_sec")),
+            "anchor_rebuild_object_anchor_sec": _round_float(metrics.get("anchor_rebuild_object_anchor_sec")),
+            "anchor_rebuild_candidate_generation_sec": _round_float(metrics.get("anchor_rebuild_candidate_generation_sec")),
+            "anchor_rebuild_validate_sec": _round_float(metrics.get("anchor_rebuild_validate_sec")),
+            "anchor_rebuild_score_sec": _round_float(metrics.get("anchor_rebuild_score_sec")),
+            "anchor_rebuild_fallback_sec": _round_float(metrics.get("anchor_rebuild_fallback_sec")),
+            "anchor_rebuild_insert_sec": _round_float(metrics.get("anchor_rebuild_insert_sec")),
+            "anchor_rebuild_room_candidate_count": _safe_int(metrics.get("anchor_rebuild_room_candidate_count")),
+            "anchor_rebuild_object_candidate_count": _safe_int(metrics.get("anchor_rebuild_object_candidate_count")),
+            "anchor_rebuild_valid_candidate_count": _safe_int(metrics.get("anchor_rebuild_valid_candidate_count")),
+            "anchor_rebuild_fallback_candidate_count": _safe_int(metrics.get("anchor_rebuild_fallback_candidate_count")),
+            "anchor_reuse_room_count": _safe_int(metrics.get("anchor_reuse_room_count")),
+            "anchor_rebuild_room_count": _safe_int(metrics.get("anchor_rebuild_room_count")),
             "diagnostics_export_sec": _round_float(metrics.get("diagnostics_export_sec")),
             "room_count": _safe_int(metrics.get("room_count")),
             "gateway_count": _safe_int(metrics.get("gateway_count")),
@@ -363,7 +531,26 @@ class RuntimeInstrumentation:
         contexts.append(str(call_context))
         frame_row["vector_map_export_call_contexts"] = "|".join(contexts)
         frame_row["vector_map_export_duplicate_same_frame"] = bool(duplicate)
-        if bool(segmentation_refresh_frame) and duplicate:
+        if bool(row["cache_hit"]):
+            frame_row["vector_map_export_cache_hit_count"] = int(frame_row.get("vector_map_export_cache_hit_count", 0) or 0) + 1
+        if bool(row["same_frame_reuse_eligible"]) and bool(row["cache_hit"]):
+            frame_row["vector_map_export_same_frame_full_reuse_count"] = int(
+                frame_row.get("vector_map_export_same_frame_full_reuse_count", 0) or 0
+            ) + 1
+        elif bool(row["same_frame_cache_frame_match"]) and bool(row["build_executed"]):
+            frame_row["vector_map_export_same_frame_fallback_rebuild_count"] = int(
+                frame_row.get("vector_map_export_same_frame_fallback_rebuild_count", 0) or 0
+            ) + 1
+            blocker = str(row.get("same_frame_reuse_blocker") or "")
+            if blocker:
+                blockers = [
+                    item
+                    for item in str(frame_row.get("vector_map_export_same_frame_reuse_blockers") or "").split("|")
+                    if item
+                ]
+                blockers.append(blocker)
+                frame_row["vector_map_export_same_frame_reuse_blockers"] = "|".join(blockers)
+        if bool(segmentation_refresh_frame) and duplicate and bool(row["build_executed"]):
             frame_row["segmentation_refresh_triggered_duplicate_export"] = True
 
     def log_history_scope(
@@ -450,19 +637,89 @@ class RuntimeInstrumentation:
         worst_stage5 = _max_row("stage5_total_sec")
         worst_stage3 = _max_row("stage3_total_sec")
         worst_total = _max_row("total_step_sec")
-        export_duplicates = [row for row in export_rows if row.get("duplicate_same_frame")]
+        export_duplicates = [
+            row for row in export_rows if row.get("duplicate_same_frame") and bool(row.get("build_executed", True))
+        ]
+        export_cache_hits = [row for row in export_rows if row.get("cache_hit")]
+        same_frame_fallback_rebuilds = [
+            row
+            for row in export_rows
+            if bool(row.get("build_executed", True)) and bool(row.get("same_frame_cache_frame_match"))
+        ]
 
         summary = {
             "sequence_id": self.sequence_id,
             "profiled_frame_count": int(len(profiled_rows)),
             "export_call_count": int(len(export_rows)),
+            "export_build_count": int(sum(1 for row in export_rows if bool(row.get("build_executed", True)))),
+            "export_cache_hit_count": int(len(export_cache_hits)),
             "history_scope_row_count": int(len(history_rows)),
             "segmentation_run_count": int(len(segmentation_rows)),
             "duplicate_export_frame_count": int(len({int(row["frame_idx"]) for row in export_duplicates})),
             "duplicate_export_call_count": int(len(export_duplicates)),
+            "same_frame_full_export_reuse_count": int(
+                sum(1 for row in export_rows if bool(row.get("cache_hit")) and bool(row.get("same_frame_reuse_eligible")))
+            ),
+            "same_frame_fallback_rebuild_count": int(len(same_frame_fallback_rebuilds)),
+            "same_frame_fallback_rebuild_blockers": _safe_counter(
+                row.get("same_frame_reuse_blocker")
+                for row in same_frame_fallback_rebuilds
+                if row.get("same_frame_reuse_blocker")
+            ),
             "history_scope_labels": _safe_counter(row.get("scope_label") for row in history_rows),
             "export_call_contexts": _safe_counter(row.get("call_context") for row in export_rows),
+            "assoc_readonly_tail_reference_compared_count": int(
+                sum(1 for row in profiled_rows if bool(row.get("assoc_readonly_tail_reference_compared")))
+            ),
+            "assoc_readonly_tail_reference_diverged_frame_count": int(
+                sum(1 for row in profiled_rows if bool(row.get("assoc_readonly_tail_reference_diverged")))
+            ),
+            "assoc_readonly_tail_reference_reason_counts": _safe_counter(
+                row.get("assoc_readonly_tail_reference_reason")
+                for row in profiled_rows
+                if row.get("assoc_readonly_tail_reference_reason") not in (None, "")
+            ),
+            "assoc_readonly_tail_object_count_delta_stats": _safe_stats(
+                [row.get("assoc_readonly_tail_object_count_delta") for row in profiled_rows],
+                digits=6,
+            ),
+            "assoc_readonly_tail_candidate_only_count_stats": _safe_stats(
+                [row.get("assoc_readonly_tail_candidate_only_count") for row in profiled_rows],
+                digits=6,
+            ),
+            "assoc_readonly_tail_reference_only_count_stats": _safe_stats(
+                [row.get("assoc_readonly_tail_reference_only_count") for row in profiled_rows],
+                digits=6,
+            ),
             "stage5_total_stats_sec": _safe_stats([row.get("stage5_total_sec") for row in profiled_rows], digits=6),
+            "stage5_candidate_mask_prep_stats_sec": _safe_stats(
+                [row.get("stage5_candidate_mask_prep_sec") for row in profiled_rows],
+                digits=6,
+            ),
+            "stage5_assoc_reference_mask_prep_stats_sec": _safe_stats(
+                [row.get("stage5_assoc_reference_mask_prep_sec") for row in profiled_rows],
+                digits=6,
+            ),
+            "stage5_assoc_candidate_mask_prep_stats_sec": _safe_stats(
+                [row.get("stage5_assoc_candidate_mask_prep_sec") for row in profiled_rows],
+                digits=6,
+            ),
+            "stage5_boxfusion_mask_prep_stats_sec": _safe_stats(
+                [row.get("stage5_boxfusion_mask_prep_sec") for row in profiled_rows],
+                digits=6,
+            ),
+            "stage5_pre_assoc_clone_stats_sec": _safe_stats(
+                [row.get("stage5_pre_assoc_clone_sec") for row in profiled_rows],
+                digits=6,
+            ),
+            "stage5_bookkeeping_stats_sec": _safe_stats(
+                [row.get("stage5_bookkeeping_sec") for row in profiled_rows],
+                digits=6,
+            ),
+            "stage5_tail_reference_audit_stats_sec": _safe_stats(
+                [row.get("stage5_tail_reference_audit_sec") for row in profiled_rows],
+                digits=6,
+            ),
             "stage3_total_stats_sec": _safe_stats([row.get("stage3_total_sec") for row in profiled_rows], digits=6),
             "total_step_stats_sec": _safe_stats([row.get("total_step_sec") for row in profiled_rows], digits=6),
             "box_count_stats": _safe_stats([row.get("total_retained_object_count") for row in profiled_rows]),

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Dict, Set
+from typing import Dict, List, Optional, Set, Tuple
 from boxfusion.instances import Instances3D
 import numpy as np
 import torch
@@ -134,6 +134,44 @@ class BoxManager:
         
     def update_fusion_flag(self, idx):
         self.fusion_flag[idx] = 1
+
+    def _sorted_num_record_items(self) -> List[Tuple[int, int]]:
+        items: List[Tuple[int, int]] = []
+        for frame_idx, cumulative_count in self.num_record.items():
+            items.append((int(frame_idx), int(cumulative_count)))
+        items.sort(key=lambda item: item[0])
+        return items
+
+    def profiled_step_index_for_frame(self, frame_idx: int) -> Optional[int]:
+        for step_idx, (known_frame_idx, _) in enumerate(self._sorted_num_record_items()):
+            if int(known_frame_idx) == int(frame_idx):
+                return int(step_idx)
+        return None
+
+    def latest_contributing_profiled_steps(self) -> Tuple[np.ndarray, np.ndarray]:
+        sorted_records = self._sorted_num_record_items()
+        object_count = int(len(self.fusion_list))
+        latest_step_indices = np.full((object_count,), -1, dtype=np.int64)
+        latest_frame_indices = np.full((object_count,), -1, dtype=np.int64)
+        if not sorted_records or object_count <= 0:
+            return latest_step_indices, latest_frame_indices
+
+        frame_indices = np.asarray([item[0] for item in sorted_records], dtype=np.int64)
+        cumulative_counts = np.asarray([item[1] for item in sorted_records], dtype=np.int64)
+
+        for object_idx, fusion_indices in enumerate(self.fusion_list):
+            best_step_idx = -1
+            for init_id in fusion_indices:
+                step_idx = int(np.searchsorted(cumulative_counts, int(init_id), side="right"))
+                if step_idx >= len(cumulative_counts):
+                    continue
+                if step_idx > best_step_idx:
+                    best_step_idx = step_idx
+            if best_step_idx < 0:
+                continue
+            latest_step_indices[object_idx] = int(best_step_idx)
+            latest_frame_indices[object_idx] = int(frame_indices[best_step_idx])
+        return latest_step_indices, latest_frame_indices
 
     def get_fusion_idx(self):
 

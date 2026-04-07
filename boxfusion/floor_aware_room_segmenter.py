@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import time
@@ -22,7 +23,7 @@ from boxfusion.floor_artifacts import (
     display_floor_label,
 )
 from boxfusion.floor_manager import FloorManager
-from boxfusion.scene_graph_builder import FloorNode, ObjectNode, RoomNode, SemanticSceneGraph
+from boxfusion.scene_graph_builder import AnchorNode, FloorNode, ObjectNode, RoomNode, SemanticSceneGraph
 
 
 @dataclass
@@ -53,6 +54,9 @@ class FloorAwareRoomSegmenter:
     def __init__(self, resolution: float = 0.05, config: Optional[Dict[str, Any]] = None) -> None:
         self.resolution = float(resolution)
         self.config = config or {}
+        runtime_logging_cfg = dict((self.config or {}).get("runtime_logging", {}))
+        self.runtime_log_level = str(runtime_logging_cfg.get("log_level", "summary") or "summary").strip().lower()
+        self.runtime_quiet = bool(runtime_logging_cfg.get("quiet", False))
         self.floor_manager = FloorManager(config=config)
         self.floor_states: Dict[str, FloorState] = {}
         self.frame_history: List[Dict[str, Any]] = []
@@ -63,7 +67,19 @@ class FloorAwareRoomSegmenter:
         self.last_finalization_report: Dict[str, Any] = {}
         self.last_merge_profile: Dict[str, Any] = {}
         self.last_export_profile: Dict[str, Any] = {}
+        self._latest_export_cache: Dict[str, Any] = {}
+        self._latest_object_room_metadata_snapshot: Dict[str, Any] = {}
         self._next_world_room_id = 1
+
+    def _log_verbose(self, message: str) -> None:
+        if self.runtime_quiet:
+            return
+        if self.runtime_log_level != "verbose":
+            return
+        print(message)
+
+    def _log_warning(self, message: str) -> None:
+        print(message)
 
     def observe_frame(
         self,
@@ -295,6 +311,72 @@ class FloorAwareRoomSegmenter:
     ) -> Dict[str, Any]:
         export_t0 = time.perf_counter()
         floors = canonicalize_floors(self.floor_manager.export_floors())
+        floor_lookup = build_floor_lookup(floors)
+        segmentation_cache_token = self._build_segmentation_cache_token(floors)
+        export_structure_cache_token = self._build_export_structure_cache_token(floors)
+        prepared_object_state = self._prepare_object_export_state(all_pred_box)
+        cached_export, reuse_diagnostics = self._evaluate_same_frame_reuse(
+            count=count,
+            segmentation_cache_token=segmentation_cache_token,
+            object_state_signature=prepared_object_state.get("full_signature"),
+            save_scene_graph_vis=save_scene_graph_vis,
+            scene_graph_vis_dir=scene_graph_vis_dir,
+        )
+        structure_reuse_export = self._get_cached_export_for_structure_reuse(
+            export_structure_cache_token=export_structure_cache_token,
+        )
+        if reuse_diagnostics.get("same_frame_reuse_eligible"):
+            vector_data = cached_export["vector_data"]
+            self.last_floor_diagnostics = dict(vector_data.get("floor_debug") or {})
+            self._refresh_readonly_object_room_metadata_snapshot(
+                frame_idx=count,
+                object_cache_entries=cached_export.get("object_cache"),
+            )
+            cached_profile = dict(cached_export.get("profile") or {})
+            self.last_export_profile = {
+                "frame_idx": None if count is None else int(count),
+                "instrumentation_context": str(instrumentation_context),
+                "cache_hit": True,
+                "build_executed": False,
+                "cache_hit_kind": "same_frame_full_export_reuse",
+                "total_sec": 0.0,
+                "room_export_sec": 0.0,
+                "vertical_transition_export_sec": 0.0,
+                "object_export_sec": 0.0,
+                "scene_graph_build_sec": 0.0,
+                "spatial_relations_sec": 0.0,
+                "anchor_build_sec": 0.0,
+                "diagnostics_export_sec": 0.0,
+                "object_export_reused_count": int(cached_profile.get("object_count", len(vector_data.get("objects", [])))),
+                "object_export_rebuilt_count": 0,
+                "room_local_delta_export_used": False,
+                "room_local_delta_changed_room_count": 0,
+                "room_local_delta_reused_room_count": int(cached_profile.get("room_count", len(vector_data.get("rooms", [])))),
+                "room_local_delta_rebuilt_room_count": 0,
+                "room_local_delta_unassigned_bucket_rebuilt": False,
+                "changed_room_count": 0,
+                "changed_room_ids": "",
+                "changed_room_structure_changed_count": 0,
+                "changed_room_structure_changed_ids": "",
+                "changed_room_object_delta_count": 0,
+                "changed_room_object_delta_ids": "",
+                "changed_room_removed_count": 0,
+                "changed_room_removed_ids": "",
+                "changed_room_local_rebuild_used": False,
+                "changed_room_locality_confident": True,
+                "full_fallback_rebuild_used": False,
+                "rebuilt_object_in_changed_rooms_count": 0,
+                "room_count": int(cached_profile.get("room_count", len(vector_data.get("rooms", [])))),
+                "gateway_count": int(cached_profile.get("gateway_count", len(vector_data.get("gateways", [])))),
+                "vertical_transition_count": int(
+                    cached_profile.get("vertical_transition_count", len(vector_data.get("vertical_transitions", [])))
+                ),
+                "object_count": int(cached_profile.get("object_count", len(vector_data.get("objects", [])))),
+                "anchor_count": int(cached_profile.get("anchor_count", len(vector_data.get("anchors", [])))),
+                **reuse_diagnostics,
+            }
+            return vector_data
+
         vector_data: Dict[str, Any] = {
             "map_info": {
                 "resolution": self.resolution,
@@ -313,7 +395,6 @@ class FloorAwareRoomSegmenter:
             "vertical_transition_summary": {},
         }
 
-        floor_lookup = build_floor_lookup(floors)
         room_export_t0 = time.perf_counter()
         room_records, room_lookup = self._export_rooms_and_gateways(vector_data, floor_lookup)
         room_export_sec = time.perf_counter() - room_export_t0
@@ -328,9 +409,73 @@ class FloorAwareRoomSegmenter:
             floor_lookup,
         )
         vertical_transition_export_sec = time.perf_counter() - vt_export_t0
+        latest_cached_export = self._get_latest_export_cache()
+        room_cache = self._build_room_export_cache(room_records)
         object_export_t0 = time.perf_counter()
-        vector_data["objects"], embedding_lookup = self._build_object_exports(all_pred_box, floor_lookup, room_lookup)
+        object_reuse_cache = None if structure_reuse_export is None else structure_reuse_export.get("object_cache")
+        delta_export_metrics = {
+            "room_local_delta_export_used": False,
+            "room_local_delta_changed_room_count": 0,
+            "room_local_delta_reused_room_count": 0,
+            "room_local_delta_rebuilt_room_count": 0,
+            "room_local_delta_unassigned_bucket_rebuilt": False,
+            "changed_room_count": 0,
+            "changed_room_ids": "",
+            "changed_room_structure_changed_count": 0,
+            "changed_room_structure_changed_ids": "",
+            "changed_room_object_delta_count": 0,
+            "changed_room_object_delta_ids": "",
+            "changed_room_removed_count": 0,
+            "changed_room_removed_ids": "",
+            "changed_room_local_rebuild_used": False,
+            "changed_room_locality_confident": False,
+            "full_fallback_rebuild_used": False,
+            "rebuilt_object_in_changed_rooms_count": 0,
+        }
+        delta_export_result = None
+        if (
+            latest_cached_export is not None
+            and (
+                reuse_diagnostics.get("same_frame_reuse_blocker") == "object_state_signature_mismatch"
+                or structure_reuse_export is None
+            )
+        ):
+            delta_export_result = self._build_room_local_delta_object_exports(
+                prepared_object_state,
+                floor_lookup,
+                room_lookup,
+                room_records=room_records,
+                room_cache=room_cache,
+                cached_export=latest_cached_export,
+            )
+        if delta_export_result is not None:
+            (
+                vector_data["objects"],
+                embedding_lookup,
+                object_cache_entries,
+                object_export_reused_count,
+                delta_export_metrics,
+            ) = delta_export_result
+        else:
+            (
+                vector_data["objects"],
+                embedding_lookup,
+                object_cache_entries,
+                object_export_reused_count,
+            ) = self._build_object_exports(
+                prepared_object_state,
+                floor_lookup,
+                room_lookup,
+                reuse_cache=object_reuse_cache,
+            )
+            delta_export_metrics["full_fallback_rebuild_used"] = bool(
+                structure_reuse_export is None and latest_cached_export is not None
+            )
         object_export_sec = time.perf_counter() - object_export_t0
+        object_export_rebuilt_count = max(len(vector_data["objects"]) - int(object_export_reused_count), 0)
+        delta_export_metrics["rebuilt_object_in_changed_rooms_count"] = int(
+            delta_export_metrics.get("rebuilt_object_in_changed_rooms_count") or object_export_rebuilt_count
+        )
 
         sg_build_t0 = time.perf_counter()
         sg = SemanticSceneGraph()
@@ -396,8 +541,28 @@ class FloorAwareRoomSegmenter:
         spatial_rel_t0 = time.perf_counter()
         sg.compute_spatial_relations(dist_threshold=1.0, z_tolerance=0.2)
         spatial_relations_sec = time.perf_counter() - spatial_rel_t0
+        sg.reset_anchor_profile()
         anchor_t0 = time.perf_counter()
-        sg.build_anchor_layer(debug=False)
+        (
+            anchor_cache,
+            anchor_reused_count,
+            anchor_rebuilt_count,
+            anchor_reuse_room_count,
+            anchor_rebuild_room_count,
+        ) = self._build_anchor_layer_with_cached_room_reuse(
+            sg,
+            room_records=room_records,
+            objects=vector_data["objects"],
+            prepared_object_state=prepared_object_state,
+            cached_export=(
+                structure_reuse_export
+                if structure_reuse_export is not None
+                else latest_cached_export
+                if bool(delta_export_metrics.get("changed_room_local_rebuild_used"))
+                else None
+            ),
+        )
+        anchor_profile = sg.get_anchor_profile()
         anchor_build_sec = time.perf_counter() - anchor_t0
 
         for source, target, data in sg.graph.edges(data=True):
@@ -429,6 +594,8 @@ class FloorAwareRoomSegmenter:
         self.last_export_profile = {
             "frame_idx": None if count is None else int(count),
             "instrumentation_context": str(instrumentation_context),
+            "cache_hit": False,
+            "build_executed": True,
             "total_sec": float(time.perf_counter() - export_t0),
             "room_export_sec": float(room_export_sec),
             "vertical_transition_export_sec": float(vertical_transition_export_sec),
@@ -436,15 +603,646 @@ class FloorAwareRoomSegmenter:
             "scene_graph_build_sec": float(scene_graph_build_sec),
             "spatial_relations_sec": float(spatial_relations_sec),
             "anchor_build_sec": float(anchor_build_sec),
+            "anchor_rebuild_room_anchor_sec": float(anchor_profile.get("room_anchor_total_sec", 0.0)),
+            "anchor_rebuild_object_anchor_sec": float(anchor_profile.get("object_anchor_total_sec", 0.0)),
+            "anchor_rebuild_candidate_generation_sec": float(anchor_profile.get("candidate_generation_sec", 0.0)),
+            "anchor_rebuild_validate_sec": float(anchor_profile.get("validate_sec", 0.0)),
+            "anchor_rebuild_score_sec": float(anchor_profile.get("score_sec", 0.0)),
+            "anchor_rebuild_fallback_sec": float(anchor_profile.get("fallback_sec", 0.0)),
+            "anchor_rebuild_insert_sec": float(anchor_profile.get("insert_sec", 0.0)),
+            "anchor_rebuild_room_candidate_count": int(anchor_profile.get("room_anchor_candidate_count", 0.0)),
+            "anchor_rebuild_object_candidate_count": int(anchor_profile.get("object_anchor_candidate_count", 0.0)),
+            "anchor_rebuild_valid_candidate_count": int(anchor_profile.get("valid_candidate_count", 0.0)),
+            "anchor_rebuild_fallback_candidate_count": int(anchor_profile.get("fallback_candidate_count", 0.0)),
+            "anchor_reused_count": int(anchor_reused_count),
+            "anchor_rebuilt_count": int(anchor_rebuilt_count),
+            "anchor_reuse_room_count": int(anchor_reuse_room_count),
+            "anchor_rebuild_room_count": int(anchor_rebuild_room_count),
             "diagnostics_export_sec": float(diagnostics_export_sec),
+            "object_export_reused_count": int(object_export_reused_count),
+            "object_export_rebuilt_count": int(object_export_rebuilt_count),
             "room_count": int(len(vector_data.get("rooms", []))),
             "gateway_count": int(len(vector_data.get("gateways", []))),
             "vertical_transition_count": int(len(vector_data.get("vertical_transitions", []))),
             "object_count": int(len(vector_data.get("objects", []))),
             "anchor_count": int(len(vector_data.get("anchors", []))),
+            **delta_export_metrics,
+            **reuse_diagnostics,
         }
+        self._latest_export_cache = {
+            "frame_idx": None if count is None else int(count),
+            "segmentation_cache_token": segmentation_cache_token,
+            "export_structure_cache_token": export_structure_cache_token,
+            "object_state_signature": prepared_object_state.get("full_signature"),
+            "vector_data": vector_data,
+            "profile": dict(self.last_export_profile),
+            "room_cache": room_cache,
+            "object_cache": object_cache_entries,
+            "anchor_cache": anchor_cache,
+            "save_scene_graph_vis": bool(save_scene_graph_vis),
+            "scene_graph_vis_dir": str(scene_graph_vis_dir),
+        }
+        self._refresh_readonly_object_room_metadata_snapshot(
+            frame_idx=count,
+            object_cache_entries=object_cache_entries,
+        )
 
         return vector_data
+
+    def _evaluate_same_frame_reuse(
+        self,
+        *,
+        count: Optional[int],
+        segmentation_cache_token: Tuple[Any, ...],
+        object_state_signature: Optional[str],
+        save_scene_graph_vis: bool,
+        scene_graph_vis_dir: str,
+    ) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
+        diagnostics = {
+            "same_frame_cache_available": False,
+            "same_frame_cache_frame_match": False,
+            "same_frame_segmentation_token_match": False,
+            "same_frame_object_state_match": False,
+            "same_frame_visualization_match": False,
+            "same_frame_reuse_eligible": False,
+            "same_frame_reuse_blocker": "no_prior_export",
+        }
+        cached = self._latest_export_cache or {}
+        if not cached:
+            return None, diagnostics
+        diagnostics["same_frame_cache_available"] = True
+        if count is None:
+            diagnostics["same_frame_reuse_blocker"] = "missing_frame_index"
+            return None, diagnostics
+        diagnostics["same_frame_cache_frame_match"] = cached.get("frame_idx") == int(count)
+        if not diagnostics["same_frame_cache_frame_match"]:
+            diagnostics["same_frame_reuse_blocker"] = "frame_mismatch"
+            return None, diagnostics
+        diagnostics["same_frame_segmentation_token_match"] = (
+            cached.get("segmentation_cache_token") == segmentation_cache_token
+        )
+        if not diagnostics["same_frame_segmentation_token_match"]:
+            diagnostics["same_frame_reuse_blocker"] = "segmentation_token_mismatch"
+            return None, diagnostics
+
+        diagnostics["same_frame_object_state_match"] = (
+            cached.get("object_state_signature") == object_state_signature
+        )
+        diagnostics["same_frame_visualization_match"] = self._is_scene_graph_vis_compatible(
+            cached,
+            save_scene_graph_vis=save_scene_graph_vis,
+            scene_graph_vis_dir=scene_graph_vis_dir,
+        )
+        if not diagnostics["same_frame_object_state_match"]:
+            diagnostics["same_frame_reuse_blocker"] = "object_state_signature_mismatch"
+            return cached, diagnostics
+        if not diagnostics["same_frame_visualization_match"]:
+            diagnostics["same_frame_reuse_blocker"] = "visualization_mismatch"
+            return cached, diagnostics
+        diagnostics["same_frame_reuse_eligible"] = True
+        diagnostics["same_frame_reuse_blocker"] = "none"
+        return cached, diagnostics
+
+    def _is_scene_graph_vis_compatible(
+        self,
+        cached_export: Dict[str, Any],
+        *,
+        save_scene_graph_vis: bool,
+        scene_graph_vis_dir: str,
+    ) -> bool:
+        if not save_scene_graph_vis:
+            return True
+        return bool(
+            cached_export.get("save_scene_graph_vis")
+            and str(cached_export.get("scene_graph_vis_dir")) == str(scene_graph_vis_dir)
+        )
+
+    def _get_cached_export_for_structure_reuse(
+        self,
+        *,
+        export_structure_cache_token: str,
+    ) -> Optional[Dict[str, Any]]:
+        cached = self._latest_export_cache or {}
+        if not cached:
+            return None
+        if cached.get("export_structure_cache_token") != export_structure_cache_token:
+            return None
+        return cached
+
+    def _get_latest_export_cache(self) -> Optional[Dict[str, Any]]:
+        cached = self._latest_export_cache or {}
+        if not cached:
+            return None
+        return cached
+
+    def get_readonly_object_room_metadata_snapshot(self) -> Dict[str, Any]:
+        snapshot = dict(self._latest_object_room_metadata_snapshot or {})
+        if not snapshot:
+            return {}
+        by_object_id = {}
+        for object_id, metadata in dict(snapshot.get("by_object_id") or {}).items():
+            by_object_id[int(object_id)] = dict(metadata or {})
+        return {
+            "frame_idx": None if snapshot.get("frame_idx") is None else int(snapshot.get("frame_idx")),
+            "object_count": int(snapshot.get("object_count", len(by_object_id))),
+            "by_object_id": by_object_id,
+        }
+
+    def _room_assignment_support_count(self, room_assignment: Dict[str, Any]) -> int:
+        votes = dict((room_assignment or {}).get("votes") or {})
+        if not votes:
+            return 0
+        try:
+            return int(max(int(value) for value in votes.values()))
+        except Exception:
+            return 0
+
+    def _cached_room_assignment_is_trusted(
+        self,
+        *,
+        room_uuid: int,
+        floor_id: Optional[str],
+        room_assignment: Dict[str, Any],
+    ) -> bool:
+        if int(room_uuid) < 0 or floor_id in (None, ""):
+            return False
+        support_count = self._room_assignment_support_count(room_assignment)
+        center_label = room_assignment.get("center_label")
+        center_label_int = -1 if center_label in (None, "") else int(center_label)
+        return bool(support_count >= 2 and (center_label_int > 0 or support_count >= 3))
+
+    def _refresh_readonly_object_room_metadata_snapshot(
+        self,
+        *,
+        frame_idx: Optional[int],
+        object_cache_entries: Optional[Dict[int, Dict[str, Any]]],
+    ) -> None:
+        cache_lookup = dict(object_cache_entries or {})
+        by_object_id: Dict[int, Dict[str, Any]] = {}
+        for instance_id, raw_cached_entry in cache_lookup.items():
+            cached_entry = dict(raw_cached_entry or {})
+            cached_object = dict(cached_entry.get("object") or {})
+            if not cached_object:
+                continue
+
+            room_assignment = dict(cached_object.get("room_assignment") or {})
+            floor_id = cached_object.get("floor_id")
+            room_uuid = int(cached_object.get("room_uuid", -1) or -1)
+            center_label = room_assignment.get("center_label")
+            center_label_int = -1 if center_label in (None, "") else int(center_label)
+            support_count = self._room_assignment_support_count(room_assignment)
+            normalized_floor_id = None if floor_id in (None, "") else str(floor_id)
+            by_object_id[int(instance_id)] = {
+                "room_uuid": int(room_uuid),
+                "floor_id": normalized_floor_id,
+                "support_count": int(support_count),
+                "center_label": int(center_label_int),
+                "trusted": bool(
+                    self._cached_room_assignment_is_trusted(
+                        room_uuid=room_uuid,
+                        floor_id=normalized_floor_id,
+                        room_assignment=room_assignment,
+                    )
+                ),
+                "metadata_available": True,
+            }
+
+        self._latest_object_room_metadata_snapshot = {
+            "frame_idx": None if frame_idx is None else int(frame_idx),
+            "object_count": int(len(by_object_id)),
+            "by_object_id": by_object_id,
+        }
+
+    def _build_anchor_layer_with_cached_room_reuse(
+        self,
+        sg: SemanticSceneGraph,
+        *,
+        room_records: Sequence[Dict[str, Any]],
+        objects: Sequence[Dict[str, Any]],
+        prepared_object_state: Dict[str, Any],
+        cached_export: Optional[Dict[str, Any]],
+    ) -> Tuple[Dict[str, Any], int, int, int, int]:
+        object_signature_by_id = self._build_object_signature_lookup(prepared_object_state)
+        room_signatures = self._build_anchor_room_signatures(
+            room_records=room_records,
+            objects=objects,
+            object_signature_by_id=object_signature_by_id,
+        )
+        anchor_cache: Dict[str, Any] = {
+            "room_signatures": dict(room_signatures),
+            "anchors_by_room": {},
+        }
+        reused_anchor_count = 0
+        reused_room_count = 0
+        rebuilt_room_count = 0
+        rebuilt_anchor_nodes: List[AnchorNode] = []
+        reusable_room_ids: set[str] = set()
+
+        cached_anchor_cache = None if cached_export is None else dict(cached_export.get("anchor_cache") or {})
+
+        cached_room_signatures = dict((cached_anchor_cache or {}).get("room_signatures") or {})
+        cached_anchors_by_room = dict((cached_anchor_cache or {}).get("anchors_by_room") or {})
+        for room_info in room_records:
+            room_id = f"room_{int(room_info['id'])}"
+            cached_signature = cached_room_signatures.get(room_id)
+            if cached_signature != room_signatures.get(room_id):
+                continue
+            cached_payloads = list(cached_anchors_by_room.get(room_id) or [])
+            reusable_anchors = self._deserialize_reusable_anchor_payloads(
+                sg,
+                room_id=room_id,
+                anchor_payloads=cached_payloads,
+            )
+            if reusable_anchors is None:
+                continue
+            sg.insert_anchor_nodes_into_graph(reusable_anchors)
+            anchor_cache["anchors_by_room"][room_id] = [dict(item) for item in cached_payloads]
+            reusable_room_ids.add(room_id)
+            reused_room_count += 1
+            reused_anchor_count += len(reusable_anchors)
+
+        if reused_room_count < 2 or reused_anchor_count == 0:
+            anchors = sg.build_anchor_layer(debug=False)
+            return (
+                self._build_anchor_cache_from_export(
+                    room_signatures=room_signatures,
+                    anchor_exports=[anchor.get_attributes() for anchor in anchors],
+                ),
+                0,
+                int(len(anchors)),
+                0,
+                int(len(room_records)),
+            )
+
+        for room_info in room_records:
+            room_id = f"room_{int(room_info['id'])}"
+            if room_id in reusable_room_ids:
+                continue
+            rebuilt_room_count += 1
+            room_anchor_nodes: List[AnchorNode] = []
+            room_anchor = sg.generate_room_anchor(room_id, debug=False)
+            if room_anchor is not None:
+                room_anchor_nodes.append(room_anchor)
+            for obj in sg._objects_in_room(room_id):
+                object_anchor = sg.generate_object_anchor(obj.id, debug=False)
+                if object_anchor is not None:
+                    room_anchor_nodes.append(object_anchor)
+            if room_anchor_nodes:
+                sg.insert_anchor_nodes_into_graph(room_anchor_nodes)
+                rebuilt_anchor_nodes.extend(room_anchor_nodes)
+            anchor_cache["anchors_by_room"][room_id] = [
+                dict(anchor.get_attributes()) for anchor in room_anchor_nodes
+            ]
+
+        return (
+            anchor_cache,
+            int(reused_anchor_count),
+            int(len(rebuilt_anchor_nodes)),
+            int(reused_room_count),
+            int(rebuilt_room_count),
+        )
+
+    def _build_anchor_cache_from_export(
+        self,
+        *,
+        room_signatures: Dict[str, str],
+        anchor_exports: Sequence[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        anchors_by_room: Dict[str, List[Dict[str, Any]]] = {}
+        for room_id in room_signatures:
+            anchors_by_room[room_id] = []
+        for anchor in anchor_exports:
+            room_id = str(anchor.get("room_id") or "")
+            anchors_by_room.setdefault(room_id, []).append(dict(anchor))
+        return {
+            "room_signatures": dict(room_signatures),
+            "anchors_by_room": anchors_by_room,
+        }
+
+    def _build_object_signature_lookup(self, prepared_object_state: Dict[str, Any]) -> Dict[int, str]:
+        instance_ids_value = prepared_object_state.get("instance_ids")
+        if instance_ids_value is None:
+            instance_ids = np.zeros((0,), dtype=np.int64)
+        else:
+            instance_ids = np.asarray(instance_ids_value, dtype=np.int64)
+        per_object_signatures = list(prepared_object_state.get("per_object_signatures") or [])
+        return {
+            int(instance_ids[idx]): str(per_object_signatures[idx])
+            for idx in range(min(len(instance_ids), len(per_object_signatures)))
+        }
+
+    def _build_anchor_room_signatures(
+        self,
+        *,
+        room_records: Sequence[Dict[str, Any]],
+        objects: Sequence[Dict[str, Any]],
+        object_signature_by_id: Dict[int, str],
+    ) -> Dict[str, str]:
+        objects_by_room: Dict[str, List[Dict[str, Any]]] = {}
+        for obj in objects:
+            room_id = obj.get("room_id")
+            if room_id is None:
+                continue
+            objects_by_room.setdefault(str(room_id), []).append(dict(obj))
+
+        room_signatures: Dict[str, str] = {}
+        for room_info in room_records:
+            room_id = f"room_{int(room_info['id'])}"
+            hasher = hashlib.blake2b(digest_size=16)
+            hasher.update(room_id.encode("utf-8"))
+            room_payload = self._room_cache_payload(room_info)
+            hasher.update(
+                json.dumps(room_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            )
+            room_objects = sorted(
+                objects_by_room.get(room_id, []),
+                key=lambda item: int(item.get("id", -1)),
+            )
+            for obj in room_objects:
+                object_id = int(obj.get("id", -1))
+                object_signature = object_signature_by_id.get(object_id)
+                if object_signature is None:
+                    object_signature = f"missing_signature:{object_id}"
+                hasher.update(f"{object_id}:{object_signature}".encode("utf-8"))
+            room_signatures[room_id] = hasher.hexdigest()
+        return room_signatures
+
+    def _room_cache_payload(self, room_record: Dict[str, Any]) -> Dict[str, Any]:
+        polygon = [
+            [round(float(point[0]), 3), round(float(point[1]), 3)]
+            for point in list(room_record.get("polygon") or [])
+        ]
+        center = list(room_record.get("center") or [])
+        return {
+            "room_id": str(room_record.get("room_id") or f"room_{int(room_record.get('id', -1))}"),
+            "floor_id": room_record.get("floor_id"),
+            "room_type": str(room_record.get("room_type", "unknown")),
+            "status": str(room_record.get("status", "confirmed")),
+            "polygon": polygon,
+            "center": [round(float(value), 3) for value in center[:2]],
+            "area_m2": round(float(room_record.get("area_m2", 0.0) or 0.0), 3),
+        }
+
+    def _room_signature_from_record(self, room_record: Dict[str, Any]) -> str:
+        hasher = hashlib.blake2b(digest_size=16)
+        hasher.update(
+            json.dumps(
+                self._room_cache_payload(room_record),
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        )
+        return hasher.hexdigest()
+
+    def _build_room_export_cache(self, room_records: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
+        room_signatures: Dict[str, str] = {}
+        rooms_by_id: Dict[str, Dict[str, Any]] = {}
+        for room_info in room_records:
+            room_id = f"room_{int(room_info['id'])}"
+            room_signatures[room_id] = self._room_signature_from_record(room_info)
+            rooms_by_id[room_id] = self._room_cache_payload(room_info)
+        return {
+            "room_signatures": room_signatures,
+            "rooms_by_id": rooms_by_id,
+        }
+
+    def _build_object_export_floor_vote_cache(self) -> Dict[str, Dict[str, Any]]:
+        cache: Dict[str, Dict[str, Any]] = {}
+        for floor_id, floor_state in self.floor_states.items():
+            segmenter = floor_state.segmenter
+            markers = getattr(segmenter, "last_room_markers", None)
+            if markers is None:
+                continue
+            cache[str(floor_id)] = {
+                "floor_state": floor_state,
+                "wall_label": int(np.max(markers)),
+            }
+        return cache
+
+    def _encode_room_ids(self, room_ids: Iterable[str]) -> str:
+        cleaned = sorted({str(room_id) for room_id in room_ids if room_id not in (None, "", "__unassigned__")})
+        return "|".join(cleaned)
+
+    def _deserialize_reusable_anchor_payloads(
+        self,
+        sg: SemanticSceneGraph,
+        *,
+        room_id: str,
+        anchor_payloads: Sequence[Dict[str, Any]],
+    ) -> Optional[List[AnchorNode]]:
+        if room_id not in sg.graph.nodes:
+            return None
+        anchors: List[AnchorNode] = []
+        for payload in anchor_payloads:
+            target_id = str(payload.get("target_id") or "")
+            payload_room_id = str(payload.get("room_id") or "")
+            if payload_room_id != room_id:
+                return None
+            if target_id not in sg.graph.nodes:
+                return None
+            position = payload.get("position") or [0.0, 0.0, 0.0]
+            candidate_positions = payload.get("candidate_positions")
+            anchors.append(
+                AnchorNode(
+                    id=str(payload.get("id")),
+                    anchor_type=str(payload.get("anchor_type", "room")),
+                    position=(
+                        float(position[0]),
+                        float(position[1]),
+                        float(position[2]),
+                    ),
+                    room_id=payload_room_id,
+                    target_id=target_id,
+                    valid=bool(payload.get("valid", True)),
+                    score=float(payload.get("score", 0.0)),
+                    floor_id=None if payload.get("floor_id") is None else str(payload.get("floor_id")),
+                    candidate_positions=None
+                    if candidate_positions is None
+                    else [tuple(map(float, item)) for item in candidate_positions],
+                )
+            )
+        return anchors
+
+    def _build_segmentation_cache_token(
+        self,
+        floors: Sequence[Dict[str, Any]],
+    ) -> Tuple[Any, ...]:
+        floor_token = tuple(
+            (
+                str(item.get("floor_id")),
+                int(item.get("floor_index", 0) or 0),
+                round(float(item.get("z_center", 0.0) or 0.0), 3),
+                str(item.get("status", "unknown")),
+            )
+            for item in floors
+        )
+        floor_state_token = []
+        for floor_id, floor_state in sorted(self.floor_states.items(), key=lambda item: item[0]):
+            markers = floor_state.segmenter.last_room_markers
+            markers_digest = None
+            if markers is not None:
+                marker_array = np.ascontiguousarray(np.asarray(markers, dtype=np.int32))
+                markers_digest = hashlib.blake2b(marker_array.tobytes(), digest_size=8).hexdigest()
+            floor_state_token.append(
+                (
+                    str(floor_id),
+                    None if floor_state.last_segmentation_frame_idx is None else int(floor_state.last_segmentation_frame_idx),
+                    int(len(floor_state.local_to_world_room_id)),
+                    markers_digest,
+                    int(len(getattr(floor_state.segmenter, "last_gateways", []) or [])),
+                )
+            )
+        return (
+            int(len(self.frame_history)),
+            floor_token,
+            tuple(floor_state_token),
+        )
+
+    def _build_export_structure_cache_token(
+        self,
+        floors: Sequence[Dict[str, Any]],
+    ) -> str:
+        hasher = hashlib.blake2b(digest_size=16)
+        for floor in floors:
+            hasher.update(
+                json.dumps(
+                    {
+                        "floor_id": str(floor.get("floor_id")),
+                        "floor_index": int(floor.get("floor_index", 0) or 0),
+                        "display_floor_id": floor.get("display_floor_id"),
+                        "display_order": None if floor.get("display_order") is None else int(floor.get("display_order")),
+                        "status": str(floor.get("status", "unknown")),
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            )
+        for floor_id, floor_state in sorted(self.floor_states.items(), key=lambda item: item[0]):
+            markers = floor_state.segmenter.last_room_markers
+            markers_digest = None
+            if markers is not None:
+                marker_array = np.ascontiguousarray(np.asarray(markers, dtype=np.int32))
+                markers_digest = hashlib.blake2b(marker_array.tobytes(), digest_size=8).hexdigest()
+            hasher.update(
+                json.dumps(
+                    {
+                        "floor_id": str(floor_id),
+                        "last_segmentation_frame_idx": None
+                        if floor_state.last_segmentation_frame_idx is None
+                        else int(floor_state.last_segmentation_frame_idx),
+                        "local_to_world_room_id": [
+                            [int(local_id), int(world_id)]
+                            for local_id, world_id in sorted((floor_state.local_to_world_room_id or {}).items())
+                        ],
+                        "markers_digest": markers_digest,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            )
+        return hasher.hexdigest()
+
+    def _prepare_object_export_state(self, all_pred_box) -> Dict[str, Any]:
+        if all_pred_box is None:
+            return {
+                "is_empty": True,
+                "box_tensors": np.zeros((0, 7), dtype=np.float32),
+                "categories": np.asarray([], dtype=object),
+                "instance_ids": np.zeros((0,), dtype=np.int64),
+                "scores": np.zeros((0,), dtype=np.float32),
+                "semantic_confidences": np.zeros((0,), dtype=np.float32),
+                "association_confidences": np.zeros((0,), dtype=np.float32),
+                "semantic_gaps": np.zeros((0,), dtype=np.float32),
+                "view_qualities": np.zeros((0,), dtype=np.float32),
+                "embeddings": None,
+                "has_embeddings": False,
+                "per_object_signatures": [],
+                "full_signature": "empty",
+            }
+
+        box_tensors = self._to_numpy_array(all_pred_box.pred_boxes_3d.tensor, dtype=np.float32)
+        categories = np.asarray(all_pred_box.categories, dtype=object)
+        instance_ids = self._to_numpy_array(all_pred_box.init_id, dtype=np.int64)
+        scores = self._to_numpy_array(
+            getattr(all_pred_box, "scores", np.ones(len(box_tensors), dtype=np.float32)),
+            dtype=np.float32,
+        )
+        semantic_confidences = self._to_numpy_array(
+            getattr(all_pred_box, "semantic_confidences", scores),
+            dtype=np.float32,
+        )
+        association_confidences = self._to_numpy_array(
+            getattr(all_pred_box, "association_confidences", np.ones(len(box_tensors), dtype=np.float32)),
+            dtype=np.float32,
+        )
+        semantic_gaps = self._to_numpy_array(
+            getattr(all_pred_box, "semantic_gaps", np.zeros(len(box_tensors), dtype=np.float32)),
+            dtype=np.float32,
+        )
+        view_qualities = self._to_numpy_array(
+            getattr(all_pred_box, "view_qualities", np.ones(len(box_tensors), dtype=np.float32)),
+            dtype=np.float32,
+        )
+        has_embeddings = hasattr(all_pred_box, "embeddings")
+        embeddings = None
+        if has_embeddings:
+            embeddings = self._to_numpy_array(getattr(all_pred_box, "embeddings"), dtype=np.float32)
+
+        per_object_signatures: List[str] = []
+        full_hasher = hashlib.blake2b(digest_size=16)
+        for idx in range(len(box_tensors)):
+            object_hasher = hashlib.blake2b(digest_size=16)
+            object_hasher.update(np.ascontiguousarray(box_tensors[idx], dtype=np.float32).tobytes())
+            object_hasher.update(np.ascontiguousarray(np.asarray([instance_ids[idx]], dtype=np.int64)).tobytes())
+            object_hasher.update(str(categories[idx]).encode("utf-8"))
+            object_hasher.update(
+                np.ascontiguousarray(
+                    np.asarray(
+                        [
+                            scores[idx],
+                            semantic_confidences[idx],
+                            association_confidences[idx],
+                            semantic_gaps[idx],
+                            view_qualities[idx],
+                        ],
+                        dtype=np.float32,
+                    )
+                ).tobytes()
+            )
+            if embeddings is not None:
+                object_hasher.update(np.ascontiguousarray(embeddings[idx], dtype=np.float32).tobytes())
+            signature = object_hasher.hexdigest()
+            per_object_signatures.append(signature)
+            full_hasher.update(signature.encode("ascii"))
+
+        return {
+            "is_empty": len(box_tensors) == 0,
+            "box_tensors": box_tensors,
+            "categories": categories,
+            "instance_ids": instance_ids,
+            "scores": scores,
+            "semantic_confidences": semantic_confidences,
+            "association_confidences": association_confidences,
+            "semantic_gaps": semantic_gaps,
+            "view_qualities": view_qualities,
+            "embeddings": embeddings,
+            "has_embeddings": bool(has_embeddings and embeddings is not None),
+            "per_object_signatures": per_object_signatures,
+            "full_signature": full_hasher.hexdigest(),
+        }
+
+    def _to_numpy_array(self, value: Any, dtype: Optional[np.dtype] = None) -> np.ndarray:
+        if hasattr(value, "detach"):
+            value = value.detach()
+        if hasattr(value, "cpu"):
+            value = value.cpu()
+        if hasattr(value, "numpy"):
+            array = value.numpy()
+        else:
+            array = np.asarray(value)
+        if dtype is not None:
+            return np.asarray(array, dtype=dtype)
+        return np.asarray(array)
 
     def update_latest_segmentation_export_metrics(self, frame_idx: int) -> None:
         if not self.last_export_profile:
@@ -1068,7 +1866,7 @@ class FloorAwareRoomSegmenter:
             "room_count_after_segmentation": int(self._segmenter_room_count(segmenter)),
         }
         floor_state.segmentation_reports.append(run_record)
-        print(
+        self._log_verbose(
             "[FloorAwareRoomSegmenter] segmentation diagnostics -> "
             f"floor={floor_id}, trigger={trigger_reason}, slice={slice_mode_label}, "
             f"fallbacks={','.join(fallback_modes) if fallback_modes else 'none'}, "
@@ -1306,115 +2104,482 @@ class FloorAwareRoomSegmenter:
             enriched.append(record)
         return enriched
 
-    def _build_object_exports(
+    def _build_object_export_record(
         self,
-        all_pred_box,
+        object_index: int,
+        *,
+        prepared_object_state: Dict[str, Any],
         floor_lookup: Dict[str, Dict[str, Any]],
         room_lookup: Dict[int, Dict[str, Any]],
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, List[float]]]:
-        if all_pred_box is None:
-            return [], {}
+        object_floor_vote_cache: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> Tuple[Dict[str, Any], Optional[List[float]]]:
+        box_tensors = prepared_object_state["box_tensors"]
+        categories = prepared_object_state["categories"]
+        instance_ids = prepared_object_state["instance_ids"]
+        scores = prepared_object_state["scores"]
+        semantic_confidences = prepared_object_state["semantic_confidences"]
+        association_confidences = prepared_object_state["association_confidences"]
+        semantic_gaps = prepared_object_state["semantic_gaps"]
+        view_qualities = prepared_object_state["view_qualities"]
+        has_embeddings = bool(prepared_object_state.get("has_embeddings", False))
+        embeddings = prepared_object_state.get("embeddings")
+        i = int(object_index)
+        instance_id = int(instance_ids[i])
+        cx, cy, cz = float(box_tensors[i, 0]), float(box_tensors[i, 1]), float(box_tensors[i, 2])
+        dx, dy, dz = float(box_tensors[i, 3]), float(box_tensors[i, 4]), float(box_tensors[i, 5])
+        yaw = float(box_tensors[i, 6]) if box_tensors.shape[1] > 6 else 0.0
 
-        box_tensors = all_pred_box.pred_boxes_3d.tensor.cpu().numpy()
-        categories = all_pred_box.categories
-        instance_ids = all_pred_box.init_id.cpu().numpy()
-        scores = all_pred_box.scores.cpu().numpy() if hasattr(all_pred_box, "scores") else np.ones(len(box_tensors))
-        has_embeddings = hasattr(all_pred_box, "embeddings")
-        semantic_confidences = all_pred_box.semantic_confidences.cpu().numpy() if hasattr(all_pred_box, "semantic_confidences") else scores
-        association_confidences = all_pred_box.association_confidences.cpu().numpy() if hasattr(all_pred_box, "association_confidences") else np.ones(len(box_tensors))
-        semantic_gaps = all_pred_box.semantic_gaps.cpu().numpy() if hasattr(all_pred_box, "semantic_gaps") else np.zeros(len(box_tensors))
-        view_qualities = all_pred_box.view_qualities.cpu().numpy() if hasattr(all_pred_box, "view_qualities") else np.ones(len(box_tensors))
+        cos_y, sin_y = np.cos(yaw), np.sin(yaw)
+        rotation = np.array([[cos_y, -sin_y], [sin_y, cos_y]], dtype=np.float32)
+        corners_local = np.array(
+            [[dx / 2, dy / 2], [-dx / 2, dy / 2], [-dx / 2, -dy / 2], [dx / 2, -dy / 2]],
+            dtype=np.float32,
+        )
+        corners_global = (rotation @ corners_local.T).T + np.array([cx, cy], dtype=np.float32)
+        footprint_2d = np.round(corners_global, 3).tolist()
+
+        floor_assignment = self.floor_manager.assign_height(cz)
+        floor_id = floor_assignment.get("floor_id")
+        room_uuid = -1
+        room_assignment = {
+            "method": "floor_then_footprint_vote_9pt",
+            "floor_status": floor_assignment.get("status"),
+            "floor_confidence": round(float(floor_assignment.get("confidence", 0.0) or 0.0), 3),
+            "center_label": -1,
+            "votes": {},
+            "local_room_id": -1,
+        }
+        floor_vote_state = None if floor_id is None else dict((object_floor_vote_cache or {}).get(str(floor_id)) or {})
+        floor_state = floor_vote_state.get("floor_state")
+        if floor_state is None and floor_id in self.floor_states:
+            floor_state = self.floor_states[floor_id]
+        if floor_state is not None:
+            if floor_state.segmenter.last_room_markers is not None:
+                wall_label = int(
+                    floor_vote_state.get("wall_label")
+                    if floor_vote_state.get("wall_label") is not None
+                    else np.max(floor_state.segmenter.last_room_markers)
+                )
+                local_room_id, center_label, room_votes = floor_state.segmenter._vote_room_label_for_object(
+                    (cx, cy),
+                    footprint_2d,
+                    wall_label,
+                )
+                room_assignment["center_label"] = int(center_label) if center_label is not None else -1
+                room_assignment["votes"] = {str(int(label)): int(value) for label, value in sorted(room_votes.items())}
+                room_assignment["local_room_id"] = int(local_room_id)
+                if int(local_room_id) >= 0:
+                    room_uuid = int(floor_state.local_to_world_room_id.get(int(local_room_id), -1))
+
+        obj_data = {
+            "id": instance_id,
+            "label": str(categories[i]),
+            "category": str(categories[i]),
+            "score": round(float(scores[i]), 3),
+            "detection_confidence": round(float(scores[i]), 3),
+            "semantic_confidence": round(float(semantic_confidences[i]), 3),
+            "association_confidence": round(float(association_confidences[i]), 3),
+            "semantic_gap": round(float(semantic_gaps[i]), 3),
+            "view_quality": round(float(view_qualities[i]), 3),
+            "floor_id": floor_id,
+            "floor_index": floor_lookup.get(str(floor_id), {}).get("floor_index") if floor_id is not None else None,
+            "display_floor_id": floor_lookup.get(str(floor_id), {}).get("display_floor_id") if floor_id is not None else None,
+            "display_order": floor_lookup.get(str(floor_id), {}).get("display_order") if floor_id is not None else None,
+            "floor_assignment": dict(floor_assignment),
+            "room_uuid": int(room_uuid),
+            "room_id": None if room_uuid < 0 else f"room_{int(room_uuid)}",
+            "pose": [round(cx, 3), round(cy, 3)],
+            "pose_3d": [round(cx, 3), round(cy, 3), round(cz, 3)],
+            "size": [round(dx, 3), round(dy, 3), round(dz, 3)],
+            "yaw": round(yaw, 3),
+            "footprint_2d": footprint_2d,
+            "room_assignment": room_assignment,
+            "semantic_observations": [
+                {
+                    "label": str(categories[i]),
+                    "category": str(categories[i]),
+                    "detection_confidence": float(scores[i]),
+                    "semantic_confidence": float(semantic_confidences[i]),
+                    "association_confidence": float(association_confidences[i]),
+                    "semantic_gap": float(semantic_gaps[i]),
+                    "view_quality": float(view_qualities[i]),
+                }
+            ],
+        }
+        embedding_values = None
+        if has_embeddings:
+            embedding_ref = f"embedding_{instance_id}"
+            obj_data["embedding_ref"] = embedding_ref
+            embedding_values = embeddings[i].tolist()
+        if room_uuid >= 0 and room_uuid in room_lookup:
+            obj_data["floor_id"] = room_lookup[room_uuid].get("floor_id")
+            obj_data["floor_index"] = room_lookup[room_uuid].get("floor_index")
+            obj_data["display_floor_id"] = room_lookup[room_uuid].get("display_floor_id")
+            obj_data["display_order"] = room_lookup[room_uuid].get("display_order")
+        return obj_data, embedding_values
+
+    def _try_reuse_cached_object_export_record(
+        self,
+        object_index: int,
+        *,
+        prepared_object_state: Dict[str, Any],
+        floor_lookup: Dict[str, Dict[str, Any]],
+        room_lookup: Dict[int, Dict[str, Any]],
+        cached_entry: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        cached_object = dict(cached_entry.get("object") or {})
+        if not cached_object:
+            return None
+
+        box_tensors = prepared_object_state["box_tensors"]
+        i = int(object_index)
+        current_floor_assignment = dict(self.floor_manager.assign_height(float(box_tensors[i, 2])) or {})
+        current_floor_id = current_floor_assignment.get("floor_id")
+
+        room_uuid = int(cached_object.get("room_uuid", -1))
+        room_record = None if room_uuid < 0 else room_lookup.get(room_uuid)
+        if room_record is not None and room_record.get("floor_id") != current_floor_id:
+            return None
+
+        cached_object["floor_assignment"] = current_floor_assignment
+        cached_object["floor_id"] = current_floor_id
+        cached_object["floor_index"] = current_floor_assignment.get("floor_index")
+        cached_object["display_floor_id"] = current_floor_assignment.get("display_floor_id")
+        cached_object["display_order"] = current_floor_assignment.get("display_order")
+
+        room_assignment = dict(cached_object.get("room_assignment") or {})
+        room_assignment["floor_status"] = current_floor_assignment.get("status")
+        room_assignment["floor_confidence"] = round(float(current_floor_assignment.get("confidence", 0.0) or 0.0), 3)
+        cached_object["room_assignment"] = room_assignment
+
+        if room_record is not None:
+            cached_object["floor_id"] = room_record.get("floor_id")
+            cached_object["floor_index"] = room_record.get("floor_index")
+            cached_object["display_floor_id"] = room_record.get("display_floor_id")
+            cached_object["display_order"] = room_record.get("display_order")
+        elif current_floor_id is not None:
+            floor_meta = dict(floor_lookup.get(str(current_floor_id)) or {})
+            if floor_meta:
+                cached_object["floor_index"] = floor_meta.get("floor_index")
+                cached_object["display_floor_id"] = floor_meta.get("display_floor_id")
+                cached_object["display_order"] = floor_meta.get("display_order")
+        return cached_object
+
+    def _object_bucket_id_from_room(self, room_id: Optional[str]) -> str:
+        if room_id in (None, ""):
+            return "__unassigned__"
+        return str(room_id)
+
+    def _build_object_exports(
+        self,
+        prepared_object_state: Dict[str, Any],
+        floor_lookup: Dict[str, Dict[str, Any]],
+        room_lookup: Dict[int, Dict[str, Any]],
+        reuse_cache: Optional[Dict[int, Dict[str, Any]]] = None,
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, List[float]], Dict[int, Dict[str, Any]], int]:
+        if prepared_object_state.get("is_empty", False):
+            return [], {}, {}, 0
+
+        instance_ids = prepared_object_state["instance_ids"]
+        per_object_signatures = prepared_object_state.get("per_object_signatures", [])
+        has_embeddings = bool(prepared_object_state.get("has_embeddings", False))
+        object_floor_vote_cache = self._build_object_export_floor_vote_cache()
 
         objects: List[Dict[str, Any]] = []
         embedding_lookup: Dict[str, List[float]] = {}
+        cache_entries: Dict[int, Dict[str, Any]] = {}
+        cache_hit_count = 0
 
-        for i in range(len(box_tensors)):
-            cx, cy, cz = float(box_tensors[i, 0]), float(box_tensors[i, 1]), float(box_tensors[i, 2])
-            dx, dy, dz = float(box_tensors[i, 3]), float(box_tensors[i, 4]), float(box_tensors[i, 5])
-            yaw = float(box_tensors[i, 6]) if box_tensors.shape[1] > 6 else 0.0
-
-            cos_y, sin_y = np.cos(yaw), np.sin(yaw)
-            rotation = np.array([[cos_y, -sin_y], [sin_y, cos_y]], dtype=np.float32)
-            corners_local = np.array(
-                [[dx / 2, dy / 2], [-dx / 2, dy / 2], [-dx / 2, -dy / 2], [dx / 2, -dy / 2]],
-                dtype=np.float32,
-            )
-            corners_global = (rotation @ corners_local.T).T + np.array([cx, cy], dtype=np.float32)
-            footprint_2d = np.round(corners_global, 3).tolist()
-
-            floor_assignment = self.floor_manager.assign_height(cz)
-            floor_id = floor_assignment.get("floor_id")
-            room_uuid = -1
-            room_assignment = {
-                "method": "floor_then_footprint_vote_9pt",
-                "floor_status": floor_assignment.get("status"),
-                "floor_confidence": round(float(floor_assignment.get("confidence", 0.0) or 0.0), 3),
-                "center_label": -1,
-                "votes": {},
-                "local_room_id": -1,
-            }
-            if floor_id in self.floor_states:
-                floor_state = self.floor_states[floor_id]
-                if floor_state.segmenter.last_room_markers is not None:
-                    wall_label = int(np.max(np.unique(floor_state.segmenter.last_room_markers)))
-                    local_room_id, center_label, room_votes = floor_state.segmenter._vote_room_label_for_object(
-                        (cx, cy),
-                        footprint_2d,
-                        wall_label,
-                    )
-                    room_assignment["center_label"] = int(center_label) if center_label is not None else -1
-                    room_assignment["votes"] = {str(int(label)): int(value) for label, value in sorted(room_votes.items())}
-                    room_assignment["local_room_id"] = int(local_room_id)
-                    if int(local_room_id) >= 0:
-                        room_uuid = int(floor_state.local_to_world_room_id.get(int(local_room_id), -1))
-
-            obj_data = {
-                "id": int(instance_ids[i]),
-                "label": str(categories[i]),
-                "category": str(categories[i]),
-                "score": round(float(scores[i]), 3),
-                "detection_confidence": round(float(scores[i]), 3),
-                "semantic_confidence": round(float(semantic_confidences[i]), 3),
-                "association_confidence": round(float(association_confidences[i]), 3),
-                "semantic_gap": round(float(semantic_gaps[i]), 3),
-                "view_quality": round(float(view_qualities[i]), 3),
-                "floor_id": floor_id,
-                "floor_index": floor_lookup.get(str(floor_id), {}).get("floor_index") if floor_id is not None else None,
-                "display_floor_id": floor_lookup.get(str(floor_id), {}).get("display_floor_id") if floor_id is not None else None,
-                "display_order": floor_lookup.get(str(floor_id), {}).get("display_order") if floor_id is not None else None,
-                "floor_assignment": dict(floor_assignment),
-                "room_uuid": int(room_uuid),
-                "room_id": None if room_uuid < 0 else f"room_{int(room_uuid)}",
-                "pose": [round(cx, 3), round(cy, 3)],
-                "pose_3d": [round(cx, 3), round(cy, 3), round(cz, 3)],
-                "size": [round(dx, 3), round(dy, 3), round(dz, 3)],
-                "yaw": round(yaw, 3),
-                "footprint_2d": footprint_2d,
-                "room_assignment": room_assignment,
-                "semantic_observations": [
-                    {
-                        "label": str(categories[i]),
-                        "category": str(categories[i]),
-                        "detection_confidence": float(scores[i]),
-                        "semantic_confidence": float(semantic_confidences[i]),
-                        "association_confidence": float(association_confidences[i]),
-                        "semantic_gap": float(semantic_gaps[i]),
-                        "view_quality": float(view_qualities[i]),
+        for i in range(len(instance_ids)):
+            instance_id = int(instance_ids[i])
+            object_signature = None if i >= len(per_object_signatures) else str(per_object_signatures[i])
+            cached_entry = None if reuse_cache is None else reuse_cache.get(instance_id)
+            if cached_entry is not None and cached_entry.get("signature") == object_signature:
+                reused_object = self._try_reuse_cached_object_export_record(
+                    i,
+                    prepared_object_state=prepared_object_state,
+                    floor_lookup=floor_lookup,
+                    room_lookup=room_lookup,
+                    cached_entry=cached_entry,
+                )
+                if reused_object is not None:
+                    objects.append(reused_object)
+                    cache_entries[instance_id] = {
+                        "signature": object_signature,
+                        "object": reused_object,
+                        "embedding": cached_entry.get("embedding"),
                     }
-                ],
-            }
-            if has_embeddings:
-                embedding_ref = f"embedding_{int(instance_ids[i])}"
-                obj_data["embedding_ref"] = embedding_ref
-                embedding_lookup[embedding_ref] = all_pred_box.embeddings[i].numpy().tolist()
-            if room_uuid >= 0 and room_uuid in room_lookup:
-                obj_data["floor_id"] = room_lookup[room_uuid].get("floor_id")
-                obj_data["floor_index"] = room_lookup[room_uuid].get("floor_index")
-                obj_data["display_floor_id"] = room_lookup[room_uuid].get("display_floor_id")
-                obj_data["display_order"] = room_lookup[room_uuid].get("display_order")
-            objects.append(obj_data)
+                    if has_embeddings and reused_object.get("embedding_ref") is not None:
+                        embedding_lookup[str(reused_object["embedding_ref"])] = list(cached_entry.get("embedding") or [])
+                    cache_hit_count += 1
+                    continue
 
-        return objects, embedding_lookup
+            obj_data, embedding_values = self._build_object_export_record(
+                i,
+                prepared_object_state=prepared_object_state,
+                floor_lookup=floor_lookup,
+                room_lookup=room_lookup,
+                object_floor_vote_cache=object_floor_vote_cache,
+            )
+            if has_embeddings and obj_data.get("embedding_ref") is not None and embedding_values is not None:
+                embedding_lookup[str(obj_data["embedding_ref"])] = embedding_values
+            objects.append(obj_data)
+            cache_entries[instance_id] = {
+                "signature": object_signature,
+                "object": obj_data,
+                "embedding": embedding_values,
+            }
+
+        return objects, embedding_lookup, cache_entries, int(cache_hit_count)
+
+    def _build_room_local_delta_object_exports(
+        self,
+        prepared_object_state: Dict[str, Any],
+        floor_lookup: Dict[str, Dict[str, Any]],
+        room_lookup: Dict[int, Dict[str, Any]],
+        *,
+        room_records: Sequence[Dict[str, Any]],
+        room_cache: Dict[str, Any],
+        cached_export: Optional[Dict[str, Any]],
+    ) -> Optional[Tuple[List[Dict[str, Any]], Dict[str, List[float]], Dict[int, Dict[str, Any]], int, Dict[str, Any]]]:
+        if prepared_object_state.get("is_empty", False):
+            return (
+                [],
+                {},
+                {},
+                0,
+                {
+                    "room_local_delta_export_used": True,
+                    "room_local_delta_changed_room_count": 0,
+                    "room_local_delta_reused_room_count": int(len(room_records)),
+                    "room_local_delta_rebuilt_room_count": 0,
+                    "room_local_delta_unassigned_bucket_rebuilt": False,
+                    "changed_room_count": 0,
+                    "changed_room_ids": "",
+                    "changed_room_structure_changed_count": 0,
+                    "changed_room_structure_changed_ids": "",
+                    "changed_room_object_delta_count": 0,
+                    "changed_room_object_delta_ids": "",
+                    "changed_room_removed_count": 0,
+                    "changed_room_removed_ids": "",
+                    "changed_room_local_rebuild_used": True,
+                    "changed_room_locality_confident": True,
+                    "full_fallback_rebuild_used": False,
+                    "rebuilt_object_in_changed_rooms_count": 0,
+                },
+            )
+        if cached_export is None:
+            return None
+
+        cached_object_cache = dict(cached_export.get("object_cache") or {})
+        if not cached_object_cache:
+            return None
+        cached_room_cache = dict(cached_export.get("room_cache") or {})
+        cached_room_signatures = dict(cached_room_cache.get("room_signatures") or {})
+        if not cached_room_signatures:
+            return None
+        current_room_signatures = dict((room_cache or {}).get("room_signatures") or {})
+        current_room_ids = set(current_room_signatures.keys())
+        cached_room_ids = set(cached_room_signatures.keys())
+
+        instance_ids = np.asarray(prepared_object_state.get("instance_ids"), dtype=np.int64)
+        per_object_signatures = list(prepared_object_state.get("per_object_signatures") or [])
+        has_embeddings = bool(prepared_object_state.get("has_embeddings", False))
+        object_floor_vote_cache = self._build_object_export_floor_vote_cache()
+
+        current_ids_in_order = [int(item) for item in instance_ids.tolist()]
+        current_signature_by_id = {
+            int(instance_ids[idx]): str(per_object_signatures[idx])
+            for idx in range(min(len(instance_ids), len(per_object_signatures)))
+        }
+        current_index_by_id = {int(instance_ids[idx]): int(idx) for idx in range(len(instance_ids))}
+        current_id_set = set(current_ids_in_order)
+        cached_id_set = {int(item) for item in cached_object_cache.keys()}
+        unchanged_room_ids = {
+            room_id
+            for room_id in current_room_ids
+            if cached_room_signatures.get(room_id) == current_room_signatures.get(room_id)
+        }
+        structure_changed_room_ids = current_room_ids - unchanged_room_ids
+        removed_room_ids = cached_room_ids - current_room_ids
+
+        prepared_entries: Dict[int, Dict[str, Any]] = {}
+        fast_reuse_ids: set[int] = set()
+        object_delta_room_ids: set[str] = set()
+        impacted_room_ids: set[str] = set(structure_changed_room_ids | removed_room_ids)
+        unassigned_bucket_rebuilt = False
+
+        def _mark_bucket(bucket_id: str) -> None:
+            nonlocal unassigned_bucket_rebuilt
+            if bucket_id == "__unassigned__":
+                unassigned_bucket_rebuilt = True
+                return
+            impacted_room_ids.add(bucket_id)
+            object_delta_room_ids.add(bucket_id)
+
+        for object_id in current_ids_in_order:
+            object_signature = current_signature_by_id.get(object_id)
+            cached_entry = cached_object_cache.get(object_id)
+            prior_room_id = ((cached_entry.get("object") or {}).get("room_id")) if cached_entry is not None else None
+            prior_bucket = self._object_bucket_id_from_room(prior_room_id)
+            if (
+                cached_entry is not None
+                and object_signature is not None
+                and cached_entry.get("signature") == object_signature
+                and prior_bucket in unchanged_room_ids
+            ):
+                fast_reuse_ids.add(object_id)
+                continue
+            object_index = current_index_by_id.get(object_id)
+            if object_index is None:
+                continue
+            obj_data, embedding_values = self._build_object_export_record(
+                object_index,
+                prepared_object_state=prepared_object_state,
+                floor_lookup=floor_lookup,
+                room_lookup=room_lookup,
+                object_floor_vote_cache=object_floor_vote_cache,
+            )
+            prepared_entries[object_id] = {
+                "signature": current_signature_by_id.get(object_id),
+                "object": obj_data,
+                "embedding": embedding_values,
+            }
+            current_bucket = self._object_bucket_id_from_room(obj_data.get("room_id"))
+            if current_bucket != "__unassigned__" and current_bucket not in current_room_ids:
+                return None
+            if cached_entry is None:
+                _mark_bucket(current_bucket)
+                continue
+            if object_signature != cached_entry.get("signature"):
+                _mark_bucket(current_bucket)
+                _mark_bucket(prior_bucket)
+                continue
+            if prior_bucket != current_bucket:
+                _mark_bucket(current_bucket)
+                _mark_bucket(prior_bucket)
+
+        disappeared_ids = cached_id_set - current_id_set
+        for object_id in sorted(disappeared_ids):
+            prior_room_id = ((cached_object_cache.get(object_id) or {}).get("object") or {}).get("room_id")
+            _mark_bucket(self._object_bucket_id_from_room(prior_room_id))
+
+        current_rebuild_room_ids = impacted_room_ids & current_room_ids
+
+        objects: List[Dict[str, Any]] = []
+        embedding_lookup: Dict[str, List[float]] = {}
+        cache_entries: Dict[int, Dict[str, Any]] = {}
+        cache_hit_count = 0
+
+        for object_id in current_ids_in_order:
+            object_signature = current_signature_by_id.get(object_id)
+            if object_id in fast_reuse_ids:
+                cached_entry = cached_object_cache.get(object_id)
+                if cached_entry is None:
+                    return None
+                prior_room_id = ((cached_entry.get("object") or {}).get("room_id"))
+                prior_bucket = self._object_bucket_id_from_room(prior_room_id)
+                if prior_bucket in current_rebuild_room_ids:
+                    obj_data, embedding_values = self._build_object_export_record(
+                        current_index_by_id[object_id],
+                        prepared_object_state=prepared_object_state,
+                        floor_lookup=floor_lookup,
+                        room_lookup=room_lookup,
+                        object_floor_vote_cache=object_floor_vote_cache,
+                    )
+                    objects.append(obj_data)
+                    cache_entries[object_id] = {
+                        "signature": object_signature,
+                        "object": obj_data,
+                        "embedding": embedding_values,
+                    }
+                    if has_embeddings and obj_data.get("embedding_ref") is not None:
+                        embedding_lookup[str(obj_data["embedding_ref"])] = list(embedding_values or [])
+                    continue
+                reused_object = self._try_reuse_cached_object_export_record(
+                    current_index_by_id[object_id],
+                    prepared_object_state=prepared_object_state,
+                    floor_lookup=floor_lookup,
+                    room_lookup=room_lookup,
+                    cached_entry=cached_entry,
+                )
+                if reused_object is None:
+                    return None
+                objects.append(reused_object)
+                cache_entries[object_id] = {
+                    "signature": object_signature,
+                    "object": reused_object,
+                    "embedding": cached_entry.get("embedding"),
+                }
+                if has_embeddings and reused_object.get("embedding_ref") is not None:
+                    embedding_lookup[str(reused_object["embedding_ref"])] = list(cached_entry.get("embedding") or [])
+                cache_hit_count += 1
+                continue
+            prepared_entry = prepared_entries.get(object_id)
+            if prepared_entry is None:
+                return None
+            obj_data = prepared_entry["object"]
+            current_bucket = self._object_bucket_id_from_room(obj_data.get("room_id"))
+            current_room_changed = (
+                current_bucket in current_rebuild_room_ids
+                or (current_bucket == "__unassigned__" and unassigned_bucket_rebuilt)
+            )
+            cached_entry = cached_object_cache.get(object_id)
+            if current_room_changed or cached_entry is None or cached_entry.get("signature") != object_signature:
+                objects.append(obj_data)
+                cache_entries[object_id] = prepared_entry
+                if has_embeddings and obj_data.get("embedding_ref") is not None:
+                    embedding_lookup[str(obj_data["embedding_ref"])] = list(prepared_entry.get("embedding") or [])
+                continue
+
+            prior_room_id = ((cached_entry.get("object") or {}).get("room_id"))
+            if prior_room_id != obj_data.get("room_id"):
+                return None
+            reused_object = self._try_reuse_cached_object_export_record(
+                current_index_by_id[object_id],
+                prepared_object_state=prepared_object_state,
+                floor_lookup=floor_lookup,
+                room_lookup=room_lookup,
+                cached_entry=cached_entry,
+            )
+            if reused_object is None:
+                return None
+            objects.append(reused_object)
+            cache_entries[object_id] = {
+                "signature": object_signature,
+                "object": reused_object,
+                "embedding": cached_entry.get("embedding"),
+            }
+            if has_embeddings and reused_object.get("embedding_ref") is not None:
+                embedding_lookup[str(reused_object["embedding_ref"])] = list(cached_entry.get("embedding") or [])
+            cache_hit_count += 1
+
+        reused_room_ids = current_room_ids - current_rebuild_room_ids
+        return (
+            objects,
+            embedding_lookup,
+            cache_entries,
+            int(cache_hit_count),
+            {
+                "room_local_delta_export_used": True,
+                "room_local_delta_changed_room_count": int(len(impacted_room_ids)),
+                "room_local_delta_reused_room_count": int(len(reused_room_ids)),
+                "room_local_delta_rebuilt_room_count": int(len(current_rebuild_room_ids)),
+                "room_local_delta_unassigned_bucket_rebuilt": bool(unassigned_bucket_rebuilt),
+                "changed_room_count": int(len(impacted_room_ids)),
+                "changed_room_ids": self._encode_room_ids(impacted_room_ids),
+                "changed_room_structure_changed_count": int(len(structure_changed_room_ids)),
+                "changed_room_structure_changed_ids": self._encode_room_ids(structure_changed_room_ids),
+                "changed_room_object_delta_count": int(len(object_delta_room_ids)),
+                "changed_room_object_delta_ids": self._encode_room_ids(object_delta_room_ids),
+                "changed_room_removed_count": int(len(removed_room_ids)),
+                "changed_room_removed_ids": self._encode_room_ids(removed_room_ids),
+                "changed_room_local_rebuild_used": True,
+                "changed_room_locality_confident": True,
+                "full_fallback_rebuild_used": False,
+                "rebuilt_object_in_changed_rooms_count": int(len(current_ids_in_order) - cache_hit_count),
+            },
+        )
 
     def _build_room_floor_validation(self, room_records: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
         room_to_floor = {}

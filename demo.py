@@ -2,6 +2,8 @@ import os
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 import argparse
+import copy
+import io
 import glob
 import itertools
 import json
@@ -19,6 +21,7 @@ from tools.utils import *
 import torch.nn.functional as F
 import time
 import cv2
+from contextlib import nullcontext, redirect_stdout
 
 try:
     import rerun
@@ -41,7 +44,565 @@ from boxfusion.box_manager import BoxManager
 from boxfusion.box_fusion import BoxFusion
 
 from boxfusion.floor_aware_room_segmenter import FloorAwareRoomSegmenter
+from boxfusion.runtime_console import RuntimeConsoleLogger
 from boxfusion.runtime_instrumentation import RuntimeInstrumentation
+
+WITHIN_FLOOR_RECENT_STEP_WINDOW = 25
+WITHIN_FLOOR_NEAR_XY_THRESHOLD_M = 4.0
+READONLY_TAIL_DRIFT_REFERENCE_MIN_RETAINED_COUNT = 60
+
+
+def _should_defer_stage3_full_export(
+    *,
+    frame_idx: int,
+    is_keyframe: bool,
+    demo_recorder,
+    segmentation_markers_available: bool,
+) -> bool:
+    if not bool(is_keyframe):
+        return False
+    if demo_recorder is None:
+        return False
+    if not bool(segmentation_markers_available):
+        return False
+    return bool(demo_recorder.should_capture(int(frame_idx), segmentation_updated=True))
+
+
+def _box_center_z_values(instances):
+    if instances is None or len(instances) == 0:
+        return np.zeros((0,), dtype=np.float32)
+    box_tensor = instances.get("pred_boxes_3d").tensor
+    if hasattr(box_tensor, "detach"):
+        box_tensor = box_tensor.detach().cpu().numpy()
+    else:
+        box_tensor = np.asarray(box_tensor)
+    if box_tensor.ndim != 2 or box_tensor.shape[1] < 3:
+        return np.zeros((len(instances),), dtype=np.float32)
+    return np.asarray(box_tensor[:, 2], dtype=np.float32)
+
+
+def _box_center_xy_values(instances):
+    if instances is None or len(instances) == 0:
+        return np.zeros((0, 2), dtype=np.float32)
+    box_tensor = instances.get("pred_boxes_3d").tensor
+    if hasattr(box_tensor, "detach"):
+        box_tensor = box_tensor.detach().cpu().numpy()
+    else:
+        box_tensor = np.asarray(box_tensor)
+    if box_tensor.ndim != 2 or box_tensor.shape[1] < 2:
+        return np.zeros((len(instances), 2), dtype=np.float32)
+    return np.asarray(box_tensor[:, :2], dtype=np.float32)
+
+
+def _build_floor_scoped_candidate_mask(
+    all_pred_box,
+    retained_count,
+    room_segmenter,
+    *,
+    readonly_object_room_snapshot=None,
+    enable_readonly_tail_pruning=True,
+    box_manager=None,
+    current_frame_idx=None,
+    current_pose_xy=None,
+    current_pose_matrix=None,
+    recent_step_window=WITHIN_FLOOR_RECENT_STEP_WINDOW,
+    nearby_xy_threshold_m=WITHIN_FLOOR_NEAR_XY_THRESHOLD_M,
+):
+    total_count = 0 if all_pred_box is None else int(len(all_pred_box))
+    retained_count = int(max(0, min(retained_count, total_count)))
+    active_mask = np.ones((total_count,), dtype=np.bool_)
+    current_frame_mask = np.zeros((total_count,), dtype=np.bool_)
+    if all_pred_box is not None and current_frame_idx is not None and hasattr(all_pred_box, "frame_id"):
+        frame_ids = getattr(all_pred_box, "frame_id")
+        if hasattr(frame_ids, "detach"):
+            frame_ids = frame_ids.detach().cpu().numpy()
+        else:
+            frame_ids = np.asarray(frame_ids)
+        frame_ids = np.asarray(frame_ids).reshape(-1)
+        if frame_ids.shape[0] == total_count:
+            current_frame_mask = frame_ids == int(current_frame_idx)
+    retained_history_count = int(np.count_nonzero(~current_frame_mask[:retained_count]))
+    observation = dict(getattr(room_segmenter, "last_floor_observation", {}) or {})
+    active_floor_id = observation.get("floor_id")
+    active_floor_status = observation.get("status")
+    profile = {
+        "active": False,
+        "active_floor_id": None if active_floor_id is None else str(active_floor_id),
+        "retained_before_count": int(retained_history_count),
+        "retained_after_count": int(retained_history_count),
+        "retained_pruned_count": 0,
+        "retained_ambiguous_count": 0,
+        "within_floor_active": False,
+        "within_floor_recent_step_window": int(recent_step_window),
+        "within_floor_nearby_xy_threshold_m": float(nearby_xy_threshold_m),
+        "same_floor_stable_count": 0,
+        "same_floor_recent_kept_count": 0,
+        "same_floor_near_kept_count": 0,
+        "same_floor_recent_or_near_kept_count": 0,
+        "same_floor_fallback_kept_count": 0,
+        "same_floor_pruned_within_floor_count": 0,
+        "same_floor_missing_recency_count": 0,
+        "same_floor_missing_xy_count": 0,
+        "active_room_id": None,
+        "cheap_room_pruning_active": False,
+        "cheap_room_pruning_reason": "inactive",
+        "cheap_room_pruning_tail_candidate_count": 0,
+        "cheap_room_pruning_ambiguous_candidate_count": 0,
+        "cheap_room_pruning_fallback_candidate_count": 0,
+        "cheap_room_pruning_trusted_candidate_count": 0,
+        "cheap_room_pruning_pruned_count": 0,
+        "cheap_room_pruning_tail_retained_count": 0,
+        "cheap_room_pruning_same_room_kept_count": 0,
+        "cheap_room_pruning_untrusted_kept_count": 0,
+        "reason": "no_retained_history",
+    }
+    if retained_history_count <= 0:
+        return active_mask, profile
+    if active_floor_id is None or active_floor_status != "stable":
+        profile["reason"] = "current_frame_not_assigned_to_stable_floor"
+        return active_mask, profile
+
+    retained_center_z = _box_center_z_values(all_pred_box[:retained_count])
+    retained_center_xy = _box_center_xy_values(all_pred_box[:retained_count])
+    pose_xy = None
+    if current_pose_xy is not None:
+        pose_xy_arr = np.asarray(current_pose_xy, dtype=np.float32).reshape(-1)
+        if pose_xy_arr.shape[0] >= 2 and np.all(np.isfinite(pose_xy_arr[:2])):
+            pose_xy = pose_xy_arr[:2]
+    latest_step_indices = None
+    current_step_index = None
+    if box_manager is not None and current_frame_idx is not None:
+        latest_step_indices, _ = box_manager.latest_contributing_profiled_steps()
+        current_step_index = box_manager.profiled_step_index_for_frame(current_frame_idx)
+    ambiguous_count = 0
+    pruned_count = 0
+    same_floor_stable_count = 0
+    same_floor_recent_kept_count = 0
+    same_floor_near_kept_count = 0
+    same_floor_recent_or_near_kept_count = 0
+    same_floor_fallback_kept_count = 0
+    same_floor_pruned_within_floor_count = 0
+    same_floor_missing_recency_count = 0
+    same_floor_missing_xy_count = 0
+    ambiguous_kept_mask = np.zeros((retained_count,), dtype=np.bool_)
+    fallback_kept_mask = np.zeros((retained_count,), dtype=np.bool_)
+    for idx, center_z in enumerate(retained_center_z.tolist()):
+        if current_frame_mask[idx]:
+            continue
+        assignment = dict(room_segmenter.floor_manager.assign_height(float(center_z)) or {})
+        assigned_floor_id = assignment.get("floor_id")
+        assigned_status = assignment.get("status")
+        if assigned_floor_id is None or assigned_status != "stable":
+            ambiguous_count += 1
+            ambiguous_kept_mask[idx] = True
+            continue
+        if str(assigned_floor_id) == str(active_floor_id):
+            same_floor_stable_count += 1
+            recent_ok = False
+            near_ok = False
+            recency_available = False
+            xy_available = False
+
+            if latest_step_indices is not None and current_step_index is not None and idx < len(latest_step_indices):
+                latest_step_idx = int(latest_step_indices[idx])
+                if latest_step_idx >= 0:
+                    recency_available = True
+                    recent_ok = int(current_step_index) - latest_step_idx <= int(recent_step_window)
+
+            if pose_xy is not None and idx < len(retained_center_xy):
+                candidate_xy = np.asarray(retained_center_xy[idx], dtype=np.float32)
+                if candidate_xy.shape[0] >= 2 and np.all(np.isfinite(candidate_xy[:2])):
+                    xy_available = True
+                    near_ok = float(np.linalg.norm(candidate_xy[:2] - pose_xy[:2])) <= float(nearby_xy_threshold_m)
+
+            if recent_ok:
+                same_floor_recent_kept_count += 1
+            if near_ok:
+                same_floor_near_kept_count += 1
+            if recent_ok or near_ok:
+                same_floor_recent_or_near_kept_count += 1
+                continue
+
+            if not recency_available:
+                same_floor_missing_recency_count += 1
+            if not xy_available:
+                same_floor_missing_xy_count += 1
+            if (not recency_available) or (not xy_available):
+                same_floor_fallback_kept_count += 1
+                fallback_kept_mask[idx] = True
+                continue
+
+            active_mask[idx] = False
+            same_floor_pruned_within_floor_count += 1
+            continue
+
+        active_mask[idx] = False
+        pruned_count += 1
+
+    profile.update(
+        {
+            "active": True,
+            "within_floor_active": True,
+            "retained_after_count": int(retained_history_count - pruned_count - same_floor_pruned_within_floor_count),
+            "retained_pruned_count": int(pruned_count),
+            "retained_ambiguous_count": int(ambiguous_count),
+            "same_floor_stable_count": int(same_floor_stable_count),
+            "same_floor_recent_kept_count": int(same_floor_recent_kept_count),
+            "same_floor_near_kept_count": int(same_floor_near_kept_count),
+            "same_floor_recent_or_near_kept_count": int(same_floor_recent_or_near_kept_count),
+            "same_floor_fallback_kept_count": int(same_floor_fallback_kept_count),
+            "same_floor_pruned_within_floor_count": int(same_floor_pruned_within_floor_count),
+            "same_floor_missing_recency_count": int(same_floor_missing_recency_count),
+            "same_floor_missing_xy_count": int(same_floor_missing_xy_count),
+            "reason": "same_stable_floor_recent_or_near",
+        }
+    )
+
+    tail_candidate_mask = np.asarray(
+        active_mask[:retained_count]
+        & (~current_frame_mask[:retained_count])
+        & (ambiguous_kept_mask | fallback_kept_mask),
+        dtype=np.bool_,
+    )
+    tail_candidate_count = int(np.count_nonzero(tail_candidate_mask))
+    ambiguous_tail_count = int(np.count_nonzero(tail_candidate_mask & ambiguous_kept_mask))
+    fallback_tail_count = int(np.count_nonzero(tail_candidate_mask & fallback_kept_mask))
+    profile.update(
+        {
+            "cheap_room_pruning_tail_candidate_count": int(tail_candidate_count),
+            "cheap_room_pruning_ambiguous_candidate_count": int(ambiguous_tail_count),
+            "cheap_room_pruning_fallback_candidate_count": int(fallback_tail_count),
+            "cheap_room_pruning_tail_retained_count": int(tail_candidate_count),
+        }
+    )
+
+    topology_status = {}
+    if current_pose_matrix is not None:
+        topology_status = dict(room_segmenter.describe_topology_status(pose_matrix=current_pose_matrix) or {})
+    active_room_id = topology_status.get("active_room_id")
+    profile["active_room_id"] = None if active_room_id is None else str(active_room_id)
+
+    if tail_candidate_count <= 0:
+        profile["cheap_room_pruning_reason"] = "no_tail_candidates"
+        return active_mask, profile
+    if not bool(enable_readonly_tail_pruning):
+        profile["cheap_room_pruning_reason"] = "readonly_tail_pruning_disabled"
+        return active_mask, profile
+    if active_room_id is None:
+        profile["cheap_room_pruning_reason"] = "active_room_unavailable"
+        return active_mask, profile
+    snapshot_lookup = dict((readonly_object_room_snapshot or {}).get("by_object_id") or {})
+    if not snapshot_lookup:
+        profile["cheap_room_pruning_reason"] = "readonly_room_snapshot_unavailable"
+        return active_mask, profile
+
+    retained_init_ids = np.asarray(all_pred_box.init_id[:retained_count].detach().cpu().numpy(), dtype=np.int64)
+    cached_room_uuid = np.full((retained_count,), -1, dtype=np.int64)
+    cached_room_floor_id = np.empty((retained_count,), dtype=object)
+    cached_room_floor_id[:] = None
+    cached_room_pruning_trusted = np.zeros((retained_count,), dtype=np.bool_)
+    for idx, object_id in enumerate(retained_init_ids.tolist()):
+        snapshot_entry = dict(snapshot_lookup.get(int(object_id)) or {})
+        if not snapshot_entry:
+            continue
+        cached_room_uuid[idx] = int(snapshot_entry.get("room_uuid", -1) or -1)
+        floor_id = snapshot_entry.get("floor_id")
+        cached_room_floor_id[idx] = None if floor_id in (None, "") else str(floor_id)
+        cached_room_pruning_trusted[idx] = bool(snapshot_entry.get("trusted", False))
+
+    trusted_tail_mask = np.asarray(tail_candidate_mask & cached_room_pruning_trusted, dtype=np.bool_)
+    trusted_candidate_count = int(np.count_nonzero(trusted_tail_mask))
+    if trusted_candidate_count <= 0:
+        profile["cheap_room_pruning_reason"] = "no_trusted_readonly_room_tail_candidates"
+        return active_mask, profile
+
+    pruned_by_cached_room = 0
+    kept_same_room = 0
+    for idx in np.flatnonzero(trusted_tail_mask):
+        candidate_floor_id = None if cached_room_floor_id[idx] in (None, "") else str(cached_room_floor_id[idx])
+        candidate_room_uuid = int(cached_room_uuid[idx])
+        if candidate_floor_id != str(active_floor_id):
+            active_mask[idx] = False
+            pruned_by_cached_room += 1
+            continue
+        if candidate_room_uuid == int(active_room_id):
+            kept_same_room += 1
+            continue
+        active_mask[idx] = False
+        pruned_by_cached_room += 1
+
+    profile.update(
+        {
+            "active": True,
+            "retained_after_count": int(profile.get("retained_after_count", retained_history_count) - pruned_by_cached_room),
+            "cheap_room_pruning_active": True,
+            "cheap_room_pruning_reason": "readonly_active_room_tail_pruning",
+            "cheap_room_pruning_trusted_candidate_count": int(trusted_candidate_count),
+            "cheap_room_pruning_pruned_count": int(pruned_by_cached_room),
+            "cheap_room_pruning_tail_retained_count": int(tail_candidate_count - pruned_by_cached_room),
+            "cheap_room_pruning_same_room_kept_count": int(kept_same_room),
+            "cheap_room_pruning_untrusted_kept_count": int(tail_candidate_count - trusted_candidate_count),
+        }
+    )
+    return active_mask, profile
+
+
+def _object_scope_label(pruning_profile, fallback_label):
+    if bool(pruning_profile.get("cheap_room_pruning_active")):
+        return "same_floor_recent_or_near_cached_room_tail_pruned_retained_history"
+    if bool(pruning_profile.get("within_floor_active")):
+        return "same_floor_recent_or_near_retained_history"
+    return "same_floor_retained_history" if bool(pruning_profile.get("active")) else str(fallback_label)
+
+
+def _object_scope_description(step_name, pruning_profile, fallback_description):
+    if not bool(pruning_profile.get("active")):
+        return str(fallback_description)
+    if bool(pruning_profile.get("cheap_room_pruning_active")):
+        if step_name == "spatial_association":
+            return "3D OBB NMS over the accepted current-floor recent-or-near retained set, plus a conservative read-only exporter-room snapshot tail keep that only retains ambiguous/fallback history when trusted snapshot metadata agrees with the current active room"
+        if step_name == "correspondence_association":
+            return "small-object correspondence check uses the accepted current-floor recent-or-near retained set and the post-filter ambiguous/fallback tail only when trusted read-only snapshot metadata agrees with the current active room"
+        if step_name == "boxfusion":
+            return "scan retained current-floor objects from the accepted baseline, and only keep ambiguous/fallback tail candidates when trusted read-only snapshot metadata agrees with the current active room"
+    if bool(pruning_profile.get("within_floor_active")):
+        if step_name == "spatial_association":
+            return "3D OBB NMS over retained objects on the current stable floor, keeping same-floor history only when recent<=25 profiled steps or XY<=4m, plus all current-frame boxes"
+        if step_name == "correspondence_association":
+            return "small-object correspondence check is seeded by current-frame keep set and restricted to retained current-floor objects that are recent<=25 profiled steps or XY<=4m"
+        if step_name == "boxfusion":
+            return "scan retained current-floor objects only when recent<=25 profiled steps or XY<=4m; optimize only fusion lists with >=3 retained observations and not already fused"
+    if step_name == "spatial_association":
+        return "3D OBB NMS over retained objects on the current stable floor plus all current-frame boxes"
+    if step_name == "correspondence_association":
+        return "small-object correspondence check is seeded by current-frame keep set and restricted to retained objects on the current stable floor"
+    if step_name == "boxfusion":
+        return "scan retained objects on the current stable floor; optimize only fusion lists with >=3 retained observations and not already fused"
+    return str(fallback_description)
+
+
+def _object_scope_notes(pruning_profile, extra_note=""):
+    parts = [
+        f"active_floor_id={pruning_profile.get('active_floor_id')}",
+        f"retained_after_combined_filter={int(pruning_profile.get('retained_after_count', 0))}",
+        f"retained_pruned_other_floors={int(pruning_profile.get('retained_pruned_count', 0))}",
+        f"retained_ambiguous_kept_global={int(pruning_profile.get('retained_ambiguous_count', 0))}",
+        f"same_floor_stable_candidates={int(pruning_profile.get('same_floor_stable_count', 0))}",
+        f"same_floor_recent_kept={int(pruning_profile.get('same_floor_recent_kept_count', 0))}",
+        f"same_floor_near_kept={int(pruning_profile.get('same_floor_near_kept_count', 0))}",
+        f"same_floor_recent_or_near_kept={int(pruning_profile.get('same_floor_recent_or_near_kept_count', 0))}",
+        f"same_floor_fallback_kept={int(pruning_profile.get('same_floor_fallback_kept_count', 0))}",
+        f"same_floor_pruned_within_floor={int(pruning_profile.get('same_floor_pruned_within_floor_count', 0))}",
+        f"same_floor_missing_recency={int(pruning_profile.get('same_floor_missing_recency_count', 0))}",
+        f"same_floor_missing_xy={int(pruning_profile.get('same_floor_missing_xy_count', 0))}",
+        f"active_room_id={pruning_profile.get('active_room_id')}",
+        f"cheap_room_tail_candidates={int(pruning_profile.get('cheap_room_pruning_tail_candidate_count', 0))}",
+        f"cheap_room_tail_ambiguous_candidates={int(pruning_profile.get('cheap_room_pruning_ambiguous_candidate_count', 0))}",
+        f"cheap_room_tail_fallback_candidates={int(pruning_profile.get('cheap_room_pruning_fallback_candidate_count', 0))}",
+        f"cheap_room_trusted_tail_candidates={int(pruning_profile.get('cheap_room_pruning_trusted_candidate_count', 0))}",
+        f"cheap_room_tail_pruned={int(pruning_profile.get('cheap_room_pruning_pruned_count', 0))}",
+        f"cheap_room_tail_retained={int(pruning_profile.get('cheap_room_pruning_tail_retained_count', 0))}",
+        f"cheap_room_same_room_kept={int(pruning_profile.get('cheap_room_pruning_same_room_kept_count', 0))}",
+        f"cheap_room_untrusted_kept={int(pruning_profile.get('cheap_room_pruning_untrusted_kept_count', 0))}",
+        f"cheap_room_reason={pruning_profile.get('cheap_room_pruning_reason')}",
+        f"recent_step_window={int(pruning_profile.get('within_floor_recent_step_window', WITHIN_FLOOR_RECENT_STEP_WINDOW))}",
+        f"nearby_xy_threshold_m={float(pruning_profile.get('within_floor_nearby_xy_threshold_m', WITHIN_FLOOR_NEAR_XY_THRESHOLD_M)):.1f}",
+        f"reason={pruning_profile.get('reason')}",
+    ]
+    if extra_note:
+        parts.append(str(extra_note))
+    return "; ".join(parts)
+
+
+def _instances_field_numpy(instances, field_name, dtype):
+    if instances is None or len(instances) == 0 or not hasattr(instances, field_name):
+        return np.zeros((0,), dtype=dtype)
+    value = getattr(instances, field_name)
+    if hasattr(value, "detach"):
+        value = value.detach()
+    if hasattr(value, "cpu"):
+        value = value.cpu()
+    if hasattr(value, "numpy"):
+        value = value.numpy()
+    return np.asarray(value, dtype=dtype).reshape(-1)
+
+
+def _format_id_csv(values, max_items=64):
+    ordered = sorted(int(value) for value in values)
+    if len(ordered) > max_items:
+        visible = ordered[:max_items]
+        return ",".join(str(item) for item in visible) + f",...(+{len(ordered) - max_items} more)"
+    return ",".join(str(item) for item in ordered)
+
+
+def _readonly_tail_reference_audit_enabled(runtime_logging_cfg):
+    return bool((runtime_logging_cfg or {}).get("enable_readonly_tail_reference_audit", False))
+
+
+def _readonly_tail_reference_audit_disabled_metrics(reason="audit_disabled"):
+    return {
+        "assoc_readonly_tail_reference_compared": False,
+        "assoc_readonly_tail_reference_reason": str(reason),
+        "assoc_readonly_tail_reference_pruned_object_count": 0,
+        "assoc_readonly_tail_reference_pruned_object_ids": "",
+        "assoc_readonly_tail_reference_object_count": None,
+        "assoc_readonly_tail_candidate_object_count": None,
+        "assoc_readonly_tail_object_count_delta": 0,
+        "assoc_readonly_tail_reference_diverged": False,
+        "assoc_readonly_tail_candidate_only_count": 0,
+        "assoc_readonly_tail_candidate_only_ids": "",
+        "assoc_readonly_tail_reference_only_count": 0,
+        "assoc_readonly_tail_reference_only_ids": "",
+        "assoc_readonly_tail_candidate_only_current_frame_count": 0,
+        "assoc_readonly_tail_reference_only_pruned_tail_count": 0,
+        "assoc_readonly_tail_reference_only_pruned_tail_ids": "",
+    }
+
+
+def _measure_readonly_tail_assoc_drift(
+    *,
+    cfg,
+    box_manager,
+    gap,
+    current_frame_idx,
+    intrinsic,
+    all_kf_pose,
+    image_height,
+    image_width,
+    pred_instances,
+    cur_global_pred_box,
+    pre_assoc_all_pred_box,
+    pre_assoc_all_poses,
+    pre_assoc_cam_poses,
+    pre_assoc_box_manager,
+    num_before_cat,
+    candidate_floor_mask,
+    reference_floor_mask,
+    candidate_result_all_pred_box,
+    internal_stdout_context,
+):
+    pruned_tail_indices = np.flatnonzero(
+        np.asarray(reference_floor_mask[:num_before_cat] & ~candidate_floor_mask[:num_before_cat], dtype=np.bool_)
+    )
+    pre_assoc_init_ids = _instances_field_numpy(pre_assoc_all_pred_box, "init_id", np.int64)
+    pruned_tail_object_ids = set(int(pre_assoc_init_ids[idx]) for idx in pruned_tail_indices.tolist() if idx < len(pre_assoc_init_ids))
+    if int(num_before_cat) < int(READONLY_TAIL_DRIFT_REFERENCE_MIN_RETAINED_COUNT):
+        return {
+            "assoc_readonly_tail_reference_compared": False,
+            "assoc_readonly_tail_reference_reason": "below_late_drift_reference_window",
+            "assoc_readonly_tail_reference_pruned_object_count": int(len(pruned_tail_object_ids)),
+            "assoc_readonly_tail_reference_pruned_object_ids": _format_id_csv(pruned_tail_object_ids),
+            "assoc_readonly_tail_reference_object_count": None,
+            "assoc_readonly_tail_candidate_object_count": None,
+            "assoc_readonly_tail_object_count_delta": 0,
+            "assoc_readonly_tail_reference_diverged": False,
+            "assoc_readonly_tail_candidate_only_count": 0,
+            "assoc_readonly_tail_candidate_only_ids": "",
+            "assoc_readonly_tail_reference_only_count": 0,
+            "assoc_readonly_tail_reference_only_ids": "",
+            "assoc_readonly_tail_candidate_only_current_frame_count": 0,
+            "assoc_readonly_tail_reference_only_pruned_tail_count": 0,
+            "assoc_readonly_tail_reference_only_pruned_tail_ids": "",
+        }
+    if not pruned_tail_object_ids:
+        return {
+            "assoc_readonly_tail_reference_compared": False,
+            "assoc_readonly_tail_reference_reason": "no_tail_mask_delta_vs_baseline",
+            "assoc_readonly_tail_reference_pruned_object_count": 0,
+            "assoc_readonly_tail_reference_pruned_object_ids": "",
+            "assoc_readonly_tail_reference_object_count": None,
+            "assoc_readonly_tail_candidate_object_count": None,
+            "assoc_readonly_tail_object_count_delta": 0,
+            "assoc_readonly_tail_reference_diverged": False,
+            "assoc_readonly_tail_candidate_only_count": 0,
+            "assoc_readonly_tail_candidate_only_ids": "",
+            "assoc_readonly_tail_reference_only_count": 0,
+            "assoc_readonly_tail_reference_only_ids": "",
+            "assoc_readonly_tail_candidate_only_current_frame_count": 0,
+            "assoc_readonly_tail_reference_only_pruned_tail_count": 0,
+            "assoc_readonly_tail_reference_only_pruned_tail_ids": "",
+        }
+
+    shadow_all_pred_box = pre_assoc_all_pred_box.clone()
+    shadow_all_poses = np.copy(pre_assoc_all_poses)
+    shadow_box_manager = copy.deepcopy(pre_assoc_box_manager)
+
+    with internal_stdout_context():
+        shadow_mask, shadow_success_mask = Instances3D.spatial_association(
+        shadow_all_pred_box,
+        cfg["box_fusion"]["nms_threshold"],
+        shadow_box_manager,
+        pre_assoc_cam_poses,
+        active_candidate_mask=reference_floor_mask,
+    )
+    shadow_cur_keep_idx = [idx - num_before_cat for idx in shadow_mask if idx >= num_before_cat]
+    shadow_cur_success_nms = [idx - num_before_cat for idx in shadow_success_mask if idx >= num_before_cat]
+    shadow_keep_idx = np.asarray(shadow_mask)
+
+    if len(shadow_cur_keep_idx) > 0:
+        with internal_stdout_context():
+            shadow_all_pred_box, shadow_all_poses, shadow_keep_idx = Instances3D.correspondence_association(
+                cfg,
+                shadow_box_manager,
+                shadow_cur_keep_idx,
+                shadow_cur_success_nms,
+                pred_instances,
+                cur_global_pred_box,
+                shadow_all_pred_box,
+                shadow_all_poses,
+                pre_assoc_cam_poses,
+                current_frame_idx,
+                shadow_mask,
+                intrinsic,
+                all_kf_pose,
+                threshold=cfg["association"]["small_threshold"],
+                H=image_height,
+                W=image_width,
+                allowed_global_indices=np.flatnonzero(reference_floor_mask[:num_before_cat]),
+            )
+        shadow_box_manager.update(shadow_keep_idx)
+        if cfg["box_fusion"]["check_valid"]:
+            with internal_stdout_context():
+                shadow_all_pred_box = shadow_box_manager.check_valid_num(shadow_all_pred_box, current_frame_idx, gap)
+    else:
+        shadow_all_pred_box = shadow_all_pred_box[shadow_mask]
+        shadow_all_poses = shadow_all_poses[shadow_mask]
+        shadow_box_manager.update(shadow_keep_idx)
+
+    candidate_ids = set(int(item) for item in _instances_field_numpy(candidate_result_all_pred_box, "init_id", np.int64).tolist())
+    reference_ids = set(int(item) for item in _instances_field_numpy(shadow_all_pred_box, "init_id", np.int64).tolist())
+    candidate_only_ids = candidate_ids - reference_ids
+    reference_only_ids = reference_ids - candidate_ids
+    candidate_frame_ids = _instances_field_numpy(candidate_result_all_pred_box, "frame_id", np.int64)
+    candidate_init_ids = _instances_field_numpy(candidate_result_all_pred_box, "init_id", np.int64)
+    candidate_only_current_frame_count = 0
+    if candidate_frame_ids.shape[0] == candidate_init_ids.shape[0]:
+        candidate_only_current_frame_count = int(
+            sum(
+                1
+                for object_id, frame_id in zip(candidate_init_ids.tolist(), candidate_frame_ids.tolist())
+                if int(object_id) in candidate_only_ids and int(frame_id) == int(current_frame_idx)
+            )
+        )
+    reference_only_pruned_tail_ids = reference_only_ids & pruned_tail_object_ids
+
+    return {
+        "assoc_readonly_tail_reference_compared": True,
+        "assoc_readonly_tail_reference_reason": "baseline_outer_filter_shadow_reference",
+        "assoc_readonly_tail_reference_pruned_object_count": int(len(pruned_tail_object_ids)),
+        "assoc_readonly_tail_reference_pruned_object_ids": _format_id_csv(pruned_tail_object_ids),
+        "assoc_readonly_tail_reference_object_count": int(len(reference_ids)),
+        "assoc_readonly_tail_candidate_object_count": int(len(candidate_ids)),
+        "assoc_readonly_tail_object_count_delta": int(len(candidate_ids) - len(reference_ids)),
+        "assoc_readonly_tail_reference_diverged": bool(candidate_only_ids or reference_only_ids),
+        "assoc_readonly_tail_candidate_only_count": int(len(candidate_only_ids)),
+        "assoc_readonly_tail_candidate_only_ids": _format_id_csv(candidate_only_ids),
+        "assoc_readonly_tail_reference_only_count": int(len(reference_only_ids)),
+        "assoc_readonly_tail_reference_only_ids": _format_id_csv(reference_only_ids),
+        "assoc_readonly_tail_candidate_only_current_frame_count": int(candidate_only_current_frame_count),
+        "assoc_readonly_tail_reference_only_pruned_tail_count": int(len(reference_only_pruned_tail_ids)),
+        "assoc_readonly_tail_reference_only_pruned_tail_ids": _format_id_csv(reference_only_pruned_tail_ids),
+    }
 
 
 def run(
@@ -66,6 +627,7 @@ def run(
     total_frames=None,
     save_point_cloud=True,
     write_debug_room_artifacts=True,
+    runtime_console_config=None,
 ):
     if re_vis and (rerun is None or rrb is None):
         raise ImportError("rerun is required when visualization is enabled. Install rerun or set re_vis=False.")
@@ -140,6 +702,23 @@ def run(
         sequence_id=str(getattr(demo_recorder, "sequence_id", "runtime_session")),
         output_dir=instrumentation_output_dir,
     )
+    console_cfg = dict(cfg.get("runtime_logging", {}) or {})
+    if runtime_console_config:
+        console_cfg.update(runtime_console_config)
+    readonly_tail_reference_audit_enabled = _readonly_tail_reference_audit_enabled(console_cfg)
+    runtime_console = RuntimeConsoleLogger(
+        sequence_id=str(getattr(demo_recorder, "sequence_id", "runtime_session")),
+        quiet=bool(console_cfg.get("quiet", False)),
+        log_level=str(console_cfg.get("log_level", "summary")),
+        runtime_print_interval=console_cfg.get("runtime_print_interval"),
+        per_profiled_frame_stdout=console_cfg.get("per_profiled_frame_stdout"),
+    )
+    runtime_console.scene_start(
+        total_frames=total_frames,
+        keyframe_gap=int(gap),
+        room_seg_interval=int(room_seg_interval),
+        instrumentation_dir=str(instrumentation_output_dir),
+    )
 
     def apply_topology_status(frame_idx, pose_matrix):
         topology_status = room_segmenter.describe_topology_status(pose_matrix=pose_matrix)
@@ -197,7 +776,14 @@ def run(
             room_segmenter.update_latest_segmentation_export_metrics(frame_idx)
         return export_metrics
 
-    def maybe_capture_demo_snapshot(frame_idx, timestamp, image_frame, pose_matrix, segmentation_updated=False):
+    def maybe_capture_demo_snapshot(
+        frame_idx,
+        timestamp,
+        image_frame,
+        pose_matrix,
+        segmentation_updated=False,
+        write_authoritative_debug_vector_map=False,
+    ):
         nonlocal latest_vector_map
         capture_t0 = time.perf_counter()
         if demo_recorder is None or not demo_recorder.should_capture(frame_idx, segmentation_updated):
@@ -222,6 +808,9 @@ def run(
                 stage_bucket="stage5",
             )
             snapshot_export_sec = float(export_metrics.get("total_sec", 0.0))
+            if write_authoritative_debug_vector_map and write_debug_room_artifacts:
+                with open(os.path.join(debug_room_dir, f"vector_map_{frame_idx}.json"), "w", encoding="utf-8") as f:
+                    json.dump(snapshot_vector_map, f, indent=2)
 
         demo_recorder.record_snapshot(
             frame_idx=frame_idx,
@@ -243,6 +832,11 @@ def run(
 
     def sync_segmentation_run_logs():
         runtime_profiler.sync_segmentation_runs(room_segmenter.export_segmentation_runs())
+
+    def internal_stdout_context():
+        if runtime_console.is_verbose():
+            return nullcontext()
+        return redirect_stdout(io.StringIO())
     
     # 在循环外初始化起点
     t_loop_start = time.time()
@@ -399,12 +993,9 @@ def run(
 
         # 将分割触发逻辑提出来，只要是 100 的整数倍帧就会检查，不再受 gap 限制
         segmentation_updated = False
+        stage3_export_deferred_to_stage5 = False
         if count % room_seg_interval == 0:
-            print(f"\n[调试信息] 当前帧: {count}, 缓存的点云片段数: {len(accumulated_all_pts)}")
-            
             if len(accumulated_all_pts) > 0:
-                print(f"[{count}] 正在执行动态 2D 栅格生成与房间拓扑分割...")
-
                 all_pts_merged = np.concatenate(accumulated_all_pts, axis=0)
                 pcd_global = o3d.geometry.PointCloud()
                 pcd_global.points = o3d.utility.Vector3dVector(np.ascontiguousarray(all_pts_merged[:, :3], dtype=np.float64))
@@ -464,25 +1055,32 @@ def run(
                 )
 
                 if markers is not None:
-                    vector_map = room_segmenter.get_vector_map_data(
-                        all_pred_box,
-                        count=count,
-                        save_scene_graph_vis=save_scene_graph_vis,
-                        scene_graph_vis_dir=debug_room_dir,
-                        instrumentation_context="stage3_post_segmentation_refresh",
+                    stage3_export_deferred_to_stage5 = _should_defer_stage3_full_export(
+                        frame_idx=count,
+                        is_keyframe=is_keyframe,
+                        demo_recorder=demo_recorder,
+                        segmentation_markers_available=bool(room_segmenter.last_room_markers is not None),
                     )
-                    log_export_profile(
-                        count,
-                        call_context="stage3_post_segmentation_refresh",
-                        call_origin="segmentation_refresh",
-                        segmentation_refresh_frame=True,
-                        stage_bucket="stage3",
-                    )
-                    latest_vector_map = vector_map
-                    if write_debug_room_artifacts:
-                        with open(os.path.join(debug_room_dir, f"vector_map_{count}.json"), 'w') as f:
-                            json.dump(vector_map, f, indent=2)
-                    print(f"[{count}] Vector Map 及拓扑数据已更新！")
+                    vector_map = None
+                    if not stage3_export_deferred_to_stage5:
+                        vector_map = room_segmenter.get_vector_map_data(
+                            all_pred_box,
+                            count=count,
+                            save_scene_graph_vis=save_scene_graph_vis,
+                            scene_graph_vis_dir=debug_room_dir,
+                            instrumentation_context="stage3_post_segmentation_refresh",
+                        )
+                        log_export_profile(
+                            count,
+                            call_context="stage3_post_segmentation_refresh",
+                            call_origin="segmentation_refresh",
+                            segmentation_refresh_frame=True,
+                            stage_bucket="stage3",
+                        )
+                        latest_vector_map = vector_map
+                        if write_debug_room_artifacts:
+                            with open(os.path.join(debug_room_dir, f"vector_map_{count}.json"), "w", encoding="utf-8") as f:
+                                json.dump(vector_map, f, indent=2)
                     segmentation_updated = True
                     segmentation_cycle_idx += 1
                     last_segmentation_frame_idx = int(count)
@@ -492,14 +1090,19 @@ def run(
                         profiled_frame=True,
                         segmentation_refresh_frame=True,
                     )
-                    runtime_profiler.set_value(
-                        count,
-                        "current_vertical_transition_count",
-                        int(room_segmenter.last_export_profile.get("vertical_transition_count", 0)),
+                    runtime_console.segmentation_refresh(
+                        frame_idx=count,
+                        active_chunks=len(accumulated_all_pts),
+                        updated=True,
+                        room_count=None if vector_map is None else len(vector_map.get("rooms", [])),
+                        object_count=None if vector_map is None else len(vector_map.get("objects", [])),
+                        anchor_count=None if vector_map is None else len(vector_map.get("anchors", [])),
                     )
                 sync_segmentation_run_logs()
             else:
-                print(f"[{count}] 警告: 没有收集到有效点云，无法执行房间分割！")
+                runtime_console.warning(
+                    f"frame={int(count)} skipped segmentation refresh because no accumulated point cloud chunks were available"
+                )
                 
         t_seg_end = time.time()
         runtime_profiler.set_value(count, "stage3_total_sec", float(t_seg_end - t_seg_start))
@@ -559,6 +1162,7 @@ def run(
                     image_frame=image,
                     pose_matrix=RT,
                     segmentation_updated=segmentation_updated,
+                    write_authoritative_debug_vector_map=stage3_export_deferred_to_stage5,
                 )
                 runtime_profiler.add_values(
                     count,
@@ -687,48 +1291,127 @@ def run(
                 )
 
             else:
-                
-                box_manager.init_new_predictions(len(pred_instances),len(per_frame_ins))
+                with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                    box_manager.init_new_predictions(len(pred_instances), len(per_frame_ins))
 
-                num_before_cat = len(all_pred_box)
-                cur_global_pred_box = all_pred_box
-                runtime_profiler.set_value(count, "all_pred_box_before_association_count", int(num_before_cat))
+                    num_before_cat = len(all_pred_box)
+                    cur_global_pred_box = all_pred_box
+                    runtime_profiler.set_value(count, "all_pred_box_before_association_count", int(num_before_cat))
 
-                all_pred_box = Instances3D.cat([all_pred_box,pred_instances])
-                per_frame_ins = Instances3D.cat([per_frame_ins,pred_instances])
-                runtime_profiler.set_value(count, "all_pred_box_after_concat_count", int(len(all_pred_box)))
-                runtime_profiler.set_value(count, "per_frame_ins_count", int(len(per_frame_ins)))
+                    all_pred_box = Instances3D.cat([all_pred_box, pred_instances])
+                    per_frame_ins = Instances3D.cat([per_frame_ins, pred_instances])
+                    runtime_profiler.set_value(count, "all_pred_box_after_concat_count", int(len(all_pred_box)))
+                    runtime_profiler.set_value(count, "per_frame_ins_count", int(len(per_frame_ins)))
+                    readonly_object_room_snapshot = room_segmenter.get_readonly_object_room_metadata_snapshot()
+                with runtime_profiler.timer(count, "stage5_candidate_mask_prep_sec"):
+                    if readonly_tail_reference_audit_enabled:
+                        with runtime_profiler.timer(count, "stage5_assoc_reference_mask_prep_sec"):
+                            association_reference_floor_mask, _ = _build_floor_scoped_candidate_mask(
+                                all_pred_box,
+                                retained_count=num_before_cat,
+                                room_segmenter=room_segmenter,
+                                readonly_object_room_snapshot=readonly_object_room_snapshot,
+                                enable_readonly_tail_pruning=False,
+                                box_manager=box_manager,
+                                current_frame_idx=count,
+                                current_pose_xy=RT[:2, 3],
+                                current_pose_matrix=RT,
+                            )
+                    else:
+                        association_reference_floor_mask = None
+                        runtime_profiler.set_value(count, "stage5_assoc_reference_mask_prep_sec", 0.0)
+                    with runtime_profiler.timer(count, "stage5_assoc_candidate_mask_prep_sec"):
+                        association_floor_mask, association_floor_profile = _build_floor_scoped_candidate_mask(
+                            all_pred_box,
+                            retained_count=num_before_cat,
+                            room_segmenter=room_segmenter,
+                            readonly_object_room_snapshot=readonly_object_room_snapshot,
+                            box_manager=box_manager,
+                            current_frame_idx=count,
+                            current_pose_xy=RT[:2, 3],
+                            current_pose_matrix=RT,
+                        )
+                with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                    runtime_profiler.add_values(
+                        count,
+                        {
+                            "object_floor_pruning_active": bool(association_floor_profile.get("active")),
+                            "object_floor_pruning_active_floor_id": association_floor_profile.get("active_floor_id"),
+                            "object_floor_pruning_reason": association_floor_profile.get("reason"),
+                            "object_floor_pruning_retained_before_count": int(association_floor_profile.get("retained_before_count", 0)),
+                            "object_floor_pruning_retained_after_count": int(association_floor_profile.get("retained_after_count", 0)),
+                            "object_floor_pruning_retained_pruned_count": int(association_floor_profile.get("retained_pruned_count", 0)),
+                            "object_floor_pruning_retained_ambiguous_count": int(association_floor_profile.get("retained_ambiguous_count", 0)),
+                            "object_within_floor_filter_active": bool(association_floor_profile.get("within_floor_active")),
+                            "object_within_floor_same_floor_stable_count": int(association_floor_profile.get("same_floor_stable_count", 0)),
+                            "object_within_floor_recent_kept_count": int(association_floor_profile.get("same_floor_recent_kept_count", 0)),
+                            "object_within_floor_near_kept_count": int(association_floor_profile.get("same_floor_near_kept_count", 0)),
+                            "object_within_floor_recent_or_near_kept_count": int(association_floor_profile.get("same_floor_recent_or_near_kept_count", 0)),
+                            "object_within_floor_fallback_kept_count": int(association_floor_profile.get("same_floor_fallback_kept_count", 0)),
+                            "object_within_floor_pruned_count": int(association_floor_profile.get("same_floor_pruned_within_floor_count", 0)),
+                            "object_within_floor_missing_recency_count": int(association_floor_profile.get("same_floor_missing_recency_count", 0)),
+                            "object_within_floor_missing_xy_count": int(association_floor_profile.get("same_floor_missing_xy_count", 0)),
+                            "object_cheap_room_pruning_active": bool(association_floor_profile.get("cheap_room_pruning_active")),
+                            "object_cheap_room_pruning_reason": association_floor_profile.get("cheap_room_pruning_reason"),
+                            "object_cheap_room_pruning_active_room_id": association_floor_profile.get("active_room_id"),
+                            "object_cheap_room_pruning_tail_candidate_count": int(association_floor_profile.get("cheap_room_pruning_tail_candidate_count", 0)),
+                            "object_cheap_room_pruning_ambiguous_candidate_count": int(association_floor_profile.get("cheap_room_pruning_ambiguous_candidate_count", 0)),
+                            "object_cheap_room_pruning_fallback_candidate_count": int(association_floor_profile.get("cheap_room_pruning_fallback_candidate_count", 0)),
+                            "object_cheap_room_pruning_trusted_candidate_count": int(association_floor_profile.get("cheap_room_pruning_trusted_candidate_count", 0)),
+                            "object_cheap_room_pruning_pruned_count": int(association_floor_profile.get("cheap_room_pruning_pruned_count", 0)),
+                            "object_cheap_room_pruning_tail_retained_count": int(association_floor_profile.get("cheap_room_pruning_tail_retained_count", 0)),
+                            "object_cheap_room_pruning_same_room_kept_count": int(association_floor_profile.get("cheap_room_pruning_same_room_kept_count", 0)),
+                            "object_cheap_room_pruning_untrusted_kept_count": int(association_floor_profile.get("cheap_room_pruning_untrusted_kept_count", 0)),
+                        },
+                    )
 
-                all_poses = np.concatenate((all_poses, pose_np), axis=0)  
+                    all_poses = np.concatenate((all_poses, pose_np), axis=0)
+                with runtime_profiler.timer(count, "stage5_pre_assoc_clone_sec"):
+                    pre_assoc_all_pred_box = all_pred_box.clone()
+                    pre_assoc_all_poses = np.copy(all_poses)
+                    pre_assoc_box_manager = copy.deepcopy(box_manager)
 
-                print("\ncur frame id:",count)
                 '''
                 STEP1: spatial association using 3D OBB NMS
                 '''
                 spatial_t0 = time.perf_counter()
-                mask, success_mask = Instances3D.spatial_association(all_pred_box,cfg["box_fusion"]["nms_threshold"],box_manager,per_frame_ins.cam_pose)
+                with internal_stdout_context():
+                    mask, success_mask = Instances3D.spatial_association(
+                        all_pred_box,
+                        cfg["box_fusion"]["nms_threshold"],
+                        box_manager,
+                        per_frame_ins.cam_pose,
+                        active_candidate_mask=association_floor_mask,
+                    )
                 runtime_profiler.add_value(count, "spatial_association_sec", time.perf_counter() - spatial_t0)
-                
-                cur_keep_idx = [i-num_before_cat for i in mask if i>=num_before_cat]
-                cur_success_nms = [i-num_before_cat for i in success_mask if i>=num_before_cat]
-                runtime_profiler.add_values(
-                    count,
-                    {
-                        "cur_keep_idx_count": int(len(cur_keep_idx)),
-                        "cur_success_nms_count": int(len(cur_success_nms)),
-                        "small_object_candidate_count": int(len(cur_keep_idx)),
-                    },
-                )
-                runtime_profiler.log_history_scope(
-                    count,
-                    step_name="spatial_association",
-                    scope_label="global_retained_history",
-                    candidate_pool_before=int(num_before_cat),
-                    candidate_pool_after=int(len(mask)),
-                    retained_history_pool=int(num_before_cat),
-                    filter_description="3D OBB NMS over all retained global objects plus current-frame boxes",
-                    notes="no floor/room/window filter is applied before spatial association",
-                )
+                with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                    cur_keep_idx = [i - num_before_cat for i in mask if i >= num_before_cat]
+                    cur_success_nms = [i - num_before_cat for i in success_mask if i >= num_before_cat]
+                    runtime_profiler.add_values(
+                        count,
+                        {
+                            "cur_keep_idx_count": int(len(cur_keep_idx)),
+                            "cur_success_nms_count": int(len(cur_success_nms)),
+                            "small_object_candidate_count": int(len(cur_keep_idx)),
+                        },
+                    )
+                    runtime_profiler.log_history_scope(
+                        count,
+                        step_name="spatial_association",
+                        scope_label=_object_scope_label(association_floor_profile, "global_retained_history"),
+                        candidate_pool_before=int(num_before_cat),
+                        candidate_pool_after=int(association_floor_profile.get("retained_after_count", num_before_cat)),
+                        retained_history_pool=int(num_before_cat),
+                        filter_description=_object_scope_description(
+                            "spatial_association",
+                            association_floor_profile,
+                            "3D OBB NMS over all retained global objects plus current-frame boxes",
+                        ),
+                        notes=_object_scope_notes(
+                            association_floor_profile,
+                            extra_note=f"post_nms_keep_count={len(mask)}",
+                        ),
+                    )
                 
  
                 keep_idx = np.asarray(mask)
@@ -737,50 +1420,114 @@ def run(
                     STEP2: correspondence association for small objects
                     '''
                     corr_t0 = time.perf_counter()
-                    all_pred_box,all_poses,keep_idx = Instances3D.correspondence_association(
-                        cfg, 
-                        box_manager, 
-                        cur_keep_idx, 
-                        cur_success_nms,
-                        pred_instances, 
-                        cur_global_pred_box, 
-                        all_pred_box,all_poses, 
-                        per_frame_ins.cam_pose, 
-                        count,
-                        mask,
-                        sample["sensor_info"].gt.depth.K[-1],
-                        all_kf_pose,
-                        threshold=cfg['association']['small_threshold'],
-                        H=image.shape[0],
-                        W=image.shape[1]
-                        )
+                    with internal_stdout_context():
+                        all_pred_box,all_poses,keep_idx = Instances3D.correspondence_association(
+                            cfg, 
+                            box_manager, 
+                            cur_keep_idx, 
+                            cur_success_nms,
+                            pred_instances, 
+                            cur_global_pred_box, 
+                            all_pred_box,all_poses, 
+                            per_frame_ins.cam_pose, 
+                            count,
+                            mask,
+                            sample["sensor_info"].gt.depth.K[-1],
+                            all_kf_pose,
+                            threshold=cfg['association']['small_threshold'],
+                            H=image.shape[0],
+                            W=image.shape[1],
+                            allowed_global_indices=np.flatnonzero(association_floor_mask[:num_before_cat]),
+                            )
                     runtime_profiler.add_value(count, "correspondence_association_sec", time.perf_counter() - corr_t0)
-                    runtime_profiler.log_history_scope(
-                        count,
-                        step_name="correspondence_association",
-                        scope_label="global_retained_history",
-                        candidate_pool_before=int(num_before_cat),
-                        candidate_pool_after=int(len(keep_idx)),
-                        retained_history_pool=int(num_before_cat),
-                        filter_description="small-object correspondence check is seeded by current-frame keep set but still compares against retained global history",
-                        notes=f"small_object_candidate_count={len(cur_keep_idx)}",
-                    )
+                    with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                        runtime_profiler.log_history_scope(
+                            count,
+                            step_name="correspondence_association",
+                            scope_label=_object_scope_label(association_floor_profile, "global_retained_history"),
+                            candidate_pool_before=int(num_before_cat),
+                            candidate_pool_after=int(association_floor_profile.get("retained_after_count", num_before_cat)),
+                            retained_history_pool=int(num_before_cat),
+                            filter_description=_object_scope_description(
+                                "correspondence_association",
+                                association_floor_profile,
+                                "small-object correspondence check is seeded by current-frame keep set but still compares against retained global history",
+                            ),
+                            notes=_object_scope_notes(
+                                association_floor_profile,
+                                extra_note=f"small_object_candidate_count={len(cur_keep_idx)}",
+                            ),
+                        )
 
-                    # update the fusion list based on keep_idx
-                    box_manager.update(keep_idx)
-                
-                    print(count," box_manager",box_manager.fusion_list)
+                        # update the fusion list based on keep_idx
+                        box_manager.update(keep_idx)
 
-                    #filter those evident wrong boxes that valid_num=0
-                    if cfg['box_fusion']['check_valid']:
-                        all_pred_box = box_manager.check_valid_num(all_pred_box, count, gap)
+                        if runtime_console.is_verbose():
+                            runtime_console.info(f"[boxfusion] frame={int(count)} fusion_list={box_manager.fusion_list}")
+
+                        # filter those evident wrong boxes that valid_num=0
+                        if cfg['box_fusion']['check_valid']:
+                            with internal_stdout_context():
+                                all_pred_box = box_manager.check_valid_num(all_pred_box, count, gap)
 
                     '''
                     multi-view box fusion
                     '''
-                    print("frame_id:box_num",box_manager.num_record)
+                    if runtime_console.is_verbose():
+                        runtime_console.info(f"[boxfusion] frame={int(count)} num_record={box_manager.num_record}")
                     if cfg['box_fusion']['use']:
-                        boxfusion_profile = Box_Fuser.boxfusion(all_pred_box, per_frame_ins, box_manager)
+                        with runtime_profiler.timer(count, "stage5_candidate_mask_prep_sec"):
+                            with runtime_profiler.timer(count, "stage5_boxfusion_mask_prep_sec"):
+                                boxfusion_floor_mask, boxfusion_floor_profile = _build_floor_scoped_candidate_mask(
+                                    all_pred_box,
+                                    retained_count=len(all_pred_box),
+                                    room_segmenter=room_segmenter,
+                                    readonly_object_room_snapshot=readonly_object_room_snapshot,
+                                    box_manager=box_manager,
+                                    current_frame_idx=count,
+                                    current_pose_xy=RT[:2, 3],
+                                    current_pose_matrix=RT,
+                                )
+                        with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                            runtime_profiler.add_values(
+                                count,
+                                {
+                                    "boxfusion_floor_pruning_active": bool(boxfusion_floor_profile.get("active")),
+                                    "boxfusion_floor_pruning_active_floor_id": boxfusion_floor_profile.get("active_floor_id"),
+                                    "boxfusion_floor_pruning_reason": boxfusion_floor_profile.get("reason"),
+                                    "boxfusion_floor_pruning_retained_before_count": int(boxfusion_floor_profile.get("retained_before_count", 0)),
+                                    "boxfusion_floor_pruning_retained_after_count": int(boxfusion_floor_profile.get("retained_after_count", 0)),
+                                    "boxfusion_floor_pruning_retained_pruned_count": int(boxfusion_floor_profile.get("retained_pruned_count", 0)),
+                                    "boxfusion_floor_pruning_retained_ambiguous_count": int(boxfusion_floor_profile.get("retained_ambiguous_count", 0)),
+                                    "boxfusion_within_floor_filter_active": bool(boxfusion_floor_profile.get("within_floor_active")),
+                                    "boxfusion_within_floor_same_floor_stable_count": int(boxfusion_floor_profile.get("same_floor_stable_count", 0)),
+                                    "boxfusion_within_floor_recent_kept_count": int(boxfusion_floor_profile.get("same_floor_recent_kept_count", 0)),
+                                    "boxfusion_within_floor_near_kept_count": int(boxfusion_floor_profile.get("same_floor_near_kept_count", 0)),
+                                    "boxfusion_within_floor_recent_or_near_kept_count": int(boxfusion_floor_profile.get("same_floor_recent_or_near_kept_count", 0)),
+                                    "boxfusion_within_floor_fallback_kept_count": int(boxfusion_floor_profile.get("same_floor_fallback_kept_count", 0)),
+                                    "boxfusion_within_floor_pruned_count": int(boxfusion_floor_profile.get("same_floor_pruned_within_floor_count", 0)),
+                                    "boxfusion_within_floor_missing_recency_count": int(boxfusion_floor_profile.get("same_floor_missing_recency_count", 0)),
+                                    "boxfusion_within_floor_missing_xy_count": int(boxfusion_floor_profile.get("same_floor_missing_xy_count", 0)),
+                                    "boxfusion_cheap_room_pruning_active": bool(boxfusion_floor_profile.get("cheap_room_pruning_active")),
+                                    "boxfusion_cheap_room_pruning_reason": boxfusion_floor_profile.get("cheap_room_pruning_reason"),
+                                    "boxfusion_cheap_room_pruning_active_room_id": boxfusion_floor_profile.get("active_room_id"),
+                                    "boxfusion_cheap_room_pruning_tail_candidate_count": int(boxfusion_floor_profile.get("cheap_room_pruning_tail_candidate_count", 0)),
+                                    "boxfusion_cheap_room_pruning_ambiguous_candidate_count": int(boxfusion_floor_profile.get("cheap_room_pruning_ambiguous_candidate_count", 0)),
+                                    "boxfusion_cheap_room_pruning_fallback_candidate_count": int(boxfusion_floor_profile.get("cheap_room_pruning_fallback_candidate_count", 0)),
+                                    "boxfusion_cheap_room_pruning_trusted_candidate_count": int(boxfusion_floor_profile.get("cheap_room_pruning_trusted_candidate_count", 0)),
+                                    "boxfusion_cheap_room_pruning_pruned_count": int(boxfusion_floor_profile.get("cheap_room_pruning_pruned_count", 0)),
+                                    "boxfusion_cheap_room_pruning_tail_retained_count": int(boxfusion_floor_profile.get("cheap_room_pruning_tail_retained_count", 0)),
+                                    "boxfusion_cheap_room_pruning_same_room_kept_count": int(boxfusion_floor_profile.get("cheap_room_pruning_same_room_kept_count", 0)),
+                                    "boxfusion_cheap_room_pruning_untrusted_kept_count": int(boxfusion_floor_profile.get("cheap_room_pruning_untrusted_kept_count", 0)),
+                                },
+                            )
+                        with internal_stdout_context():
+                            boxfusion_profile = Box_Fuser.boxfusion(
+                                all_pred_box,
+                                per_frame_ins,
+                                box_manager,
+                                active_candidate_mask=boxfusion_floor_mask,
+                            )
                         runtime_profiler.add_values(
                             count,
                             {
@@ -799,69 +1546,120 @@ def run(
                                 "fusion_list_len_max": float(boxfusion_profile.get("fusion_list_len_max", 0.0)),
                             },
                         )
-                        runtime_profiler.log_history_scope(
-                            count,
-                            step_name="boxfusion",
-                            scope_label="near_global_retained_history",
-                            candidate_pool_before=int(boxfusion_profile.get("boxfusion_candidates_scanned", 0)),
-                            candidate_pool_after=int(boxfusion_profile.get("boxfusion_candidates_optimized", 0)),
-                            retained_history_pool=int(boxfusion_profile.get("retained_history_pool", 0)),
-                            filter_description="scan every retained object; optimize only fusion lists with >=3 retained observations and not already fused",
-                            notes="historical per_frame_ins store is cumulative and not window-pruned",
-                        )
+                        with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                            runtime_profiler.log_history_scope(
+                                count,
+                                step_name="boxfusion",
+                                scope_label=_object_scope_label(boxfusion_floor_profile, "near_global_retained_history"),
+                                candidate_pool_before=int(boxfusion_floor_profile.get("retained_before_count", len(all_pred_box))),
+                                candidate_pool_after=int(boxfusion_profile.get("boxfusion_candidates_optimized", 0)),
+                                retained_history_pool=int(boxfusion_floor_profile.get("retained_after_count", 0)),
+                                filter_description=_object_scope_description(
+                                    "boxfusion",
+                                    boxfusion_floor_profile,
+                                    "scan every retained object; optimize only fusion lists with >=3 retained observations and not already fused",
+                                ),
+                                notes=_object_scope_notes(
+                                    boxfusion_floor_profile,
+                                    extra_note="historical per_frame_ins store is cumulative and not window-pruned",
+                                ),
+                            )
                 
                     #predict the semantic classes of remaining new boxes
-                    cur_keep_idx = [i-num_before_cat for i in keep_idx if i>=num_before_cat]
-                    cur_keep_idx_in_all = [i for i in range(keep_idx.shape[0]) if keep_idx[i]>=num_before_cat]
+                    with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                        cur_keep_idx = [i - num_before_cat for i in keep_idx if i >= num_before_cat]
+                        cur_keep_idx_in_all = [i for i in range(keep_idx.shape[0]) if keep_idx[i] >= num_before_cat]
 
                     if len(cur_keep_idx)>0:
-                        boxes = pred_instances.pred_boxes.cpu().numpy()
-                        boxes = boxes[cur_keep_idx]
-                        # scale the boxes
-                        boxes = scale_boxes(boxes,image.shape[0],image.shape[1],scale=cfg['detection']['scale_box'])
+                        with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                            boxes = pred_instances.pred_boxes.cpu().numpy()
+                            boxes = boxes[cur_keep_idx]
+                            # scale the boxes
+                            boxes = scale_boxes(boxes,image.shape[0],image.shape[1],scale=cfg['detection']['scale_box'])
                         # if len(pred_instances)>0:
                         clip_t0 = time.perf_counter()
                         class_results, box_features = text_prompt(boxes, tokenized_text, text_features, image, clip_model, preprocess) #[N_box]
                         runtime_profiler.add_value(count, "clip_classification_sec", time.perf_counter() - clip_t0)
-                        all_pred_box.categories[cur_keep_idx_in_all] = class_results
-                        # --- [修改点 2：同步更新增量特征] ---
-                        if not hasattr(all_pred_box, 'embeddings'):
-                            dim = box_features.shape[-1]
-                            all_pred_box.embeddings = torch.zeros((len(all_pred_box), dim))
-                        all_pred_box.embeddings[cur_keep_idx_in_all] = box_features.cpu()
+                        with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                            all_pred_box.categories[cur_keep_idx_in_all] = class_results
+                            # --- [修改点 2：同步更新增量特征] ---
+                            if not hasattr(all_pred_box, 'embeddings'):
+                                dim = box_features.shape[-1]
+                                all_pred_box.embeddings = torch.zeros((len(all_pred_box), dim))
+                            all_pred_box.embeddings[cur_keep_idx_in_all] = box_features.cpu()
 
                 else: # no new box
-                    all_pred_box = all_pred_box[mask]
-                    all_poses = all_poses[mask]
-                    box_manager.update(keep_idx)
-                    print(count, "new boxes have all been nms"," box_manager",box_manager.fusion_list)
-                    runtime_profiler.log_history_scope(
-                        count,
-                        step_name="spatial_association",
-                        scope_label="global_retained_history",
-                        candidate_pool_before=int(num_before_cat),
-                        candidate_pool_after=int(len(mask)),
-                        retained_history_pool=int(num_before_cat),
-                        filter_description="all current-frame boxes suppressed by global NMS against retained history",
-                        notes="no remaining candidates reached correspondence or boxfusion",
-                    )
-                runtime_profiler.set_value(count, "all_pred_box_after_association_count", int(len(all_pred_box)))
-                fusion_lengths = [len(item) for item in box_manager.fusion_list]
-                if fusion_lengths:
-                    fusion_lengths_sorted = sorted(fusion_lengths)
-                    p50_idx = int(round((len(fusion_lengths_sorted) - 1) * 0.50))
-                    p95_idx = int(round((len(fusion_lengths_sorted) - 1) * 0.95))
-                    runtime_profiler.add_values(
-                        count,
-                        {
-                            "fusion_list_count": int(len(fusion_lengths)),
-                            "fusion_list_ge3_count": int(sum(1 for value in fusion_lengths if value >= 3)),
-                            "fusion_list_len_mean": float(sum(fusion_lengths) / len(fusion_lengths)),
-                            "fusion_list_len_p50": float(fusion_lengths_sorted[p50_idx]),
-                            "fusion_list_len_p95": float(fusion_lengths_sorted[p95_idx]),
-                            "fusion_list_len_max": float(max(fusion_lengths)),
-                        },
-                    )
+                    with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                        all_pred_box = all_pred_box[mask]
+                        all_poses = all_poses[mask]
+                        box_manager.update(keep_idx)
+                        if runtime_console.is_verbose():
+                            runtime_console.info(
+                                f"[boxfusion] frame={int(count)} all new boxes suppressed by NMS | fusion_list={box_manager.fusion_list}"
+                            )
+                        runtime_profiler.log_history_scope(
+                            count,
+                            step_name="spatial_association",
+                            scope_label=_object_scope_label(association_floor_profile, "global_retained_history"),
+                            candidate_pool_before=int(num_before_cat),
+                            candidate_pool_after=int(association_floor_profile.get("retained_after_count", num_before_cat)),
+                            retained_history_pool=int(num_before_cat),
+                            filter_description=_object_scope_description(
+                                "spatial_association",
+                                association_floor_profile,
+                                "all current-frame boxes suppressed by global NMS against retained history",
+                            ),
+                            notes=_object_scope_notes(
+                                association_floor_profile,
+                                extra_note="no remaining candidates reached correspondence or boxfusion",
+                            ),
+                        )
+                with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                    runtime_profiler.set_value(count, "all_pred_box_after_association_count", int(len(all_pred_box)))
+                if readonly_tail_reference_audit_enabled:
+                    with runtime_profiler.timer(count, "stage5_tail_reference_audit_sec"):
+                        readonly_tail_drift_metrics = _measure_readonly_tail_assoc_drift(
+                            cfg=cfg,
+                            box_manager=box_manager,
+                            gap=gap,
+                            current_frame_idx=count,
+                            intrinsic=sample["sensor_info"].gt.depth.K[-1],
+                            all_kf_pose=all_kf_pose,
+                            image_height=image.shape[0],
+                            image_width=image.shape[1],
+                            pred_instances=pred_instances,
+                            cur_global_pred_box=cur_global_pred_box,
+                            pre_assoc_all_pred_box=pre_assoc_all_pred_box,
+                            pre_assoc_all_poses=pre_assoc_all_poses,
+                            pre_assoc_cam_poses=per_frame_ins.cam_pose,
+                            pre_assoc_box_manager=pre_assoc_box_manager,
+                            num_before_cat=num_before_cat,
+                            candidate_floor_mask=association_floor_mask,
+                            reference_floor_mask=association_reference_floor_mask,
+                            candidate_result_all_pred_box=all_pred_box,
+                            internal_stdout_context=internal_stdout_context,
+                        )
+                else:
+                    runtime_profiler.set_value(count, "stage5_tail_reference_audit_sec", 0.0)
+                    readonly_tail_drift_metrics = _readonly_tail_reference_audit_disabled_metrics()
+                runtime_profiler.add_values(count, readonly_tail_drift_metrics)
+                with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
+                    fusion_lengths = [len(item) for item in box_manager.fusion_list]
+                    if fusion_lengths:
+                        fusion_lengths_sorted = sorted(fusion_lengths)
+                        p50_idx = int(round((len(fusion_lengths_sorted) - 1) * 0.50))
+                        p95_idx = int(round((len(fusion_lengths_sorted) - 1) * 0.95))
+                        runtime_profiler.add_values(
+                            count,
+                            {
+                                "fusion_list_count": int(len(fusion_lengths)),
+                                "fusion_list_ge3_count": int(sum(1 for value in fusion_lengths if value >= 3)),
+                                "fusion_list_len_mean": float(sum(fusion_lengths) / len(fusion_lengths)),
+                                "fusion_list_len_p50": float(fusion_lengths_sorted[p50_idx]),
+                                "fusion_list_len_p95": float(fusion_lengths_sorted[p95_idx]),
+                                "fusion_list_len_max": float(max(fusion_lengths)),
+                            },
+                        )
 
             if re_vis:
                 visualize_online_boxes(all_pred_box, prefix="/device/wide", boxes_3d_name="pred_boxes_3d", log_instances_name="pred_instances",count=count,save=False,show_class=cfg["vis"]["show_class"],show_label=cfg["vis"]["show_label"]) 
@@ -872,6 +1670,7 @@ def run(
                 image_frame=image,
                 pose_matrix=RT,
                 segmentation_updated=segmentation_updated,
+                write_authoritative_debug_vector_map=stage3_export_deferred_to_stage5,
             )
             runtime_profiler.add_value(count, "snapshot_capture_sec", float(capture_result.get("capture_total_sec", 0.0)))
                 
@@ -885,6 +1684,7 @@ def run(
                 image_frame=image,
                 pose_matrix=RT,
                 segmentation_updated=True,
+                write_authoritative_debug_vector_map=False,
             )
             runtime_profiler.add_value(count, "snapshot_capture_sec", float(capture_result.get("capture_total_sec", 0.0)))
 
@@ -946,13 +1746,15 @@ def run(
 
         # --- 打印本帧耗时统计（仅在关键帧打印） ---
         if is_keyframe:
-            print(f"\n=== 关键帧 [{count}] 耗时分析 (单位: 秒) ===")
-            print(f"数据加载与预处理: {t_data_end - t_loop_start:.4f}")
-            print(f"主模型与边界框推理: {t_infer_end - t_infer_start:.4f}")
-            print(f"拓扑生成与房间分割: {t_seg_end - t_seg_start:.4f}")
-            print(f"Rerun 可视化发送: {t_rerun_end - t_rerun_start:.4f}")
-            print(f"特征提取与 BoxFusion: {t_fusion_end - t_fusion_start:.4f}")
-            print("=========================================\n")
+            runtime_console.profiled_frame_timing(
+                frame_idx=count,
+                data_preprocess_sec=float(t_data_end - t_loop_start),
+                inference_sec=float(t_infer_end - t_infer_start),
+                stage3_sec=float(t_seg_end - t_seg_start),
+                rerun_sec=float(t_rerun_end - t_rerun_start),
+                stage5_sec=float(t_fusion_end - t_fusion_start),
+            )
+        runtime_console.progress(processed_frames=count + 1, total_frames=total_frames)
 
         count+=1
         
@@ -962,10 +1764,9 @@ def run(
     end_time = time.time()
     duration = end_time - start_time
     fps = (count / duration) if duration > 0 else 0.0
-    print(f"count: {count:.2f} frames")
-    print(f"Cost: {duration:.2f} s", f"Average FPS: {fps:.2f}")
 
     vid_str = video_id[0] if isinstance(video_id, list) else video_id
+    runtime_console.bind_sequence(vid_str)
 
     # save global boxes for evaluation
     if cfg['data']['output_dir'] is not None and cfg["eval"] and all_pred_box is not None:
@@ -980,7 +1781,6 @@ def run(
             save_list = [[(int(0), (boxes_3d[n]), 1.0) for n in range(boxes_3d.shape[0])]] # list of tuples class_idx[n]
             save_box(save_list, os.path.join(cfg['data']['output_dir'], vid_str+"_boxes.pkl"))
 
-    print("正在保存点云文件...")
     save_path = "./exported_pc/"
     if save_point_cloud:
         os.makedirs(save_path, exist_ok=True)
@@ -1002,7 +1802,6 @@ def run(
         pc_save_name = os.path.join(save_path, f"{vid_str}_global_map.ply")
 
         o3d.io.write_point_cloud(pc_save_name, pcd)
-        print(f"全局点云已成功保存至: {pc_save_name}，共 {len(pcd.points)} 个点。")
     # --- 新增结束 ---
 
     final_frame_idx = max(count - 1, 0)
@@ -1014,10 +1813,11 @@ def run(
     if final_flush_report.get("segmented_floor_count", 0) > 0:
         segmentation_cycle_idx += int(final_flush_report["segmented_floor_count"])
         last_segmentation_frame_idx = int(final_frame_idx)
-        print(
-            f"[finalize] 追加分割刷新楼层: {final_flush_report.get('segmented_floor_ids', [])} "
-            f"at frame {final_frame_idx}"
-        )
+        if runtime_console.is_verbose():
+            runtime_console.info(
+                f"[finalize] segmented_floor_ids={final_flush_report.get('segmented_floor_ids', [])} "
+                f"at frame={int(final_frame_idx)}"
+            )
 
     if room_segmenter.last_room_markers is not None:
         latest_vector_map = room_segmenter.get_vector_map_data(
@@ -1087,6 +1887,18 @@ def run(
             }
         )
 
+    runtime_console.scene_finish(
+        processed_frames=int(count),
+        duration_sec=float(duration),
+        fps=float(fps),
+        output_paths={
+            "point_cloud_path": pc_save_name,
+            "runtime_instrumentation_dir": str(instrumentation_output_dir),
+            "runtime_instrumentation_summary_json": str(instrumentation_output_dir / "summary.json"),
+            "final_vector_map_path": None if demo_recorder is None else demo_recorder.latest_vector_map_path,
+        },
+    )
+
     return {
         "processed_frames": int(count),
         "duration_sec": float(duration),
@@ -1111,6 +1923,15 @@ if __name__ == "__main__":
     parser.add_argument("--viz-on-gt-points", default=True, action="store_true", help="Backproject the GT depth to form a point cloud in order to visualize the predictions")
     parser.add_argument("--device", default="cpu", help="Which device to push the model to (cpu, mps, cuda)")
     parser.add_argument("--video-ids", nargs="+", help="Subset of videos to execute on. By default, all. Ignored if a tar file is explicitly given or in stream mode.")
+    parser.add_argument("--quiet", action="store_true", help="Keep stdout to warnings plus final summary lines")
+    parser.add_argument("--log-level", choices=["summary", "verbose"], default="summary", help="Console verbosity for runtime progress")
+    parser.add_argument("--runtime-print-interval", default=50, type=int, help="Progress print interval in processed frames; set 0 to disable periodic progress")
+    parser.add_argument("--no-per-profiled-frame-stdout", action="store_true", help="Suppress per-profiled-frame timing lines even in verbose mode")
+    parser.add_argument(
+        "--enable-readonly-tail-reference-audit",
+        action="store_true",
+        help="Run the stage-5 shadow-reference readonly-tail audit. Disabled by default for normal runtime and benchmark runs.",
+    )
 
     args = parser.parse_args()
     print("Command Line Args:", args)
@@ -1124,6 +1945,13 @@ if __name__ == "__main__":
         else:
             with open(args.config, 'r') as  f:
                 cfg = yaml.full_load(f)
+        cfg["runtime_logging"] = {
+            "quiet": bool(args.quiet),
+            "log_level": str(args.log_level),
+            "runtime_print_interval": args.runtime_print_interval,
+            "per_profiled_frame_stdout": bool(str(args.log_level) == "verbose" and not args.no_per_profiled_frame_stdout),
+            "enable_readonly_tail_reference_audit": bool(args.enable_readonly_tail_reference_audit),
+        }
         # load the customized sequence if given by the user
         if args.seq is not None:
             if dataset_path.lower()=='ca1m':
@@ -1197,4 +2025,19 @@ if __name__ == "__main__":
         text_features = torch.load('./data/class_features_small.pt').to(args.device)
         # ------------------- 修改结束 -------------------
 
-    run(cfg, model, dataset, clip_model, preprocess, text_class, text_features, augmentor, preprocessor, score_thresh=cfg['detection']['score_thresh'], viz_on_gt_points=args.viz_on_gt_points, gap=cfg["data"]["gap"], re_vis=cfg['vis']['rerun'])
+    run(
+        cfg,
+        model,
+        dataset,
+        clip_model,
+        preprocess,
+        text_class,
+        text_features,
+        augmentor,
+        preprocessor,
+        score_thresh=cfg['detection']['score_thresh'],
+        viz_on_gt_points=args.viz_on_gt_points,
+        gap=cfg["data"]["gap"],
+        re_vis=cfg['vis']['rerun'],
+        runtime_console_config=dict(cfg.get("runtime_logging") or {}),
+    )

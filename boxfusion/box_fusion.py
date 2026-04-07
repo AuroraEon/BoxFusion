@@ -625,9 +625,13 @@ class BoxFusion(object):
         return mean_xyzlwh, mean_rot
 
     
-    def boxfusion(self, all_pred_box, per_frame_box, box_manager, beta=0.9, verbose=False):
+    def boxfusion(self, all_pred_box, per_frame_box, box_manager, beta=0.9, verbose=False, active_candidate_mask=None):
         total_t0 = time.perf_counter()
         N_box = len(all_pred_box)
+        if active_candidate_mask is None:
+            active_candidate_mask = np.ones((N_box,), dtype=np.bool_)
+        else:
+            active_candidate_mask = np.asarray(active_candidate_mask, dtype=np.bool_)
         per_cam_pose = per_frame_box.cam_pose.cpu().numpy()
         per_boxes_3d = per_frame_box.pred_boxes_3d.tensor.cpu().numpy()
         per_boxes_3d_R = per_frame_box.get("pred_boxes_3d").R.cpu().numpy()
@@ -641,6 +645,9 @@ class BoxFusion(object):
         candidate_updated = 0
         for i in range(N_box):
             scan_t0 = time.perf_counter()
+            if not active_candidate_mask[i]:
+                candidate_scan_sec += time.perf_counter() - scan_t0
+                continue
             fusion_idx = box_manager.fusion_list[i]
             already_fused = box_manager.check_if_fusion(fusion_idx)
             candidate_scan_sec += time.perf_counter() - scan_t0
@@ -760,7 +767,7 @@ class BoxFusion(object):
             "boxfusion_candidate_scan_sec": float(candidate_scan_sec),
             "boxfusion_optimization_sec": float(optimization_sec),
             "boxfusion_total_sec": float(time.perf_counter() - total_t0),
-            "boxfusion_candidates_scanned": int(N_box),
+            "boxfusion_candidates_scanned": int(np.count_nonzero(active_candidate_mask)),
             "boxfusion_candidates_eligible": int(candidate_eligible),
             "boxfusion_candidates_optimized": int(candidate_eligible),
             "boxfusion_candidates_updated": int(candidate_updated),
@@ -770,6 +777,6 @@ class BoxFusion(object):
             "fusion_list_len_p50": _percentile(fusion_lengths_sorted, 0.50),
             "fusion_list_len_p95": _percentile(fusion_lengths_sorted, 0.95),
             "fusion_list_len_max": 0.0 if not fusion_lengths else float(max(fusion_lengths)),
-            "retained_history_pool": int(len(per_frame_box)),
+            "retained_history_pool": int(np.count_nonzero(active_candidate_mask)),
         }
         return self.last_runtime_profile

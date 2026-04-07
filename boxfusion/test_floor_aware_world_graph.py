@@ -17,6 +17,157 @@ from boxfusion.room_topology import RoomTopologyBuilder
 from boxfusion.scene_graph_builder import FloorNode, ObjectNode, RoomNode, SemanticSceneGraph
 
 
+class _MockBoxes3D:
+    def __init__(self, tensor: List[List[float]]) -> None:
+        self.tensor = _MockTensor(tensor, dtype=np.float32)
+
+
+class _MockTensor:
+    def __init__(self, array: Any, dtype: Any) -> None:
+        self._array = np.asarray(array, dtype=dtype)
+
+    def cpu(self) -> "_MockTensor":
+        return self
+
+    def detach(self) -> "_MockTensor":
+        return self
+
+    def numpy(self) -> np.ndarray:
+        return np.asarray(self._array)
+
+
+class _MockInstances:
+    def __init__(
+        self,
+        *,
+        boxes: List[List[float]],
+        categories: List[str],
+        instance_ids: List[int],
+        scores: List[float],
+    ) -> None:
+        self.pred_boxes_3d = _MockBoxes3D(boxes)
+        self.categories = np.asarray(categories, dtype=object)
+        self.init_id = _MockTensor(instance_ids, dtype=np.int64)
+        self.scores = _MockTensor(scores, dtype=np.float32)
+        self.embeddings = _MockTensor(
+            [[float(instance_id), float(instance_id) + 0.5] for instance_id in instance_ids],
+            dtype=np.float32,
+        )
+        self.semantic_confidences = _MockTensor(scores, dtype=np.float32)
+        self.association_confidences = _MockTensor(np.ones(len(instance_ids), dtype=np.float32), dtype=np.float32)
+        self.semantic_gaps = _MockTensor(np.zeros(len(instance_ids), dtype=np.float32), dtype=np.float32)
+        self.view_qualities = _MockTensor(np.ones(len(instance_ids), dtype=np.float32), dtype=np.float32)
+
+
+def _build_export_ready_segmenter() -> FloorAwareRoomSegmenter:
+    segmenter = FloorAwareRoomSegmenter(
+        resolution=0.05,
+        config={
+            "floor_segmentation": {
+                "new_floor_confirm_frames": 2,
+                "min_confirmed_support_frames": 2,
+                "stable_assignment_margin_m": 0.7,
+                "pending_assignment_margin_m": 1.0,
+                "new_floor_min_separation_m": 2.0,
+            }
+        },
+    )
+
+    def pose(z: float) -> np.ndarray:
+        mat = np.eye(4, dtype=np.float32)
+        mat[2, 3] = float(z)
+        return mat
+
+    segmenter.observe_frame(frame_idx=0, timestamp=0.0, pose_matrix=pose(0.0), points_xyzrgb=None, is_keyframe=True)
+    segmenter.observe_frame(frame_idx=1, timestamp=0.1, pose_matrix=pose(0.05), points_xyzrgb=None, is_keyframe=True)
+    floor_state = segmenter._get_or_create_floor_state("floor_1")
+    floor_state.last_segmentation_frame_idx = 10
+    floor_state.local_to_world_room_id = {1: 1}
+    floor_state.segmenter.last_room_markers = np.array([[1, 1], [1, 2]], dtype=np.int32)
+    floor_state.segmenter.label_to_global = {1: 1}
+    floor_state.segmenter.last_gateways = []
+    floor_state.segmenter._grid_to_world = lambda u, v: np.array([float(u), float(v)], dtype=np.float32)
+    floor_state.segmenter._vote_room_label_for_object = lambda *_args, **_kwargs: (1, 1, {1: 9})
+    segmenter.last_room_markers = True
+    segmenter.last_floor_observation = {"floor_id": "floor_1", "status": "stable"}
+    return segmenter
+
+
+def _build_two_room_export_ready_segmenter() -> FloorAwareRoomSegmenter:
+    segmenter = _build_export_ready_segmenter()
+    floor_state = segmenter.floor_states["floor_1"]
+    floor_state.local_to_world_room_id = {1: 1, 2: 2, 3: 3}
+    floor_state.segmenter._grid_to_world = lambda u, v: np.array([float(u) * 2.0, float(v) * 2.0], dtype=np.float32)
+    floor_state.segmenter.last_room_markers = np.array(
+        [
+            [1, 1, 2, 2, 3, 3, 4],
+            [1, 1, 2, 2, 3, 3, 4],
+        ],
+        dtype=np.int32,
+    )
+    floor_state.segmenter.label_to_global = {1: 1, 2: 2, 3: 3}
+
+    def vote_room_label_for_object(center_xy, *_args, **_kwargs):
+        if float(center_xy[0]) < 4.0:
+            return (1, 1, {1: 9})
+        if float(center_xy[0]) < 8.0:
+            return (2, 2, {2: 9})
+        return (3, 3, {3: 9})
+
+    floor_state.segmenter._vote_room_label_for_object = vote_room_label_for_object
+    return segmenter
+
+
+def _build_room_and_unassigned_export_ready_segmenter() -> FloorAwareRoomSegmenter:
+    segmenter = _build_export_ready_segmenter()
+    floor_state = segmenter.floor_states["floor_1"]
+    floor_state.local_to_world_room_id = {1: 1}
+    floor_state.segmenter.last_room_markers = np.array([[1, 1], [1, 2]], dtype=np.int32)
+    floor_state.segmenter.label_to_global = {1: 1}
+
+    def vote_room_label_for_object(center_xy, *_args, **_kwargs):
+        if float(center_xy[0]) < 4.0:
+            return (1, 1, {1: 9})
+        return (-1, -1, {})
+
+    floor_state.segmenter._vote_room_label_for_object = vote_room_label_for_object
+    return segmenter
+
+
+def _mutate_two_room_segmenter_for_room2_geometry_change(segmenter: FloorAwareRoomSegmenter) -> None:
+    floor_state = segmenter.floor_states["floor_1"]
+    floor_state.segmenter.last_room_markers = np.array(
+        [
+            [1, 1, 2, 4, 3, 3, 4],
+            [1, 1, 2, 2, 3, 3, 4],
+        ],
+        dtype=np.int32,
+    )
+    floor_state.segmenter.label_to_global = {1: 1, 2: 2, 3: 3}
+
+    def vote_room_label_for_object(center_xy, *_args, **_kwargs):
+        if float(center_xy[0]) < 4.0:
+            return (1, 1, {1: 9})
+        if float(center_xy[0]) < 8.0:
+            return (2, 2, {2: 9})
+        return (3, 3, {3: 9})
+
+    floor_state.segmenter._vote_room_label_for_object = vote_room_label_for_object
+
+
+def _advance_segmenter_frame(segmenter: FloorAwareRoomSegmenter, *, frame_idx: int, z: float = 0.05) -> None:
+    pose = np.eye(4, dtype=np.float32)
+    pose[2, 3] = float(z)
+    segmenter.observe_frame(
+        frame_idx=int(frame_idx),
+        timestamp=float(frame_idx) * 0.1,
+        pose_matrix=pose,
+        points_xyzrgb=None,
+        is_keyframe=True,
+    )
+    segmenter.last_floor_observation = {"floor_id": "floor_1", "status": "stable"}
+
+
 def _build_multifloor_vector_map() -> Dict[str, Any]:
     return {
         "floors": [
@@ -654,6 +805,599 @@ def _validate_persistent_fallback_diagnostics_regression() -> None:
     assert exported["runs"][1]["fallback_modes"] == []
 
 
+def _validate_same_frame_full_export_reuse() -> None:
+    segmenter = _build_export_ready_segmenter()
+    instances = _MockInstances(
+        boxes=[[0.5, 0.5, 0.3, 0.6, 0.4, 0.8, 0.0]],
+        categories=["chair"],
+        instance_ids=[11],
+        scores=[0.95],
+    )
+
+    vector_map_a = segmenter.get_vector_map_data(
+        instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage3_post_segmentation_refresh",
+    )
+    profile_a = dict(segmenter.last_export_profile)
+    vector_map_b = segmenter.get_vector_map_data(
+        instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage5_snapshot_capture",
+    )
+    profile_b = dict(segmenter.last_export_profile)
+
+    assert profile_a["cache_hit"] is False
+    assert profile_b["cache_hit"] is True
+    assert profile_b["cache_hit_kind"] == "same_frame_full_export_reuse"
+    assert profile_b["same_frame_reuse_eligible"] is True
+    assert profile_b["same_frame_reuse_blocker"] == "none"
+    assert profile_b["total_sec"] == 0.0
+    assert profile_b["object_export_sec"] == 0.0
+    assert vector_map_a is vector_map_b
+    assert len(vector_map_b["objects"]) == 1
+    assert vector_map_b["objects"][0]["id"] == 11
+
+
+def _validate_same_frame_object_export_memoization() -> None:
+    segmenter = _build_export_ready_segmenter()
+    initial_instances = _MockInstances(
+        boxes=[
+            [0.5, 0.5, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [1.5, 0.5, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "lamp"],
+        instance_ids=[11, 22],
+        scores=[0.95, 0.88],
+    )
+    updated_instances = _MockInstances(
+        boxes=[
+            [0.5, 0.5, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [1.5, 0.7, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "lamp"],
+        instance_ids=[11, 22],
+        scores=[0.95, 0.91],
+    )
+
+    vector_map_a = segmenter.get_vector_map_data(
+        initial_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage3_post_segmentation_refresh",
+    )
+    cached_first_object = vector_map_a["objects"][0]
+    vector_map_b = segmenter.get_vector_map_data(
+        updated_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage5_snapshot_capture",
+    )
+    profile_b = dict(segmenter.last_export_profile)
+
+    assert profile_b["cache_hit"] is False
+    assert profile_b["same_frame_cache_frame_match"] is True
+    assert profile_b["same_frame_segmentation_token_match"] is True
+    assert profile_b["same_frame_reuse_blocker"] == "object_state_signature_mismatch"
+    assert profile_b["room_local_delta_export_used"] is True
+    assert profile_b["room_local_delta_changed_room_count"] == 1
+    assert profile_b["changed_room_count"] == 1
+    assert profile_b["changed_room_ids"] == "room_1"
+    assert profile_b["changed_room_local_rebuild_used"] is True
+    assert profile_b["full_fallback_rebuild_used"] is False
+    assert profile_b["room_local_delta_reused_room_count"] == 0
+    assert profile_b["room_local_delta_rebuilt_room_count"] == 1
+    assert profile_b["object_export_reused_count"] == 0
+    assert profile_b["object_export_rebuilt_count"] == 2
+    assert profile_b["rebuilt_object_in_changed_rooms_count"] == 2
+    assert vector_map_b["objects"][0] is not cached_first_object
+    assert vector_map_b["objects"][1]["pose_3d"][1] == 0.7
+
+
+def _validate_same_frame_anchor_reuse_for_unchanged_rooms() -> None:
+    segmenter = _build_two_room_export_ready_segmenter()
+    initial_instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [5.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [9.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "table", "lamp"],
+        instance_ids=[11, 22, 33],
+        scores=[0.95, 0.88, 0.86],
+    )
+    updated_instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [5.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [9.0, 1.2, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "table", "lamp"],
+        instance_ids=[11, 22, 33],
+        scores=[0.95, 0.88, 0.91],
+    )
+
+    vector_map_a = segmenter.get_vector_map_data(
+        initial_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage3_post_segmentation_refresh",
+    )
+    room_1_anchor_snapshot = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_a["anchors"]
+            if item["room_id"] == "room_1"
+        ]
+    )
+    room_2_anchor_snapshot = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_a["anchors"]
+            if item["room_id"] == "room_2"
+        ]
+    )
+
+    vector_map_b = segmenter.get_vector_map_data(
+        updated_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage5_snapshot_capture",
+    )
+    profile_b = dict(segmenter.last_export_profile)
+    room_1_anchor_snapshot_after = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_b["anchors"]
+            if item["room_id"] == "room_1"
+        ]
+    )
+    room_2_anchor_snapshot_after = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_b["anchors"]
+            if item["room_id"] == "room_2"
+        ]
+    )
+
+    assert profile_b["cache_hit"] is False
+    assert profile_b["same_frame_reuse_blocker"] == "object_state_signature_mismatch"
+    assert profile_b["room_local_delta_export_used"] is True
+    assert profile_b["room_local_delta_changed_room_count"] == 1
+    assert profile_b["changed_room_count"] == 1
+    assert profile_b["changed_room_ids"] == "room_3"
+    assert profile_b["changed_room_local_rebuild_used"] is True
+    assert profile_b["room_local_delta_reused_room_count"] == 2
+    assert profile_b["room_local_delta_rebuilt_room_count"] == 1
+    assert profile_b["object_export_reused_count"] == 2
+    assert profile_b["object_export_rebuilt_count"] == 1
+    assert profile_b["rebuilt_object_in_changed_rooms_count"] == 1
+    assert profile_b["anchor_reuse_room_count"] == 2
+    assert profile_b["anchor_rebuild_room_count"] == 1
+    assert room_1_anchor_snapshot_after == room_1_anchor_snapshot
+    assert room_2_anchor_snapshot_after == room_2_anchor_snapshot
+
+
+def _validate_cross_frame_object_export_reuse() -> None:
+    segmenter = _build_export_ready_segmenter()
+    initial_instances = _MockInstances(
+        boxes=[
+            [0.5, 0.5, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [1.5, 0.5, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "lamp"],
+        instance_ids=[11, 22],
+        scores=[0.95, 0.88],
+    )
+    updated_instances = _MockInstances(
+        boxes=[
+            [0.5, 0.5, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [1.5, 0.7, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "lamp"],
+        instance_ids=[11, 22],
+        scores=[0.95, 0.91],
+    )
+
+    vector_map_a = segmenter.get_vector_map_data(
+        initial_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage5_snapshot_capture",
+    )
+    cached_first_object = vector_map_a["objects"][0]
+    _advance_segmenter_frame(segmenter, frame_idx=11)
+    vector_map_b = segmenter.get_vector_map_data(
+        updated_instances,
+        count=11,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage5_snapshot_capture",
+    )
+    profile_b = dict(segmenter.last_export_profile)
+
+    assert profile_b["cache_hit"] is False
+    assert profile_b["same_frame_cache_frame_match"] is False
+    assert profile_b["same_frame_reuse_blocker"] == "frame_mismatch"
+    assert profile_b["room_local_delta_export_used"] is False
+    assert profile_b["changed_room_local_rebuild_used"] is False
+    assert profile_b["full_fallback_rebuild_used"] is False
+    assert profile_b["object_export_reused_count"] == 1
+    assert profile_b["object_export_rebuilt_count"] == 1
+    assert vector_map_b["objects"][0]["id"] == cached_first_object["id"]
+    assert vector_map_b["objects"][0]["footprint_2d"] == cached_first_object["footprint_2d"]
+    assert vector_map_b["objects"][1]["pose_3d"][1] == 0.7
+
+
+def _validate_cross_frame_anchor_reuse_for_unchanged_rooms() -> None:
+    segmenter = _build_two_room_export_ready_segmenter()
+    initial_instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [5.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [9.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "table", "lamp"],
+        instance_ids=[11, 22, 33],
+        scores=[0.95, 0.88, 0.86],
+    )
+    updated_instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [5.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [9.0, 1.2, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "table", "lamp"],
+        instance_ids=[11, 22, 33],
+        scores=[0.95, 0.88, 0.91],
+    )
+
+    vector_map_a = segmenter.get_vector_map_data(
+        initial_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage5_snapshot_capture",
+    )
+    room_1_anchor_snapshot = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_a["anchors"]
+            if item["room_id"] == "room_1"
+        ]
+    )
+    room_2_anchor_snapshot = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_a["anchors"]
+            if item["room_id"] == "room_2"
+        ]
+    )
+
+    _advance_segmenter_frame(segmenter, frame_idx=11)
+    vector_map_b = segmenter.get_vector_map_data(
+        updated_instances,
+        count=11,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage5_snapshot_capture",
+    )
+    profile_b = dict(segmenter.last_export_profile)
+    room_1_anchor_snapshot_after = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_b["anchors"]
+            if item["room_id"] == "room_1"
+        ]
+    )
+    room_2_anchor_snapshot_after = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_b["anchors"]
+            if item["room_id"] == "room_2"
+        ]
+    )
+
+    assert profile_b["cache_hit"] is False
+    assert profile_b["same_frame_cache_frame_match"] is False
+    assert profile_b["same_frame_reuse_blocker"] == "frame_mismatch"
+    assert profile_b["object_export_reused_count"] == 2
+    assert profile_b["object_export_rebuilt_count"] == 1
+    assert profile_b["changed_room_local_rebuild_used"] is False
+    assert profile_b["full_fallback_rebuild_used"] is False
+    assert profile_b["anchor_reuse_room_count"] == 2
+    assert profile_b["anchor_rebuild_room_count"] == 1
+    assert room_1_anchor_snapshot_after == room_1_anchor_snapshot
+    assert room_2_anchor_snapshot_after == room_2_anchor_snapshot
+
+
+def _validate_cross_frame_changed_room_rebuild_reduction() -> None:
+    segmenter = _build_two_room_export_ready_segmenter()
+    instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [5.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [9.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "table", "lamp"],
+        instance_ids=[11, 22, 33],
+        scores=[0.95, 0.88, 0.86],
+    )
+
+    vector_map_a = segmenter.get_vector_map_data(
+        instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage3_post_segmentation_refresh",
+    )
+    room_1_anchor_snapshot = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_a["anchors"]
+            if item["room_id"] == "room_1"
+        ]
+    )
+    room_3_anchor_snapshot = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_a["anchors"]
+            if item["room_id"] == "room_3"
+        ]
+    )
+
+    _advance_segmenter_frame(segmenter, frame_idx=11)
+    _mutate_two_room_segmenter_for_room2_geometry_change(segmenter)
+    original_build_object_export_record = segmenter._build_object_export_record
+    build_object_export_record_call_count = 0
+
+    def _counting_build_object_export_record(*args, **kwargs):
+        nonlocal build_object_export_record_call_count
+        build_object_export_record_call_count += 1
+        return original_build_object_export_record(*args, **kwargs)
+
+    segmenter._build_object_export_record = _counting_build_object_export_record
+    try:
+        vector_map_b = segmenter.get_vector_map_data(
+            instances,
+            count=11,
+            save_scene_graph_vis=False,
+            instrumentation_context="stage5_snapshot_capture",
+        )
+    finally:
+        segmenter._build_object_export_record = original_build_object_export_record
+    profile_b = dict(segmenter.last_export_profile)
+    room_1_anchor_snapshot_after = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_b["anchors"]
+            if item["room_id"] == "room_1"
+        ]
+    )
+    room_3_anchor_snapshot_after = sorted(
+        [
+            (item["id"], item["target_id"], tuple(item["position"]))
+            for item in vector_map_b["anchors"]
+            if item["room_id"] == "room_3"
+        ]
+    )
+
+    assert profile_b["same_frame_cache_frame_match"] is False
+    assert profile_b["same_frame_reuse_blocker"] == "frame_mismatch"
+    assert profile_b["room_local_delta_export_used"] is True
+    assert profile_b["changed_room_local_rebuild_used"] is True
+    assert profile_b["changed_room_locality_confident"] is True
+    assert profile_b["full_fallback_rebuild_used"] is False
+    assert profile_b["changed_room_count"] == 1
+    assert profile_b["changed_room_ids"] == "room_2"
+    assert profile_b["changed_room_structure_changed_count"] == 1
+    assert profile_b["changed_room_structure_changed_ids"] == "room_2"
+    assert profile_b["changed_room_removed_count"] == 0
+    assert profile_b["object_export_reused_count"] == 2
+    assert profile_b["object_export_rebuilt_count"] == 1
+    assert profile_b["rebuilt_object_in_changed_rooms_count"] == 1
+    assert build_object_export_record_call_count == 1
+    assert profile_b["anchor_reuse_room_count"] == 2
+    assert profile_b["anchor_rebuild_room_count"] == 1
+    assert room_1_anchor_snapshot_after == room_1_anchor_snapshot
+    assert room_3_anchor_snapshot_after == room_3_anchor_snapshot
+
+
+def _validate_same_frame_room_local_delta_disappearance() -> None:
+    segmenter = _build_two_room_export_ready_segmenter()
+    initial_instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [5.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [9.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "table", "lamp"],
+        instance_ids=[11, 22, 33],
+        scores=[0.95, 0.88, 0.86],
+    )
+    updated_instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [5.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "table"],
+        instance_ids=[11, 22],
+        scores=[0.95, 0.88],
+    )
+
+    segmenter.get_vector_map_data(
+        initial_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage3_post_segmentation_refresh",
+    )
+    vector_map_b = segmenter.get_vector_map_data(
+        updated_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage5_snapshot_capture",
+    )
+    profile_b = dict(segmenter.last_export_profile)
+
+    assert profile_b["same_frame_reuse_blocker"] == "object_state_signature_mismatch"
+    assert profile_b["room_local_delta_export_used"] is True
+    assert profile_b["room_local_delta_changed_room_count"] == 1
+    assert profile_b["changed_room_count"] == 1
+    assert profile_b["changed_room_ids"] == "room_3"
+    assert profile_b["changed_room_removed_count"] == 0
+    assert profile_b["room_local_delta_reused_room_count"] == 2
+    assert profile_b["room_local_delta_rebuilt_room_count"] == 1
+    assert profile_b["object_export_reused_count"] == 2
+    assert profile_b["object_export_rebuilt_count"] == 0
+    assert [obj["id"] for obj in vector_map_b["objects"]] == [11, 22]
+
+
+def _validate_same_frame_room_local_delta_unassigned_bucket() -> None:
+    segmenter = _build_room_and_unassigned_export_ready_segmenter()
+    initial_instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [8.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "lamp"],
+        instance_ids=[11, 99],
+        scores=[0.95, 0.86],
+    )
+    updated_instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [8.2, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "lamp"],
+        instance_ids=[11, 99],
+        scores=[0.95, 0.91],
+    )
+
+    vector_map_a = segmenter.get_vector_map_data(
+        initial_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage3_post_segmentation_refresh",
+    )
+    cached_room_object = next(obj for obj in vector_map_a["objects"] if obj["id"] == 11)
+    vector_map_b = segmenter.get_vector_map_data(
+        updated_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage5_snapshot_capture",
+    )
+    profile_b = dict(segmenter.last_export_profile)
+
+    assert profile_b["same_frame_reuse_blocker"] == "object_state_signature_mismatch"
+    assert profile_b["room_local_delta_export_used"] is True
+    assert profile_b["room_local_delta_changed_room_count"] == 0
+    assert profile_b["changed_room_count"] == 0
+    assert profile_b["changed_room_ids"] == ""
+    assert profile_b["room_local_delta_reused_room_count"] == 1
+    assert profile_b["room_local_delta_rebuilt_room_count"] == 0
+    assert profile_b["room_local_delta_unassigned_bucket_rebuilt"] is True
+    assert profile_b["object_export_reused_count"] == 1
+    assert profile_b["object_export_rebuilt_count"] == 1
+    reused_room_object = next(obj for obj in vector_map_b["objects"] if obj["id"] == 11)
+    assert reused_room_object["room_id"] == cached_room_object["room_id"]
+    assert reused_room_object["footprint_2d"] == cached_room_object["footprint_2d"]
+    assert next(obj for obj in vector_map_b["objects"] if obj["id"] == 99)["room_id"] is None
+
+
+def _validate_same_frame_room_local_delta_two_room_move() -> None:
+    segmenter = _build_two_room_export_ready_segmenter()
+    initial_instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [5.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [9.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "table", "lamp"],
+        instance_ids=[11, 22, 33],
+        scores=[0.95, 0.88, 0.86],
+    )
+    updated_instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [9.2, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [9.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "table", "lamp"],
+        instance_ids=[11, 22, 33],
+        scores=[0.95, 0.92, 0.86],
+    )
+
+    segmenter.get_vector_map_data(
+        initial_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage3_post_segmentation_refresh",
+    )
+    vector_map_b = segmenter.get_vector_map_data(
+        updated_instances,
+        count=10,
+        save_scene_graph_vis=False,
+        instrumentation_context="stage5_snapshot_capture",
+    )
+    profile_b = dict(segmenter.last_export_profile)
+
+    assert profile_b["same_frame_reuse_blocker"] == "object_state_signature_mismatch"
+    assert profile_b["room_local_delta_export_used"] is True
+    assert profile_b["room_local_delta_changed_room_count"] == 2
+    assert profile_b["changed_room_count"] == 2
+    assert profile_b["changed_room_ids"] == "room_2|room_3"
+    assert profile_b["room_local_delta_reused_room_count"] == 1
+    assert profile_b["room_local_delta_rebuilt_room_count"] == 2
+    assert profile_b["object_export_reused_count"] == 1
+    assert profile_b["object_export_rebuilt_count"] == 2
+    assert [obj["room_id"] for obj in vector_map_b["objects"]] == ["room_1", "room_3", "room_3"]
+
+
+def _validate_object_export_floor_vote_cache_once_per_export() -> None:
+    segmenter = _build_two_room_export_ready_segmenter()
+    instances = _MockInstances(
+        boxes=[
+            [1.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [5.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+            [9.0, 1.0, 0.3, 0.6, 0.4, 0.8, 0.0],
+        ],
+        categories=["chair", "table", "lamp"],
+        instance_ids=[11, 22, 33],
+        scores=[0.95, 0.88, 0.86],
+    )
+
+    original_build_object_export_record = segmenter._build_object_export_record
+    original_build_object_export_floor_vote_cache = segmenter._build_object_export_floor_vote_cache
+    build_object_export_record_call_count = 0
+    build_object_export_floor_vote_cache_call_count = 0
+
+    def _counting_build_object_export_record(*args, **kwargs):
+        nonlocal build_object_export_record_call_count
+        build_object_export_record_call_count += 1
+        return original_build_object_export_record(*args, **kwargs)
+
+    def _counting_build_object_export_floor_vote_cache(*args, **kwargs):
+        nonlocal build_object_export_floor_vote_cache_call_count
+        build_object_export_floor_vote_cache_call_count += 1
+        return original_build_object_export_floor_vote_cache(*args, **kwargs)
+
+    segmenter._build_object_export_record = _counting_build_object_export_record
+    segmenter._build_object_export_floor_vote_cache = _counting_build_object_export_floor_vote_cache
+    try:
+        segmenter.get_vector_map_data(
+            instances,
+            count=10,
+            save_scene_graph_vis=False,
+            instrumentation_context="stage5_snapshot_capture",
+        )
+    finally:
+        segmenter._build_object_export_record = original_build_object_export_record
+        segmenter._build_object_export_floor_vote_cache = original_build_object_export_floor_vote_cache
+
+    profile = dict(segmenter.last_export_profile)
+    assert profile["object_export_rebuilt_count"] == 3
+    assert build_object_export_record_call_count == 3
+    assert build_object_export_floor_vote_cache_call_count == 1
+
+
 
 def run_mock_test() -> None:
     print("Running floor-aware world graph validation...")
@@ -664,6 +1408,16 @@ def run_mock_test() -> None:
     _validate_low_span_slice_regression()
     _validate_vertical_transition_evidence_regression()
     _validate_persistent_fallback_diagnostics_regression()
+    _validate_same_frame_full_export_reuse()
+    _validate_same_frame_object_export_memoization()
+    _validate_same_frame_anchor_reuse_for_unchanged_rooms()
+    _validate_cross_frame_object_export_reuse()
+    _validate_cross_frame_anchor_reuse_for_unchanged_rooms()
+    _validate_cross_frame_changed_room_rebuild_reduction()
+    _validate_same_frame_room_local_delta_disappearance()
+    _validate_same_frame_room_local_delta_unassigned_bucket()
+    _validate_same_frame_room_local_delta_two_room_move()
+    _validate_object_export_floor_vote_cache_once_per_export()
     _validate_floor_aware_scene_graph()
     print("Floor-aware world graph validated.")
 

@@ -1,4 +1,5 @@
 import math
+import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -583,6 +584,29 @@ class SemanticSceneGraph:
         self.floors: Dict[str, FloorNode] = {}
         self.rooms: Dict[str, RoomNode] = {}
         self.anchors: Dict[str, AnchorNode] = {}
+        self._anchor_profile: Dict[str, float] = {}
+        self.reset_anchor_profile()
+
+    def reset_anchor_profile(self) -> None:
+        self._anchor_profile = {
+            "room_anchor_total_sec": 0.0,
+            "object_anchor_total_sec": 0.0,
+            "candidate_generation_sec": 0.0,
+            "validate_sec": 0.0,
+            "score_sec": 0.0,
+            "fallback_sec": 0.0,
+            "insert_sec": 0.0,
+            "room_anchor_candidate_count": 0.0,
+            "object_anchor_candidate_count": 0.0,
+            "valid_candidate_count": 0.0,
+            "fallback_candidate_count": 0.0,
+        }
+
+    def _accumulate_anchor_profile(self, key: str, value: float) -> None:
+        self._anchor_profile[key] = float(self._anchor_profile.get(key, 0.0) or 0.0) + float(value)
+
+    def get_anchor_profile(self) -> Dict[str, float]:
+        return dict(self._anchor_profile)
 
     def add_floor_node(self, floor: FloorNode) -> None:
         self.floors[floor.id] = floor
@@ -735,6 +759,7 @@ class SemanticSceneGraph:
             return False, {"reason": "too_close_to_wall", "wall_clearance": wall_clearance}
 
         object_clearance = float("inf")
+        scoring_object_clearance = float("inf")
         target_object = self.object_index.get(target_id or "")
         for obj in room_objects:
             if obj.footprint is None:
@@ -749,6 +774,8 @@ class SemanticSceneGraph:
                 return False, {"reason": "inside_object", "object_id": obj.id}
             distance = _distance_point_to_polygon_boundary(point_xy, obj.footprint)
             object_clearance = min(object_clearance, distance)
+            if target_type == "room" or obj.id != target_id:
+                scoring_object_clearance = min(scoring_object_clearance, distance)
             if distance < margin:
                 reason = "too_close_to_target" if obj.id == target_id else "too_close_to_other_object"
                 return False, {"reason": reason, "object_id": obj.id, "object_clearance": distance}
@@ -765,12 +792,28 @@ class SemanticSceneGraph:
 
         if not math.isfinite(object_clearance):
             object_clearance = wall_clearance
+        if not math.isfinite(scoring_object_clearance):
+            scoring_object_clearance = wall_clearance
 
-        return True, {"wall_clearance": wall_clearance, "object_clearance": object_clearance}
+        return True, {
+            "wall_clearance": wall_clearance,
+            "object_clearance": object_clearance,
+            "scoring_object_clearance": scoring_object_clearance,
+        }
 
-    def _score_room_anchor(self, point_xy: np.ndarray, room: RoomNode, room_objects: Sequence[ObjectNode]) -> float:
-        wall_clearance = _distance_point_to_polygon_boundary(point_xy, room.polygon)
-        obstacle_clearance = self._distance_to_objects(point_xy, room_objects)
+    def _score_room_anchor(
+        self,
+        point_xy: np.ndarray,
+        room: RoomNode,
+        room_objects: Sequence[ObjectNode],
+        *,
+        wall_clearance: Optional[float] = None,
+        obstacle_clearance: Optional[float] = None,
+    ) -> float:
+        if wall_clearance is None:
+            wall_clearance = _distance_point_to_polygon_boundary(point_xy, room.polygon)
+        if obstacle_clearance is None:
+            obstacle_clearance = self._distance_to_objects(point_xy, room_objects)
         if not math.isfinite(obstacle_clearance):
             obstacle_clearance = wall_clearance
         center = np.asarray(room.center or _polygon_centroid(room.polygon), dtype=np.float32)
@@ -780,6 +823,12 @@ class SemanticSceneGraph:
     def _score_clearance(self, point_xy: np.ndarray, room: RoomNode, room_objects: Sequence[ObjectNode], ignore_ids: Optional[set[str]] = None) -> float:
         wall_clearance = _distance_point_to_polygon_boundary(point_xy, room.polygon)
         object_clearance = self._distance_to_objects(point_xy, room_objects, ignore_ids=ignore_ids)
+        return self._clearance_score_from_distances(
+            wall_clearance=wall_clearance,
+            object_clearance=object_clearance,
+        )
+
+    def _clearance_score_from_distances(self, *, wall_clearance: float, object_clearance: float) -> float:
         min_clearance = min(wall_clearance, object_clearance)
         return min(1.0, max(0.0, min_clearance / self.anchor_config["clearance_score_scale"]))
 
@@ -837,6 +886,7 @@ class SemanticSceneGraph:
         best_anchor: Optional[AnchorNode] = None
         for scale in (1.0, 1.3, 1.6):
             candidate_xy = object_xy + direction * base_distance * scale
+            self._accumulate_anchor_profile("fallback_candidate_count", 1.0)
             valid, _ = self.validate_anchor((candidate_xy[0], candidate_xy[1], 0.0), room.id, obj.id, "object")
             if not valid:
                 continue
@@ -862,10 +912,13 @@ class SemanticSceneGraph:
         obj: ObjectNode,
         room: RoomNode,
         room_objects: Sequence[ObjectNode],
+        *,
+        clearance_score: Optional[float] = None,
     ) -> float:
         room_center = np.asarray(room.center or _polygon_centroid(room.polygon), dtype=np.float32)
         object_xy = np.asarray(obj.center[:2], dtype=np.float32)
-        clearance_score = self._score_clearance(candidate_xy, room, room_objects, ignore_ids={obj.id})
+        if clearance_score is None:
+            clearance_score = self._score_clearance(candidate_xy, room, room_objects, ignore_ids={obj.id})
         interiority_score = self._score_interiority(candidate_xy, object_xy, room_center)
         distance_score = self._score_preferred_distance(candidate_xy, object_xy)
         return float(
@@ -886,6 +939,7 @@ class SemanticSceneGraph:
         return canonical_label in self.landmark_rules["labels"]
 
     def generate_room_anchor(self, room_id: str, debug: bool = False) -> Optional[AnchorNode]:
+        room_t0 = time.perf_counter()
         room = self.rooms.get(room_id)
         if room is None or len(room.polygon) < 3:
             return None
@@ -898,15 +952,27 @@ class SemanticSceneGraph:
                 angle = (2.0 * math.pi * angle_idx) / self.anchor_config["room_anchor_search_angles"]
                 offset = np.array([math.cos(angle), math.sin(angle)], dtype=np.float32) * radius
                 candidates.append(centroid + offset)
+        self._accumulate_anchor_profile("room_anchor_candidate_count", float(len(candidates)))
 
         best_anchor: Optional[AnchorNode] = None
         debug_candidates: List[Tuple[float, float]] = []
         for candidate_xy in candidates:
-            valid, _ = self.validate_anchor((candidate_xy[0], candidate_xy[1], 0.0), room_id, target_type="room")
+            validate_t0 = time.perf_counter()
+            valid, details = self.validate_anchor((candidate_xy[0], candidate_xy[1], 0.0), room_id, target_type="room")
+            self._accumulate_anchor_profile("validate_sec", time.perf_counter() - validate_t0)
             debug_candidates.append((float(candidate_xy[0]), float(candidate_xy[1])))
             if not valid:
                 continue
-            score = self._score_room_anchor(candidate_xy, room, room_objects)
+            self._accumulate_anchor_profile("valid_candidate_count", 1.0)
+            score_t0 = time.perf_counter()
+            score = self._score_room_anchor(
+                candidate_xy,
+                room,
+                room_objects,
+                wall_clearance=float(details["wall_clearance"]),
+                obstacle_clearance=float(details["scoring_object_clearance"]),
+            )
+            self._accumulate_anchor_profile("score_sec", time.perf_counter() - score_t0)
             anchor = AnchorNode(
                 id=f"anchor_{room_id}",
                 anchor_type="room",
@@ -920,9 +986,11 @@ class SemanticSceneGraph:
             )
             if best_anchor is None or anchor.score > best_anchor.score:
                 best_anchor = anchor
+        self._accumulate_anchor_profile("room_anchor_total_sec", time.perf_counter() - room_t0)
         return best_anchor
 
     def generate_object_anchor(self, object_id: str, debug: bool = False) -> Optional[AnchorNode]:
+        object_t0 = time.perf_counter()
         obj = self.object_index.get(object_id)
         if obj is None:
             return None
@@ -941,7 +1009,11 @@ class SemanticSceneGraph:
         if obj.obs_count <= 1:
             semantic_gate *= 0.85
 
-        for candidate_xy, boundary_midpoint in self._generate_side_candidates(obj):
+        candidate_gen_t0 = time.perf_counter()
+        side_candidates = self._generate_side_candidates(obj)
+        self._accumulate_anchor_profile("candidate_generation_sec", time.perf_counter() - candidate_gen_t0)
+        self._accumulate_anchor_profile("object_anchor_candidate_count", float(len(side_candidates)))
+        for candidate_xy, boundary_midpoint in side_candidates:
             debug_candidates.append((float(candidate_xy[0]), float(candidate_xy[1])))
             if not _segment_inside_polygon(
                 boundary_midpoint,
@@ -950,10 +1022,24 @@ class SemanticSceneGraph:
                 samples=int(self.anchor_config["anchor_candidate_line_samples"]),
             ):
                 continue
-            valid, _ = self.validate_anchor((candidate_xy[0], candidate_xy[1], 0.0), room.id, obj.id, "object")
+            validate_t0 = time.perf_counter()
+            valid, details = self.validate_anchor((candidate_xy[0], candidate_xy[1], 0.0), room.id, obj.id, "object")
+            self._accumulate_anchor_profile("validate_sec", time.perf_counter() - validate_t0)
             if not valid:
                 continue
-            score = self._score_object_anchor_candidate(candidate_xy, obj, room, room_objects) * semantic_gate
+            self._accumulate_anchor_profile("valid_candidate_count", 1.0)
+            score_t0 = time.perf_counter()
+            score = self._score_object_anchor_candidate(
+                candidate_xy,
+                obj,
+                room,
+                room_objects,
+                clearance_score=self._clearance_score_from_distances(
+                    wall_clearance=float(details["wall_clearance"]),
+                    object_clearance=float(details["scoring_object_clearance"]),
+                ),
+            ) * semantic_gate
+            self._accumulate_anchor_profile("score_sec", time.perf_counter() - score_t0)
             anchor = AnchorNode(
                 id=f"anchor_{obj.id}",
                 anchor_type="object",
@@ -969,11 +1055,15 @@ class SemanticSceneGraph:
                 best_anchor = anchor
 
         if best_anchor is not None:
+            self._accumulate_anchor_profile("object_anchor_total_sec", time.perf_counter() - object_t0)
             return best_anchor
 
+        fallback_t0 = time.perf_counter()
         fallback_anchor = self._fallback_object_anchor(obj, room, room_objects)
+        self._accumulate_anchor_profile("fallback_sec", time.perf_counter() - fallback_t0)
         if fallback_anchor and debug:
             fallback_anchor.candidate_positions = debug_candidates
+        self._accumulate_anchor_profile("object_anchor_total_sec", time.perf_counter() - object_t0)
         return fallback_anchor
 
     def _remove_existing_anchor_layer(self) -> None:
@@ -982,6 +1072,7 @@ class SemanticSceneGraph:
         self.anchors.clear()
 
     def insert_anchor_nodes_into_graph(self, anchors: Sequence[AnchorNode]) -> None:
+        insert_t0 = time.perf_counter()
         for anchor in anchors:
             self.anchors[anchor.id] = anchor
             self.graph.add_node(anchor.id, **anchor.get_attributes())
@@ -989,6 +1080,7 @@ class SemanticSceneGraph:
             self._add_relation_edge(anchor.id, anchor.target_id, "FOR")
             if anchor.floor_id is not None and anchor.floor_id in self.graph.nodes:
                 self._add_relation_edge(anchor.id, anchor.floor_id, "ON_FLOOR")
+        self._accumulate_anchor_profile("insert_sec", time.perf_counter() - insert_t0)
 
     def generate_room_anchors(self, debug: bool = False) -> List[AnchorNode]:
         anchors: List[AnchorNode] = []
@@ -1055,6 +1147,7 @@ class SemanticSceneGraph:
         show_anchor_links: bool = True,
         show_anchor_candidates: bool = False,
         show_relations: bool = True,
+        verbose: bool = False,
     ) -> None:
         import matplotlib.pyplot as plt
 
@@ -1167,7 +1260,8 @@ class SemanticSceneGraph:
 
         if save_path:
             fig.savefig(save_path, dpi=300, bbox_inches="tight")
-            print(f"✅ BEV Scene Graph 已保存至 {save_path}")
+            if verbose:
+                print(f"✅ BEV Scene Graph 已保存至 {save_path}")
             plt.close(fig)
         else:
             plt.show()
@@ -1177,12 +1271,14 @@ class SemanticSceneGraph:
         save_path: Optional[str] = "scene_graph_2d.png",
         show_anchor_links: bool = True,
         show_anchor_candidates: bool = False,
+        verbose: bool = False,
     ) -> None:
         self.visualize_bev_graph(
             save_path=save_path,
             show_anchor_links=show_anchor_links,
             show_anchor_candidates=show_anchor_candidates,
             show_relations=True,
+            verbose=verbose,
         )
 
 

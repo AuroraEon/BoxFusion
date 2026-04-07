@@ -19,7 +19,19 @@ ImgNorm = tvf.Compose([
 ])
 
 
-def nms_3d(instance_lists, box_manager, boxes, scores, init_id, cam_poses, box_size,  iou_threshold=0.5,merge_upper=0.7,merge_lower=0.3): #merge_lower=0.3/0.1
+def nms_3d(
+    instance_lists,
+    box_manager,
+    boxes,
+    scores,
+    init_id,
+    cam_poses,
+    box_size,
+    iou_threshold=0.5,
+    merge_upper=0.7,
+    merge_lower=0.3,
+    active_candidate_mask=None,
+): #merge_lower=0.3/0.1
     """
     Performs 3D Non-Maximum Suppression (NMS) on bounding boxes.
     This function implements 3D NMS to filter overlapping 3D bounding boxes based on their scores and IoU.
@@ -54,6 +66,10 @@ def nms_3d(instance_lists, box_manager, boxes, scores, init_id, cam_poses, box_s
 
     keep = []
     success_nms = []
+    if active_candidate_mask is None:
+        active_candidate_mask = np.ones(boxes.shape[0], dtype=np.bool_)
+    else:
+        active_candidate_mask = np.asarray(active_candidate_mask, dtype=np.bool_)
 
     while order.size > 0:
         nms_box_inds = []
@@ -63,17 +79,24 @@ def nms_3d(instance_lists, box_manager, boxes, scores, init_id, cam_poses, box_s
         keep.append(i)
         
         temp_order = order[1:]
-        ious = calculate_obb_iou(boxes[i], boxes[order[1:]])
+        active_partner_positions = np.flatnonzero(active_candidate_mask[temp_order]) if active_candidate_mask[i] else np.zeros((0,), dtype=np.int64)
+        if active_partner_positions.size > 0:
+            compare_order = temp_order[active_partner_positions]
+            ious = calculate_obb_iou(boxes[i], boxes[compare_order])
+        else:
+            compare_order = np.zeros((0,), dtype=temp_order.dtype)
+            ious = np.zeros((0,), dtype=np.float32)
 
-     
-        inds = np.where(ious <= iou_threshold)[0]
+        suppress_positions = active_partner_positions[np.where(ious > iou_threshold)[0]]
+        keep_positions = np.ones(temp_order.shape[0], dtype=np.bool_)
+        keep_positions[suppress_positions] = False
         # i nms others, and is valid
         associate_inds = np.where(ious > iou_threshold)[0]
         if associate_inds.shape[0]>=1:
             instance_lists.valid_num[i] +=1
-            print('nms',i,'->',order[1+associate_inds])
+            print('nms',i,'->',compare_order[associate_inds])
 
-        nms_inds = np.where((ious > iou_threshold))[0]
+        nms_inds = suppress_positions
         nms_inds = np.asarray(nms_inds)
         '''
         record the fusion history
@@ -90,7 +113,7 @@ def nms_3d(instance_lists, box_manager, boxes, scores, init_id, cam_poses, box_s
             '''
             keep = box_manager.record(i, nms_box_inds, order_init_id, cam_poses, box_size, keep, boxes_centers)        
 
-        order = order[inds + 1] # +1 because inds is for temp_order
+        order = temp_order[keep_positions]
 
         if order.size == 1:
             keep.append(order[0])
@@ -117,10 +140,19 @@ def calculate_obb_iou(corners1, corners_others):
     Note:
         Uses Instances3D.obb_iou for individual IoU calculations between pairs of boxes.
     """
-    
-    iou = [Instances3D.obb_iou(corners1,corners_others[i]) for i in range(corners_others.shape[0])]
+    if corners_others.shape[0] == 0:
+        return np.zeros((0,), dtype=np.float32)
 
-    iou = np.asarray(iou) 
+    ref_min = np.min(corners1, axis=0)
+    ref_max = np.max(corners1, axis=0)
+    other_mins = np.min(corners_others, axis=1)
+    other_maxs = np.max(corners_others, axis=1)
+
+    # Cheap AABB overlap reject before the much heavier OBB/ConvexHull path.
+    aabb_overlap = np.all((ref_min <= other_maxs) & (other_mins <= ref_max), axis=1)
+    iou = np.zeros((corners_others.shape[0],), dtype=np.float32)
+    for i in np.flatnonzero(aabb_overlap):
+        iou[i] = Instances3D.obb_iou(corners1, corners_others[i])
 
     return iou
 
@@ -369,7 +401,7 @@ class Instances3D:
         self.projected_boxes = projected_boxes
 
 
-    def spatial_association(instance_lists, threshold, box_manager, cam_poses) :
+    def spatial_association(instance_lists, threshold, box_manager, cam_poses, active_candidate_mask=None) :
         """
         Args:
             instance Instances
@@ -390,7 +422,17 @@ class Instances3D:
         init_id = instance_lists.init_id.cpu().numpy() 
 
         # Execute spatial association
-        keep, success_nms = nms_3d(instance_lists, box_manager, boxes_corners, scores, init_id, cam_poses, box_size, iou_threshold=threshold)
+        keep, success_nms = nms_3d(
+            instance_lists,
+            box_manager,
+            boxes_corners,
+            scores,
+            init_id,
+            cam_poses,
+            box_size,
+            iou_threshold=threshold,
+            active_candidate_mask=active_candidate_mask,
+        )
         keep = sorted(keep)
         success_nms = sorted(success_nms)
 
@@ -408,7 +450,25 @@ class Instances3D:
         old_ins.pred_proj_xy[ind_old] = new_ins.pred_proj_xy[ind_new]
 
 
-    def correspondence_association(cfg, box_manager, cur_keep_idx, cur_success_nms, pred_instances, global_pred_box, all_pred_box, all_poses, per_frame_ins_cam_pose, frame_id, mask, intrinsic, all_kf_pose, threshold=0.33, H=480, W=640):  
+    def correspondence_association(
+        cfg,
+        box_manager,
+        cur_keep_idx,
+        cur_success_nms,
+        pred_instances,
+        global_pred_box,
+        all_pred_box,
+        all_poses,
+        per_frame_ins_cam_pose,
+        frame_id,
+        mask,
+        intrinsic,
+        all_kf_pose,
+        threshold=0.33,
+        H=480,
+        W=640,
+        allowed_global_indices=None,
+    ):  
 
         N_glo = len(global_pred_box)
     
@@ -422,6 +482,10 @@ class Instances3D:
 
         keep_idx = copy.deepcopy(np.asarray(mask))
         global_keep_idx = keep_idx[keep_idx<N_glo]
+        if allowed_global_indices is not None:
+            allowed_global_mask = np.zeros((N_glo,), dtype=np.bool_)
+            allowed_global_mask[np.asarray(allowed_global_indices, dtype=np.int64)] = True
+            global_keep_idx = global_keep_idx[allowed_global_mask[global_keep_idx]]
 
         small_idx = []
      
@@ -730,4 +794,3 @@ class Instances3D:
         return s
 
     __repr__ = __str__
-

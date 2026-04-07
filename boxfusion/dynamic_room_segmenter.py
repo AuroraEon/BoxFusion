@@ -16,6 +16,9 @@ class DynamicRoomSegmenter:
     def __init__(self, resolution=0.05, config=None):
         self.resolution = resolution
         room_cfg = dict((config or {}).get("room_segmentation", config or {}))
+        runtime_logging_cfg = dict((config or {}).get("runtime_logging", {}))
+        self.runtime_log_level = str(runtime_logging_cfg.get("log_level", "summary") or "summary").strip().lower()
+        self.runtime_quiet = bool(runtime_logging_cfg.get("quiet", False))
         
         # --- [修改点 1: 锁死全局原点] ---
         # 设定一个足够大的物理安全边界（假设室内场景不会超出当前 SLAM 坐标系系原点的 -50米）
@@ -68,6 +71,16 @@ class DynamicRoomSegmenter:
         self.tier2_next_cooldown_id = 1
         self.last_tier2_debug = {}
         # --------------------------------
+
+    def _log_verbose(self, message: str) -> None:
+        if self.runtime_quiet:
+            return
+        if self.runtime_log_level != "verbose":
+            return
+        print(message)
+
+    def _log_warning(self, message: str) -> None:
+        print(message)
 
     def _parse_roi(self, roi_value) -> Optional[Tuple[int, int, int, int]]:
         if roi_value is None:
@@ -905,9 +918,9 @@ class DynamicRoomSegmenter:
                 "mode": slice_mode,
                 "adaptive_applied": bool(adaptive_applied),
             }
-            print(f"\n[RoomSegmenter] 动态高度 -> 地板: {floor_z:.2f}m | 天花板: {ceiling_z:.2f}m")
+            self._log_verbose(f"\n[RoomSegmenter] 动态高度 -> 地板: {floor_z:.2f}m | 天花板: {ceiling_z:.2f}m")
             if adaptive_applied:
-                print(
+                self._log_verbose(
                     "[RoomSegmenter] Height slice fallback -> "
                     f"mode={slice_mode}, span={span_z:.2f}m, "
                     f"slice=[{self.slice_z_min:.2f}, {self.slice_z_max:.2f}]"
@@ -1050,17 +1063,17 @@ class DynamicRoomSegmenter:
         seg_state_t0 = time.perf_counter()
         segmentation_state = self._build_segmentation_state(full_map, frame_id=count)
         self.last_segmentation_profile["segmentation_state_build_sec"] = float(time.perf_counter() - seg_state_t0)
-        print(
+        self._log_verbose(
             f"[RoomSegmenter] 距离变换最大值: {segmentation_state['max_dist']:.2f} 像素 "
             f"(约 {segmentation_state['max_dist'] * self.resolution:.2f} 米)"
         )
-        print(
+        self._log_verbose(
             f"[RoomSegmenter] 提取到的原始轮廓: {segmentation_state['seed_components']}, "
             f"有效种子点(> {segmentation_state['min_area_m']}㎡): {segmentation_state['valid_seed_count']}"
         )
 
         if "markers" not in segmentation_state:
-            print("[RoomSegmenter] 警告: 未能提取到有效种子点，分割终止。")
+            self._log_warning("[RoomSegmenter] 警告: 未能提取到有效种子点，分割终止。")
             self.last_failure_debug = {
                 "reason": "no_valid_seed_points",
                 "frame_id": int(count),
@@ -1088,7 +1101,7 @@ class DynamicRoomSegmenter:
         markers = repaired_markers
         self.last_tier2_debug = tier2_debug
         if tier2_debug.get("repair_events"):
-            print(
+            self._log_verbose(
                 f"[RoomSegmenter] Tier2 repaired {len(tier2_debug['repair_events'])} unsupported split(s) "
                 f"in ROI {tier2_debug.get('roi_bbox')}"
             )
@@ -1130,7 +1143,7 @@ class DynamicRoomSegmenter:
                 door_box_count,
             )
             if self.last_door_debug:
-                print(
+                self._log_verbose(
                     "[RoomSegmenter] Door carving observability -> "
                     f"room_count_changed={self.last_door_debug['room_count_changed']}, "
                     f"room_adjacency_changed={self.last_door_debug['room_adjacency_changed']}, "

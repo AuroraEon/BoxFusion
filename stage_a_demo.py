@@ -106,6 +106,13 @@ def _run_single_sequence(
     if args.keyframe_gap is not None:
         cfg["data"]["gap"] = int(args.keyframe_gap)
     cfg["vis"]["rerun"] = bool(args.enable_rerun)
+    cfg["runtime_logging"] = {
+        "quiet": bool(args.quiet),
+        "log_level": str(args.log_level),
+        "runtime_print_interval": args.runtime_print_interval,
+        "per_profiled_frame_stdout": bool(str(args.log_level) == "verbose" and not args.no_per_profiled_frame_stdout),
+        "enable_readonly_tail_reference_audit": bool(args.enable_readonly_tail_reference_audit),
+    }
 
     dataset = get_dataset(cfg)
     if hasattr(dataset, "load_arkit_depth"):
@@ -158,6 +165,7 @@ def _run_single_sequence(
         total_frames=raw_total_frames,
         save_point_cloud=not args.core_only,
         write_debug_room_artifacts=not args.core_only,
+        runtime_console_config=dict(cfg.get("runtime_logging") or {}),
     )
 
     summary_payload = None
@@ -375,6 +383,15 @@ def main() -> None:
     parser.add_argument("--room-seg-interval", default=100, type=int)
     parser.add_argument("--capture-stride", default=None, type=int, help="Snapshot stride in frames")
     parser.add_argument("--runtime-profile-interval", default=None, type=int, help="Frame interval used for runtime-growth profile sampling")
+    parser.add_argument("--quiet", action="store_true", help="Keep stdout to warnings plus final summary lines")
+    parser.add_argument("--log-level", choices=["summary", "verbose"], default="summary", help="Console verbosity for runtime progress")
+    parser.add_argument("--runtime-print-interval", default=50, type=int, help="Progress print interval in processed frames; set 0 to disable periodic progress")
+    parser.add_argument("--no-per-profiled-frame-stdout", action="store_true", help="Suppress per-profiled-frame timing lines even in verbose mode")
+    parser.add_argument(
+        "--enable-readonly-tail-reference-audit",
+        action="store_true",
+        help="Run the stage-5 shadow-reference readonly-tail audit. Disabled by default for normal runtime and benchmark runs.",
+    )
     parser.add_argument("--core-only", action="store_true", help="Keep Tier 1 backend artifacts only and suppress optional demo/showcase outputs")
     parser.add_argument(
         "--full-rgb-replay",

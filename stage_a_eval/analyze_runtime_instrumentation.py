@@ -72,6 +72,13 @@ def safe_int(value: Any) -> Optional[int]:
     return int(value)
 
 
+def export_build_executed(row: Dict[str, Any]) -> bool:
+    value = row.get("build_executed")
+    if value is None:
+        return True
+    return bool(value)
+
+
 def stats(values: Iterable[Any], digits: int = 6) -> Dict[str, Optional[float]]:
     cleaned = sorted(float(value) for value in values if value is not None)
     if not cleaned:
@@ -207,7 +214,9 @@ def build_scene_analysis(
     segmentation_rows: Sequence[Dict[str, Any]],
     scene_summary: Dict[str, Any],
 ) -> Dict[str, Any]:
-    duplicate_frames = sorted({int(row["frame_idx"]) for row in export_rows if row.get("duplicate_same_frame")})
+    duplicate_frames = sorted(
+        {int(row["frame_idx"]) for row in export_rows if row.get("duplicate_same_frame") and export_build_executed(row)}
+    )
     scope_counter = Counter(str(row.get("scope_label")) for row in history_rows if row.get("scope_label"))
     stage5_worst = worst_row(frame_rows, "stage5_total_sec")
     stage3_worst = worst_row(frame_rows, "stage3_total_sec")
@@ -217,6 +226,21 @@ def build_scene_analysis(
         "profiled_frame_count": int(len(frame_rows)),
         "duplicate_export_frames": duplicate_frames,
         "duplicate_export_frame_count": int(len(duplicate_frames)),
+        "same_frame_full_export_reuse_count": int(
+            sum(1 for row in export_rows if bool(row.get("cache_hit")) and bool(row.get("same_frame_reuse_eligible")))
+        ),
+        "same_frame_fallback_rebuild_count": int(
+            sum(1 for row in export_rows if export_build_executed(row) and bool(row.get("same_frame_cache_frame_match")))
+        ),
+        "same_frame_fallback_rebuild_blockers": dict(
+            Counter(
+                str(row.get("same_frame_reuse_blocker"))
+                for row in export_rows
+                if export_build_executed(row)
+                and bool(row.get("same_frame_cache_frame_match"))
+                and row.get("same_frame_reuse_blocker")
+            )
+        ),
         "history_scope_counter": dict(scope_counter),
         "active_room_available_rate": None,
         "stage5_export_share_mean": stage_share(frame_rows, "snapshot_export_sec", "stage5_total_sec"),
@@ -637,7 +661,19 @@ def main() -> int:
             "total_step_sec": stats(row.get("total_step_sec") for row in combined_frame_rows),
         },
         "duplicate_export_frame_count": int(
-            len({int(row["frame_idx"]) for row in combined_export_rows if row.get("duplicate_same_frame")})
+            len(
+                {
+                    int(row["frame_idx"])
+                    for row in combined_export_rows
+                    if row.get("duplicate_same_frame") and export_build_executed(row)
+                }
+            )
+        ),
+        "same_frame_full_export_reuse_count": int(
+            sum(1 for row in combined_export_rows if bool(row.get("cache_hit")) and bool(row.get("same_frame_reuse_eligible")))
+        ),
+        "same_frame_fallback_rebuild_count": int(
+            sum(1 for row in combined_export_rows if export_build_executed(row) and bool(row.get("same_frame_cache_frame_match")))
         ),
         "history_scope_counter": dict(
             Counter(str(row.get("scope_label")) for row in combined_history_rows if row.get("scope_label"))
