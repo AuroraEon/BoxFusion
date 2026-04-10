@@ -823,6 +823,7 @@ def run(
             segmentation_updated=segmentation_updated,
             segmentation_cycle_idx=segmentation_cycle_idx,
             last_segmentation_frame_idx=last_segmentation_frame_idx,
+            export_profile=dict(room_segmenter.last_export_profile or {}),
         )
         return {
             "captured": True,
@@ -1873,6 +1874,7 @@ def run(
                 segmentation_updated=True,
                 segmentation_cycle_idx=segmentation_cycle_idx,
                 last_segmentation_frame_idx=last_segmentation_frame_idx,
+                export_profile=dict(room_segmenter.last_export_profile or {}),
             )
         demo_outputs = demo_recorder.finalize(
             {

@@ -70,6 +70,7 @@ class FloorAwareRoomSegmenter:
         self._latest_export_cache: Dict[str, Any] = {}
         self._latest_object_room_metadata_snapshot: Dict[str, Any] = {}
         self._next_world_room_id = 1
+        self._pending_segmentation_probe_config = self._load_pending_segmentation_probe_config()
 
     def _log_verbose(self, message: str) -> None:
         if self.runtime_quiet:
@@ -80,6 +81,168 @@ class FloorAwareRoomSegmenter:
 
     def _log_warning(self, message: str) -> None:
         print(message)
+
+    def _load_pending_segmentation_probe_config(self) -> Optional[Dict[str, Any]]:
+        raw_value = os.environ.get("BOXFUSION_PENDING_SEG_DIAG_CONFIG", "").strip()
+        if not raw_value:
+            return None
+        try:
+            if raw_value.startswith("{"):
+                payload = json.loads(raw_value)
+            else:
+                with open(raw_value, "r", encoding="utf-8") as f:
+                    payload = json.load(f)
+        except Exception as exc:
+            self._log_warning(f"[FloorAwareRoomSegmenter] Failed to load BOXFUSION_PENDING_SEG_DIAG_CONFIG: {exc}")
+            return None
+        if not isinstance(payload, dict):
+            return None
+        return payload
+
+    def _clone_segmenter_for_debug(self, segmenter: DynamicRoomSegmenter) -> DynamicRoomSegmenter:
+        clone = DynamicRoomSegmenter(resolution=segmenter.resolution, config=self.config)
+        clone.origin_x = float(segmenter.origin_x)
+        clone.origin_y = float(segmenter.origin_y)
+        clone.grid_width = int(segmenter.grid_width)
+        clone.grid_height = int(segmenter.grid_height)
+        clone.height_estimated = bool(segmenter.height_estimated)
+        clone.slice_z_min = float(segmenter.slice_z_min)
+        clone.slice_z_max = float(segmenter.slice_z_max)
+        clone.full_z_max = float(segmenter.full_z_max)
+        clone.last_height_slice_debug = dict(segmenter.last_height_slice_debug)
+        return clone
+
+    def _downsample_points_xyzrgb(self, points_xyzrgb: np.ndarray) -> Optional[np.ndarray]:
+        merged = np.asarray(points_xyzrgb, dtype=np.float64)
+        if len(merged) == 0:
+            return None
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(np.ascontiguousarray(merged[:, :3], dtype=np.float64))
+        if merged.shape[1] >= 6:
+            pcd.colors = o3d.utility.Vector3dVector(np.ascontiguousarray(merged[:, 3:6], dtype=np.float64))
+        pcd = pcd.voxel_down_sample(voxel_size=self.resolution)
+        points = np.asarray(pcd.points)
+        if len(points) == 0:
+            return None
+        colors = np.asarray(pcd.colors) if pcd.has_colors() else np.zeros((len(points), 3), dtype=np.float64)
+        return np.concatenate([points, colors], axis=1)
+
+    def _binary_delta_counts(self, before: np.ndarray, after: np.ndarray) -> Dict[str, int]:
+        if before.shape != after.shape:
+            min_h = min(before.shape[0], after.shape[0])
+            min_w = min(before.shape[1], after.shape[1])
+            before = before[:min_h, :min_w]
+            after = after[:min_h, :min_w]
+        before_on = before > 0
+        after_on = after > 0
+        return {
+            "0_to_1": int((~before_on & after_on).sum()),
+            "1_to_0": int((before_on & ~after_on).sum()),
+            "changed": int((before_on != after_on).sum()),
+            "before_on": int(before_on.sum()),
+            "after_on": int(after_on.sum()),
+        }
+
+    def _write_pending_segmentation_probe(
+        self,
+        floor_id: str,
+        count: int,
+        floor_state: FloorState,
+    ) -> None:
+        cfg = dict(self._pending_segmentation_probe_config or {})
+        if not cfg:
+            return
+        target_floor_id = str(cfg.get("floor_id", floor_id))
+        target_run_frame = cfg.get("target_run_frame")
+        if floor_id != target_floor_id:
+            return
+        if target_run_frame is not None and int(target_run_frame) != int(count):
+            return
+        requested_frames = [int(item) for item in cfg.get("pending_frames", [])]
+        if not requested_frames:
+            return
+        observed_frames = [int(item) for item in floor_state.pending_chunk_frame_indices]
+        if any(frame not in observed_frames for frame in requested_frames):
+            return
+        roi_bbox = cfg.get("roi_bbox_xyxy")
+        output_json = cfg.get("output_json")
+        if not output_json:
+            return
+
+        existing_points = floor_state.merged_points_xyzrgb
+        prefix_chunks: List[np.ndarray] = []
+        frame_reports: Dict[str, Any] = {}
+        ordered_targets = [frame for frame in observed_frames if frame in requested_frames]
+        for frame_idx, chunk in zip(observed_frames, floor_state.pending_chunks):
+            if len(chunk) == 0:
+                continue
+            prefix_chunks.append(chunk)
+            if frame_idx not in requested_frames:
+                continue
+            merge_parts: List[np.ndarray] = []
+            if existing_points is not None and len(existing_points) > 0:
+                merge_parts.append(existing_points)
+            merge_parts.extend(prefix_chunks)
+            merged_prefix = np.concatenate(merge_parts, axis=0) if merge_parts else np.zeros((0, 6), dtype=np.float64)
+            downsampled_prefix = self._downsample_points_xyzrgb(merged_prefix)
+            probe_segmenter = self._clone_segmenter_for_debug(floor_state.segmenter)
+            probe = probe_segmenter.inspect_pre_outside_boundary_debug(
+                np.ascontiguousarray(downsampled_prefix[:, :3], dtype=np.float64) if downsampled_prefix is not None else np.zeros((0, 3), dtype=np.float64),
+                frame_id=frame_idx,
+                roi_bbox=roi_bbox,
+            )
+            probe["merge_profile"] = {
+                "existing_merged_point_count": 0 if existing_points is None else int(len(existing_points)),
+                "pending_prefix_point_count": int(sum(len(item) for item in prefix_chunks)),
+                "merged_prefix_point_count_before_downsample": int(len(merged_prefix)),
+                "merged_prefix_point_count_after_downsample": 0 if downsampled_prefix is None else int(len(downsampled_prefix)),
+            }
+            frame_reports[str(int(frame_idx))] = probe
+
+        between_frame_deltas: Dict[str, Any] = {}
+        for before_frame, after_frame in zip(ordered_targets, ordered_targets[1:]):
+            before_report = frame_reports.get(str(int(before_frame)))
+            after_report = frame_reports.get(str(int(after_frame)))
+            if before_report is None or after_report is None:
+                continue
+            before_masks = before_report.get("_roi_masks", {})
+            after_masks = after_report.get("_roi_masks", {})
+            pair_key = f"{before_frame}_to_{after_frame}"
+            between_frame_deltas[pair_key] = {
+                "raw_hist_sum_delta": float(
+                    after_report.get("roi_report", {}).get("raw_hist", {}).get("sum", 0.0)
+                    - before_report.get("roi_report", {}).get("raw_hist", {}).get("sum", 0.0)
+                ),
+                "blurred_hist_sum_delta": float(
+                    after_report.get("roi_report", {}).get("blurred_hist", {}).get("sum", 0.0)
+                    - before_report.get("roi_report", {}).get("blurred_hist", {}).get("sum", 0.0)
+                ),
+                "stage_deltas": {},
+            }
+            for stage_name in ("raw_support", "blur_positive", "preclose", "postclose", "filled"):
+                before_mask = before_masks.get(stage_name)
+                after_mask = after_masks.get(stage_name)
+                if before_mask is None or after_mask is None:
+                    continue
+                between_frame_deltas[pair_key]["stage_deltas"][stage_name] = self._binary_delta_counts(before_mask, after_mask)
+
+        for report in frame_reports.values():
+            report.pop("_roi_masks", None)
+
+        payload = {
+            "floor_id": str(floor_id),
+            "target_run_frame": int(count),
+            "base_last_segmentation_frame_idx": None if floor_state.last_segmentation_frame_idx is None else int(floor_state.last_segmentation_frame_idx),
+            "observed_pending_frames": observed_frames,
+            "requested_pending_frames": requested_frames,
+            "roi_bbox_xyxy": [int(v) for v in roi_bbox] if isinstance(roi_bbox, (list, tuple)) and len(roi_bbox) == 4 else None,
+            "frame_reports": frame_reports,
+            "between_frame_deltas": between_frame_deltas,
+        }
+        output_path = os.path.abspath(str(output_json))
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2)
 
     def observe_frame(
         self,
@@ -231,6 +394,7 @@ class FloorAwareRoomSegmenter:
         floor_state = self._get_or_create_floor_state(floor_id)
         pending_chunk_count = self._pending_chunk_count(floor_state)
         pending_chunk_frame_indices = [int(item) for item in floor_state.pending_chunk_frame_indices]
+        self._write_pending_segmentation_probe(floor_id=floor_id, count=count, floor_state=floor_state)
         merge_t0 = time.perf_counter()
         merged_points = self._merge_floor_points(floor_state)
         merge_total_sec = time.perf_counter() - merge_t0

@@ -10,6 +10,18 @@ import cv2
 import numpy as np
 
 from boxfusion.floor_artifacts import display_floor_label as canonical_display_floor_label
+from boxfusion.online_topology_lifecycle import OnlineTopologyLifecycleManager
+from boxfusion.online_topology_working_snapshot import (
+    build_working_topology_snapshot,
+    build_working_vs_committed_report,
+    write_json as write_debug_topology_json,
+)
+from boxfusion.working_vs_committed_topology_timeline import (
+    build_working_vs_committed_timeline,
+    render_working_vs_committed_timeline_markdown,
+    write_json as write_debug_timeline_json,
+    write_markdown as write_debug_timeline_markdown,
+)
 from boxfusion.room_topology import RoomTopologyBuilder
 
 
@@ -724,6 +736,7 @@ class ClosedLoopDemoRecorder:
             directory.mkdir(parents=True, exist_ok=True)
 
         self.revisit_detector = RevisitDetector()
+        self.online_topology_lifecycle = OnlineTopologyLifecycleManager(sequence_id=self.sequence_id)
         self.snapshots: List[SnapshotRecord] = []
         self.replay_frames: List[ReplayFrameRecord] = []
         self.revisit_events: List[Dict[str, Any]] = []
@@ -765,6 +778,7 @@ class ClosedLoopDemoRecorder:
         segmentation_updated: bool = False,
         segmentation_cycle_idx: int = 0,
         last_segmentation_frame_idx: Optional[int] = None,
+        export_profile: Optional[Dict[str, Any]] = None,
     ) -> None:
         rgb_path = self._write_rgb_frame(frame_idx, image_rgb)
 
@@ -825,6 +839,20 @@ class ClosedLoopDemoRecorder:
         else:
             self.snapshots.append(snapshot)
         self.last_captured_frame = int(frame_idx)
+        self.online_topology_lifecycle.observe_room_tracking(
+            frame_idx=int(frame_idx),
+            timestamp=float(timestamp),
+            current_room_id=current_room_id,
+            source="snapshot",
+        )
+        self.online_topology_lifecycle.observe_export(
+            frame_idx=int(frame_idx),
+            timestamp=float(timestamp),
+            vector_map=vector_map,
+            tracking_report=tracking_report,
+            segmentation_updated=bool(segmentation_updated),
+            export_profile=export_profile,
+        )
 
     def record_frame(
         self,
@@ -863,6 +891,12 @@ class ClosedLoopDemoRecorder:
                 map_snapshot_index=None if map_snapshot is None else int(map_snapshot.index),
                 current_room_id=current_room_id,
             )
+        )
+        self.online_topology_lifecycle.observe_room_tracking(
+            frame_idx=int(frame_idx),
+            timestamp=float(timestamp),
+            current_room_id=current_room_id,
+            source="replay",
         )
 
     def _map_snapshot_for_replay_frame(self, frame: ReplayFrameRecord) -> Optional[SnapshotRecord]:
@@ -1215,10 +1249,20 @@ class ClosedLoopDemoRecorder:
         topology_json = self.log_dir / "topology_v0_1.json"
         topology_query_report_json = self.log_dir / "topology_query_report.json"
         topology_graphml = self.log_dir / "topology_v0_1.graphml" if self.write_graphml else None
+        online_topology_lifecycle_json = self.log_dir / "online_topology_lifecycle_v0_1.json"
+        working_topology_json = self.log_dir / "working_topology_v0_1.json"
+        working_vs_committed_topology_report_json = self.log_dir / "working_vs_committed_topology_report_v0_1.json"
+        working_vs_committed_topology_timeline_json = self.log_dir / "working_vs_committed_topology_timeline_v0_1.json"
+        working_vs_committed_topology_timeline_md = self.log_dir / "working_vs_committed_topology_timeline_v0_1.md"
         vertical_transition_evidence_json = self.log_dir / "vertical_transition_evidence.json"
         room_segmentation_diagnostics_json = self.log_dir / "room_segmentation_diagnostics.json" if self.write_room_segmentation_diagnostics else None
         floor_diagnostics_summary_json = self.log_dir / "floor_diagnostics_summary.json"
         topology_export_error = None
+        working_topology_export_error = None
+        working_vs_committed_timeline_export_error = None
+        room_topology = None
+        working_topology_payload = None
+        working_vs_committed_report_payload = None
         try:
             room_topology = RoomTopologyBuilder().build(
                 final_vector_map,
@@ -1255,6 +1299,77 @@ class ClosedLoopDemoRecorder:
         floor_diagnostics_payload["sequence_id"] = self.sequence_id
         with open(floor_diagnostics_summary_json, "w", encoding="utf-8") as f:
             json.dump(floor_diagnostics_payload, f, indent=2)
+        online_topology_working_lifecycle_payload = self.online_topology_lifecycle.finalize_report(
+            frame_idx=int(final_snapshot.frame_idx),
+            timestamp=float(final_snapshot.timestamp),
+            public_topology_export_succeeded=False,
+        )
+        self.online_topology_lifecycle.export_json(
+            online_topology_lifecycle_json,
+            frame_idx=int(final_snapshot.frame_idx),
+            timestamp=float(final_snapshot.timestamp),
+            public_topology_export_succeeded=topology_export_error is None,
+        )
+        with open(online_topology_lifecycle_json, "r", encoding="utf-8") as f:
+            online_topology_lifecycle_payload = json.load(f)
+        if topology_export_error is None and room_topology is not None:
+            try:
+                public_topology_payload = room_topology.to_dict(include_query_examples=False)
+                working_topology_payload = build_working_topology_snapshot(
+                    public_topology_payload,
+                    online_topology_working_lifecycle_payload,
+                    committed_room_ids=online_topology_lifecycle_payload.get("committed_rooms") or [],
+                    source_artifacts={
+                        "topology_json": str(topology_json),
+                        "lifecycle_json": str(online_topology_lifecycle_json),
+                    },
+                    lifecycle_semantics="pre_finalize_working_view",
+                )
+                working_vs_committed_report_payload = build_working_vs_committed_report(
+                    working_topology_payload,
+                    public_topology_payload,
+                    online_topology_working_lifecycle_payload,
+                    committed_room_ids=online_topology_lifecycle_payload.get("committed_rooms") or [],
+                    source_artifacts={
+                        "topology_json": str(topology_json),
+                        "lifecycle_json": str(online_topology_lifecycle_json),
+                        "working_topology_json": str(working_topology_json),
+                    },
+                )
+                write_debug_topology_json(working_topology_json, working_topology_payload)
+                write_debug_topology_json(
+                    working_vs_committed_topology_report_json,
+                    working_vs_committed_report_payload,
+                )
+            except Exception as exc:
+                working_topology_export_error = str(exc)
+        try:
+            working_vs_committed_timeline_payload = build_working_vs_committed_timeline(
+                online_topology_lifecycle_payload,
+                source_artifacts={
+                    "lifecycle_json": str(online_topology_lifecycle_json),
+                    "working_topology_json": None if working_topology_payload is None else str(working_topology_json),
+                    "working_vs_committed_topology_report_json": None
+                    if working_vs_committed_report_payload is None
+                    else str(working_vs_committed_topology_report_json),
+                    "topology_json": None if topology_export_error else str(topology_json),
+                },
+                source_path=online_topology_lifecycle_json,
+                final_comparison_payload=working_vs_committed_report_payload,
+            )
+            working_vs_committed_timeline_markdown = render_working_vs_committed_timeline_markdown(
+                working_vs_committed_timeline_payload
+            )
+            write_debug_timeline_json(
+                working_vs_committed_topology_timeline_json,
+                working_vs_committed_timeline_payload,
+            )
+            write_debug_timeline_markdown(
+                working_vs_committed_topology_timeline_md,
+                working_vs_committed_timeline_markdown,
+            )
+        except Exception as exc:
+            working_vs_committed_timeline_export_error = str(exc)
         presentation_parameters = self._presentation_parameters()
         presentation_quality_note = self._presentation_quality_note()
         summary_payload = dict(run_summary)
@@ -1289,6 +1404,15 @@ class ClosedLoopDemoRecorder:
                 "vertical_transition_evidence_json": str(vertical_transition_evidence_json),
                 "room_segmentation_diagnostics_json": None if room_segmentation_diagnostics_json is None else str(room_segmentation_diagnostics_json),
                 "floor_diagnostics_summary_json": str(floor_diagnostics_summary_json),
+                "online_topology_lifecycle_json": str(online_topology_lifecycle_json),
+                "working_topology_json": None if topology_export_error or working_topology_export_error else str(working_topology_json),
+                "working_vs_committed_topology_report_json": None if topology_export_error or working_topology_export_error else str(working_vs_committed_topology_report_json),
+                "working_vs_committed_topology_timeline_json": None
+                if working_vs_committed_timeline_export_error
+                else str(working_vs_committed_topology_timeline_json),
+                "working_vs_committed_topology_timeline_md": None
+                if working_vs_committed_timeline_export_error
+                else str(working_vs_committed_topology_timeline_md),
                 "runtime_growth_profile_csv": str(runtime_growth_profile_csv),
                 "runtime_growth_profile_json": str(runtime_growth_profile_json),
                 "runtime_growth_summary": self.runtime_growth_summary,
@@ -1302,10 +1426,16 @@ class ClosedLoopDemoRecorder:
                 "per_frame_pose_overlay_enabled": bool(self.full_rgb_replay and self.per_frame_pose_overlay),
                 "map_refresh_count": int(len(self.snapshots)),
                 "map_refresh_frame_indices": [int(snapshot.frame_idx) for snapshot in self.snapshots],
+                "online_topology_dirty_room_count": int(online_topology_lifecycle_payload.get("summary", {}).get("dirty_room_count", 0)),
+                "online_topology_candidate_complete_room_count": int(online_topology_lifecycle_payload.get("summary", {}).get("candidate_complete_room_count", 0)),
+                "online_topology_committed_room_count": int(online_topology_lifecycle_payload.get("summary", {}).get("committed_room_count", 0)),
+                "online_topology_blocked_commit_room_count": int(online_topology_lifecycle_payload.get("summary", {}).get("blocked_commit_room_count", 0)),
                 "topology_v0_1_json": None if topology_export_error else str(topology_json),
                 "topology_query_report_json": None if topology_export_error else str(topology_query_report_json),
                 "topology_v0_1_graphml": None if topology_export_error or topology_graphml is None else str(topology_graphml),
                 "topology_export_error": topology_export_error,
+                "working_topology_export_error": working_topology_export_error,
+                "working_vs_committed_timeline_export_error": working_vs_committed_timeline_export_error,
             }
         )
         with open(summary_json, "w", encoding="utf-8") as f:
@@ -1337,12 +1467,23 @@ class ClosedLoopDemoRecorder:
             "vertical_transition_evidence_json": str(vertical_transition_evidence_json),
             "room_segmentation_diagnostics_json": None if room_segmentation_diagnostics_json is None else str(room_segmentation_diagnostics_json),
             "floor_diagnostics_summary_json": str(floor_diagnostics_summary_json),
+            "online_topology_lifecycle_json": str(online_topology_lifecycle_json),
+            "working_topology_json": None if topology_export_error or working_topology_export_error else str(working_topology_json),
+            "working_vs_committed_topology_report_json": None if topology_export_error or working_topology_export_error else str(working_vs_committed_topology_report_json),
+            "working_vs_committed_topology_timeline_json": None
+            if working_vs_committed_timeline_export_error
+            else str(working_vs_committed_topology_timeline_json),
+            "working_vs_committed_topology_timeline_md": None
+            if working_vs_committed_timeline_export_error
+            else str(working_vs_committed_topology_timeline_md),
             "runtime_growth_profile_csv": str(runtime_growth_profile_csv),
             "runtime_growth_profile_json": str(runtime_growth_profile_json),
             "spotlight_dir": None if not spotlight_paths else str(self.spotlight_dir),
             "topology_v0_1_json": None if topology_export_error else str(topology_json),
             "topology_query_report_json": None if topology_export_error else str(topology_query_report_json),
             "topology_v0_1_graphml": None if topology_export_error or topology_graphml is None else str(topology_graphml),
+            "working_topology_export_error": working_topology_export_error,
+            "working_vs_committed_timeline_export_error": working_vs_committed_timeline_export_error,
         }
 
     def _snapshot_metric_summary(self, snapshot: SnapshotRecord) -> Dict[str, Any]:

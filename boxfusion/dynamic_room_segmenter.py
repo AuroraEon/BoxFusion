@@ -5,7 +5,7 @@ import cv2
 import os
 import time
 import yaml
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from boxfusion.scene_graph_builder import SemanticSceneGraph, RoomNode, ObjectNode
 from boxfusion.tier2_enablement import evaluate_tier2_enablement, finalize_tier2_enablement_for_shape
 
@@ -125,6 +125,281 @@ class DynamicRoomSegmenter:
             min(w, x1 + margin),
             min(h, y1 + margin),
         )
+
+    def _roi_slice(self, array: np.ndarray, roi: Optional[Tuple[int, int, int, int]]) -> np.ndarray:
+        if roi is None:
+            return array
+        x0, y0, x1, y1 = roi
+        return array[y0:y1, x0:x1]
+
+    def _binary_delta_counts(self, before: np.ndarray, after: np.ndarray) -> Dict[str, int]:
+        if before.shape != after.shape:
+            min_h = min(before.shape[0], after.shape[0])
+            min_w = min(before.shape[1], after.shape[1])
+            before = before[:min_h, :min_w]
+            after = after[:min_h, :min_w]
+        before_on = before > 0
+        after_on = after > 0
+        return {
+            "0_to_1": int((~before_on & after_on).sum()),
+            "1_to_0": int((before_on & ~after_on).sum()),
+            "changed": int((before_on != after_on).sum()),
+            "before_on": int(before_on.sum()),
+            "after_on": int(after_on.sum()),
+        }
+
+    def _summarize_roi_values(self, array: np.ndarray, roi: Optional[Tuple[int, int, int, int]]) -> Dict[str, Any]:
+        roi_view = self._roi_slice(array, roi)
+        if roi_view.size == 0:
+            return {
+                "sum": 0.0,
+                "nonzero_px": 0,
+                "max": 0.0,
+                "mean_nonzero": 0.0,
+            }
+        nonzero = roi_view[roi_view > 0]
+        return {
+            "sum": float(np.sum(roi_view)),
+            "nonzero_px": int(nonzero.size),
+            "max": float(np.max(roi_view)),
+            "mean_nonzero": 0.0 if nonzero.size == 0 else float(np.mean(nonzero)),
+        }
+
+    def _summarize_components_touching_roi(
+        self,
+        mask: np.ndarray,
+        roi: Optional[Tuple[int, int, int, int]],
+        bbox_offset: Tuple[int, int] = (0, 0),
+    ) -> List[Dict[str, Any]]:
+        mask_u8 = (mask > 0).astype(np.uint8)
+        if mask_u8.size == 0 or int(mask_u8.sum()) == 0:
+            return []
+        num_labels, labels_im, stats, _ = cv2.connectedComponentsWithStats(mask_u8, connectivity=8)
+        summaries: List[Dict[str, Any]] = []
+        if roi is None:
+            roi_mask = np.ones(mask_u8.shape, dtype=bool)
+        else:
+            x0, y0, x1, y1 = roi
+            roi_mask = np.zeros(mask_u8.shape, dtype=bool)
+            roi_mask[y0:y1, x0:x1] = True
+        offset_x, offset_y = bbox_offset
+        for label_idx in range(1, num_labels):
+            component = labels_im == label_idx
+            overlap_px = int((component & roi_mask).sum())
+            if overlap_px <= 0:
+                continue
+            x = int(stats[label_idx, cv2.CC_STAT_LEFT]) - offset_x
+            y = int(stats[label_idx, cv2.CC_STAT_TOP]) - offset_y
+            w = int(stats[label_idx, cv2.CC_STAT_WIDTH])
+            h = int(stats[label_idx, cv2.CC_STAT_HEIGHT])
+            summaries.append(
+                {
+                    "label": int(label_idx),
+                    "area_px": int(stats[label_idx, cv2.CC_STAT_AREA]),
+                    "bbox_xyxy": [x, y, x + w, y + h],
+                    "roi_overlap_px": int(overlap_px),
+                }
+            )
+        summaries.sort(key=lambda item: (-int(item["roi_overlap_px"]), -int(item["area_px"]), item["bbox_xyxy"]))
+        return summaries
+
+    def _summarize_contours_touching_roi(
+        self,
+        contours,
+        shape: Tuple[int, int],
+        roi: Optional[Tuple[int, int, int, int]],
+        bbox_offset: Tuple[int, int] = (0, 0),
+    ) -> List[Dict[str, Any]]:
+        if not contours:
+            return []
+        roi_mask = None
+        if roi is not None:
+            roi_mask = np.zeros(shape, dtype=np.uint8)
+            x0, y0, x1, y1 = roi
+            roi_mask[y0:y1, x0:x1] = 255
+        offset_x, offset_y = bbox_offset
+        summaries: List[Dict[str, Any]] = []
+        for contour in contours:
+            contour_mask = np.zeros(shape, dtype=np.uint8)
+            cv2.drawContours(contour_mask, [contour], -1, 255, -1)
+            overlap_px = int(contour_mask.sum() // 255) if roi_mask is None else int(cv2.countNonZero(cv2.bitwise_and(contour_mask, roi_mask)))
+            if overlap_px <= 0:
+                continue
+            x, y, w, h = cv2.boundingRect(contour)
+            moments = cv2.moments(contour)
+            centroid = None
+            if abs(float(moments.get("m00", 0.0))) > 1e-6:
+                centroid = [
+                    round(float(moments["m10"] / moments["m00"]) - offset_x, 3),
+                    round(float(moments["m01"] / moments["m00"]) - offset_y, 3),
+                ]
+            summaries.append(
+                {
+                    "area_px": float(cv2.contourArea(contour)),
+                    "bbox_xyxy": [int(x - offset_x), int(y - offset_y), int(x + w - offset_x), int(y + h - offset_y)],
+                    "roi_overlap_px": int(overlap_px),
+                    "centroid_xy": centroid,
+                }
+            )
+        summaries.sort(key=lambda item: (-int(item["roi_overlap_px"]), -float(item["area_px"]), item["bbox_xyxy"]))
+        return summaries
+
+    def inspect_pre_outside_boundary_debug(
+        self,
+        all_pts_merged,
+        frame_id: int = 0,
+        roi_bbox: Optional[Tuple[int, int, int, int]] = None,
+    ) -> Dict[str, Any]:
+        all_pts_np = np.asarray(all_pts_merged)
+        roi_unpadded = self._parse_roi(roi_bbox)
+        if len(all_pts_np) == 0:
+            return {
+                "frame_id": int(frame_id),
+                "failure_reason": "empty_point_cloud",
+                "roi_bbox_xyxy": None if roi_unpadded is None else list(map(int, roi_unpadded)),
+            }
+
+        if not self.height_estimated and len(all_pts_np) > 1000:
+            z_values = all_pts_np[:, 2]
+            floor_z = np.percentile(z_values, 2)
+            ceiling_z = np.percentile(z_values, 98)
+            span_z = max(float(ceiling_z - floor_z), 1e-6)
+            slice_z_min = float(floor_z + 1.5)
+            slice_z_max = float(ceiling_z - 0.3)
+            slice_mode = "default"
+            adaptive_applied = False
+            if slice_z_min >= slice_z_max:
+                adaptive_applied = True
+                slice_mode = "adaptive_low_span"
+                adaptive_upper_margin = min(0.3, max(0.1, 0.15 * span_z))
+                slice_z_min = float(floor_z + 0.6 * span_z)
+                slice_z_max = float(ceiling_z - adaptive_upper_margin)
+                if slice_z_min >= slice_z_max:
+                    slice_mode = "adaptive_mid_band"
+                    slice_mid = float(floor_z + 0.72 * span_z)
+                    half_band = max(0.05, 0.08 * span_z)
+                    slice_z_min = max(float(floor_z), float(slice_mid - half_band))
+                    slice_z_max = min(float(ceiling_z), float(slice_mid + half_band))
+            self.slice_z_min = float(slice_z_min)
+            self.slice_z_max = float(slice_z_max)
+            self.full_z_max = float(ceiling_z - min(0.2, max(0.05, 0.12 * span_z)))
+            self.height_estimated = True
+            self.last_height_slice_debug = {
+                "floor_z": float(floor_z),
+                "ceiling_z": float(ceiling_z),
+                "span_z": float(span_z),
+                "slice_z_min": float(self.slice_z_min),
+                "slice_z_max": float(self.slice_z_max),
+                "full_z_max": float(self.full_z_max),
+                "mode": slice_mode,
+                "adaptive_applied": bool(adaptive_applied),
+            }
+
+        max_x = np.max(all_pts_np[:, 0])
+        max_y = np.max(all_pts_np[:, 1])
+        needed_width = int(np.ceil((max_x - self.origin_x) / self.resolution)) + 20
+        needed_height = int(np.ceil((max_y - self.origin_y) / self.resolution)) + 20
+        self.grid_width = max(self.grid_width, needed_width)
+        self.grid_height = max(self.grid_height, needed_height)
+
+        z_mask_walls = (all_pts_np[:, 2] >= self.slice_z_min) & (all_pts_np[:, 2] <= self.slice_z_max)
+        z_mask_full = all_pts_np[:, 2] < self.full_z_max
+        pts_walls = all_pts_np[z_mask_walls][:, [0, 1]]
+        pts_full = all_pts_np[z_mask_full][:, [0, 1]]
+        if len(pts_full) == 0:
+            return {
+                "frame_id": int(frame_id),
+                "failure_reason": "empty_full_slice",
+                "roi_bbox_xyxy": None if roi_unpadded is None else list(map(int, roi_unpadded)),
+            }
+
+        num_bins = (self.grid_width, self.grid_height)
+        hist_range = [
+            [self.origin_x, self.origin_x + self.grid_width * self.resolution],
+            [self.origin_y, self.origin_y + self.grid_height * self.resolution],
+        ]
+        hist_full_raw, _, _ = np.histogram2d(pts_full[:, 0], pts_full[:, 1], bins=num_bins, range=hist_range)
+        hist_full_raw = hist_full_raw.T
+        hist_full_norm = cv2.normalize(hist_full_raw, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        hist_full_blur = cv2.GaussianBlur(hist_full_norm, (21, 21), 2)
+        _, threshold_preclose = cv2.threshold(hist_full_blur, 0, 255, cv2.THRESH_BINARY)
+
+        padding = 10
+        threshold_padded = cv2.copyMakeBorder(
+            threshold_preclose,
+            padding,
+            padding,
+            padding,
+            padding,
+            cv2.BORDER_CONSTANT,
+            value=0,
+        )
+        kernel_rect5 = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+        post_close_mask = cv2.morphologyEx(threshold_padded, cv2.MORPH_CLOSE, kernel_rect5, iterations=3)
+        contours, _ = cv2.findContours(post_close_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        filled_mask = np.zeros_like(post_close_mask)
+        cv2.drawContours(filled_mask, contours, -1, 255, -1)
+
+        roi_padded = None
+        if roi_unpadded is not None:
+            roi_padded = self._clip_roi_to_shape(
+                (
+                    roi_unpadded[0] + padding,
+                    roi_unpadded[1] + padding,
+                    roi_unpadded[2] + padding,
+                    roi_unpadded[3] + padding,
+                ),
+                post_close_mask.shape,
+            )
+            roi_unpadded = self._clip_roi_to_shape(roi_unpadded, threshold_preclose.shape)
+
+        raw_support_mask = (hist_full_raw > 0).astype(np.uint8) * 255
+        blur_positive_mask = (hist_full_blur > 0).astype(np.uint8) * 255
+        raw_roi_mask = self._roi_slice(raw_support_mask, roi_unpadded)
+        blur_roi_mask = self._roi_slice(blur_positive_mask, roi_unpadded)
+        preclose_roi_mask = self._roi_slice(threshold_preclose, roi_unpadded)
+        postclose_roi_mask = self._roi_slice(post_close_mask, roi_padded)
+        filled_roi_mask = self._roi_slice(filled_mask, roi_padded)
+
+        roi_report = {
+            "raw_hist": self._summarize_roi_values(hist_full_raw, roi_unpadded),
+            "normalized_hist": self._summarize_roi_values(hist_full_norm, roi_unpadded),
+            "blurred_hist": self._summarize_roi_values(hist_full_blur, roi_unpadded),
+            "raw_support_components": self._summarize_components_touching_roi(raw_support_mask, roi_unpadded),
+            "preclose_components": self._summarize_components_touching_roi(threshold_preclose, roi_unpadded),
+            "blur_positive_delta_vs_raw_support": self._binary_delta_counts(raw_roi_mask, blur_roi_mask),
+            "preclose_delta_vs_blur_positive": self._binary_delta_counts(blur_roi_mask, preclose_roi_mask),
+            "postclose_delta_vs_preclose": self._binary_delta_counts(preclose_roi_mask, postclose_roi_mask),
+            "fill_delta_vs_postclose": self._binary_delta_counts(postclose_roi_mask, filled_roi_mask),
+            "postclose_contours": self._summarize_contours_touching_roi(
+                contours,
+                post_close_mask.shape,
+                roi_padded,
+                bbox_offset=(padding, padding),
+            ),
+            "filled_mask_on_px": int((filled_roi_mask > 0).sum()),
+        }
+
+        return {
+            "frame_id": int(frame_id),
+            "failure_reason": None,
+            "roi_bbox_xyxy": None if roi_unpadded is None else list(map(int, roi_unpadded)),
+            "padding_px": int(padding),
+            "grid_width": int(self.grid_width),
+            "grid_height": int(self.grid_height),
+            "input_point_count": int(len(all_pts_np)),
+            "wall_slice_point_count": int(len(pts_walls)),
+            "full_slice_point_count": int(len(pts_full)),
+            "height_slice": dict(self.last_height_slice_debug),
+            "roi_report": roi_report,
+            "_roi_masks": {
+                "raw_support": raw_roi_mask.copy(),
+                "blur_positive": blur_roi_mask.copy(),
+                "preclose": preclose_roi_mask.copy(),
+                "postclose": postclose_roi_mask.copy(),
+                "filled": filled_roi_mask.copy(),
+            },
+        }
 
     def _tier2_enabled_for_shape(self, shape) -> bool:
         decision = self._resolve_tier2_policy(shape)

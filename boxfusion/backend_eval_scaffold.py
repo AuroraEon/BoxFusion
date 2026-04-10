@@ -108,6 +108,12 @@ OPTIONAL_DEMO_ARTIFACT_SPECS: Sequence[Dict[str, Any]] = (
         "required_for_backend_eval": False,
     },
     {
+        "key": "online_topology_lifecycle_json",
+        "relative_path": "logs/online_topology_lifecycle_v0_1.json",
+        "artifact_tier": "tier2_optional_demo",
+        "required_for_backend_eval": False,
+    },
+    {
         "key": "final_bev_png",
         "relative_path": "final/{sequence_name}_final_bev.png",
         "artifact_tier": "tier2_optional_demo",
