@@ -1,60 +1,10 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from boxfusion.floor_artifacts import display_floor_label
 from boxfusion.query_api import RoomTopologyQueryAPI
-from boxfusion.room_topology import _canonical_room_id
-
-
-def _canonical_room_from_timeline(value: Any) -> Optional[str]:
-    canonical = _canonical_room_id(value)
-    if canonical is not None:
-        return canonical
-    if value is None:
-        return None
-    text = str(value).strip()
-    if not text:
-        return None
-    if text.isdigit():
-        return f"room_{int(text)}"
-    return None
-
-
-def _round_float(value: Any, digits: int = 3) -> Optional[float]:
-    if value is None:
-        return None
-    return round(float(value), digits)
-
-
-def load_replay_observations(timeline_json: Path, query_api: RoomTopologyQueryAPI) -> List[Dict[str, Any]]:
-    rows = json.loads(Path(timeline_json).read_text(encoding="utf-8"))
-    observations: List[Dict[str, Any]] = []
-    for row in rows:
-        if row.get("row_type") not in {None, "replay_frame"}:
-            continue
-        room_id = _canonical_room_from_timeline(row.get("current_room_id"))
-        room_record = query_api.topology.get_room(room_id) if room_id else {}
-        floor_id = room_record.get("floor_id") if room_record else None
-        display_floor_id = room_record.get("display_floor_id") if room_record else None
-        observations.append(
-            {
-                "frame_idx": row.get("frame_idx"),
-                "timestamp": _round_float(row.get("timestamp")),
-                "replay_frame_idx": row.get("replay_frame_idx"),
-                "snapshot_idx": row.get("snapshot_idx"),
-                "current_room_id": room_id,
-                "current_floor_id": floor_id,
-                "current_display_floor_id": display_floor_id,
-                "current_floor_label": display_floor_label(floor_id, display_floor_id),
-                "vector_map_path": row.get("vector_map_path"),
-                "rgb_path": row.get("rgb_path"),
-                "raw_row": dict(row),
-            }
-        )
-    return observations
+from boxfusion.replay_timeline import load_replay_observations
 
 
 def extract_room_transition_observations(observations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

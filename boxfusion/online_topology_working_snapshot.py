@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
+from boxfusion.artifact_contract import ARTIFACT_SURFACE_WORKING
 from boxfusion.online_topology_lifecycle import RoomLifecycleState
 
 
@@ -485,12 +486,26 @@ def build_working_topology_snapshot(
         lifecycle_payload,
         committed_room_ids=committed_room_ids,
     )
+    working_payload.update(
+        {
+            "artifact_kind": "working_topology_debug",
+            "artifact_surface": ARTIFACT_SURFACE_WORKING,
+            "debug_only": True,
+            "public_default": False,
+            "non_public": True,
+            "truth_owner": "world_export",
+            "derived_layer": True,
+            "source_artifacts": dict(source_artifacts or {}),
+        }
+    )
     working_payload["metadata"] = dict(working_payload.get("metadata") or {})
     working_payload["metadata"].update(
         {
             "artifact_kind": "working_topology_debug",
+            "artifact_surface": ARTIFACT_SURFACE_WORKING,
             "debug_only": True,
             "public_default": False,
+            "non_public": True,
             "truth_owner": "world_export",
             "derived_layer": True,
             "working_semantics": {
@@ -587,6 +602,7 @@ def build_working_vs_committed_report(
         "version": "0.1",
         "sequence_id": working_topology_payload.get("sequence_id") or public_topology_payload.get("sequence_id"),
         "artifact_kind": "working_vs_committed_topology_report_debug",
+        "artifact_surface": ARTIFACT_SURFACE_WORKING,
         "debug_only": True,
         "public_default": False,
         "non_public": True,

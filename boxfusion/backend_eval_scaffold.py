@@ -6,6 +6,17 @@ from pathlib import Path
 from statistics import mean
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
+from boxfusion.artifact_contract import (
+    active_artifact_profile,
+    artifact_semantics_for_key,
+    artifact_surface_for_key,
+    build_artifact_contract,
+    load_timeline_rows,
+    summarize_artifact_surfaces,
+    summarize_timeline_rows,
+    surface_flags,
+)
+
 
 ACTIVE_HM3D_DATASET_ROOT = Path("/media/aurora/Program/dataset/hm3dsem_walks/val")
 ACTIVE_SEQUENCE_NAMES: Sequence[str] = (
@@ -81,6 +92,36 @@ CORE_BACKEND_ARTIFACT_SPECS: Sequence[Dict[str, Any]] = (
         "artifact_tier": "tier1_core_backend",
         "required_for_backend_eval": False,
     },
+    {
+        "key": "online_topology_lifecycle_json",
+        "relative_path": "logs/online_topology_lifecycle_v0_1.json",
+        "artifact_tier": "tier1_core_backend",
+        "required_for_backend_eval": False,
+    },
+    {
+        "key": "working_topology_json",
+        "relative_path": "logs/working_topology_v0_1.json",
+        "artifact_tier": "tier1_core_backend",
+        "required_for_backend_eval": False,
+    },
+    {
+        "key": "working_vs_committed_topology_report_json",
+        "relative_path": "logs/working_vs_committed_topology_report_v0_1.json",
+        "artifact_tier": "tier1_core_backend",
+        "required_for_backend_eval": False,
+    },
+    {
+        "key": "working_vs_committed_topology_timeline_json",
+        "relative_path": "logs/working_vs_committed_topology_timeline_v0_1.json",
+        "artifact_tier": "tier1_core_backend",
+        "required_for_backend_eval": False,
+    },
+    {
+        "key": "working_vs_committed_topology_timeline_md",
+        "relative_path": "logs/working_vs_committed_topology_timeline_v0_1.md",
+        "artifact_tier": "tier1_core_backend",
+        "required_for_backend_eval": False,
+    },
 )
 OPTIONAL_DEMO_ARTIFACT_SPECS: Sequence[Dict[str, Any]] = (
     {
@@ -104,12 +145,6 @@ OPTIONAL_DEMO_ARTIFACT_SPECS: Sequence[Dict[str, Any]] = (
     {
         "key": "room_segmentation_diagnostics_json",
         "relative_path": "logs/room_segmentation_diagnostics.json",
-        "artifact_tier": "tier2_optional_demo",
-        "required_for_backend_eval": False,
-    },
-    {
-        "key": "online_topology_lifecycle_json",
-        "relative_path": "logs/online_topology_lifecycle_v0_1.json",
         "artifact_tier": "tier2_optional_demo",
         "required_for_backend_eval": False,
     },
@@ -246,7 +281,8 @@ def expected_scene_artifacts(scene_root: Path) -> Dict[str, Path]:
 def _artifact_record(scene_root: Path, spec: Dict[str, Any]) -> Dict[str, Any]:
     artifact_path = Path(spec["path"])
     exists = artifact_path.exists()
-    return {
+    surface = artifact_surface_for_key(str(spec["key"]))
+    record = {
         "path": str(artifact_path),
         "relative_path": str(artifact_path.relative_to(scene_root)),
         "exists": bool(exists),
@@ -254,6 +290,9 @@ def _artifact_record(scene_root: Path, spec: Dict[str, Any]) -> Dict[str, Any]:
         "artifact_tier": str(spec["artifact_tier"]),
         "required_for_backend_eval": bool(spec["required_for_backend_eval"]),
     }
+    record.update(surface_flags(surface))
+    record["artifact_semantics"] = artifact_semantics_for_key(str(spec["key"]))
+    return record
 
 
 def collect_scene_manifest(
@@ -273,6 +312,12 @@ def collect_scene_manifest(
     floor_diag = load_json(artifacts["floor_diagnostics_summary_json"]) if artifacts["floor_diagnostics_summary_json"].exists() else {}
     vertical = load_json(artifacts["vertical_transition_evidence_json"]) if artifacts["vertical_transition_evidence_json"].exists() else {}
     runtime_growth_summary = dict(summary.get("runtime_growth_summary") or {})
+    artifact_profile = str(summary.get("artifact_profile") or active_artifact_profile(core_only=bool(summary.get("core_only_mode"))))
+    timeline_rows = load_timeline_rows(artifacts["timeline_json"]) if artifacts["timeline_json"].exists() else []
+    timeline_summary = summarize_timeline_rows(
+        timeline_rows,
+        timeline_path=artifacts["timeline_json"] if artifacts["timeline_json"].exists() else None,
+    )
 
     floor_count = None
     if floor_diag.get("per_floor"):
@@ -300,6 +345,7 @@ def collect_scene_manifest(
         str(spec["key"]): _artifact_record(scene_root, spec)
         for spec in artifact_specs
     }
+    artifact_surface_summary = summarize_artifact_surfaces(artifact_records)
     tier1_keys = [str(spec["key"]) for spec in artifact_specs if str(spec["artifact_tier"]) == "tier1_core_backend"]
     tier2_keys = [str(spec["key"]) for spec in artifact_specs if str(spec["artifact_tier"]) == "tier2_optional_demo"]
     required_backend_keys = [str(spec["key"]) for spec in artifact_specs if bool(spec["required_for_backend_eval"])]
@@ -331,6 +377,15 @@ def collect_scene_manifest(
     if missing_backend_keys:
         notes.append("missing_backend_artifacts:" + ",".join(sorted(missing_backend_keys)))
 
+    artifact_contract = build_artifact_contract(
+        artifact_profile=artifact_profile,
+        timeline_summary=timeline_summary,
+        topology_json_exists=artifact_records.get("topology_json", {}).get("exists", False),
+        topology_query_report_exists=artifact_records.get("topology_query_report_json", {}).get("exists", False),
+        online_topology_lifecycle_exists=artifact_records.get("online_topology_lifecycle_json", {}).get("exists", False),
+        working_vs_committed_timeline_exists=artifact_records.get("working_vs_committed_topology_timeline_json", {}).get("exists", False),
+    )
+
     manifest = {
         "version": "0.1",
         "generated_at_utc": utc_now_iso(),
@@ -339,6 +394,7 @@ def collect_scene_manifest(
         "scene_root": str(scene_root),
         "dataset_root": None if dataset_root is None else str(dataset_root),
         "dataset_sequence_dir": None if dataset_root is None else str(Path(dataset_root) / sequence_name),
+        "artifact_profile": artifact_profile,
         "status": status,
         "notes": notes,
         "world_model_summary": {
@@ -356,8 +412,12 @@ def collect_scene_manifest(
             "duration_sec": summary.get("duration_sec"),
             "average_fps": summary.get("average_fps"),
             "output_mode": summary.get("output_mode"),
+            "artifact_profile": artifact_profile,
             "core_only_mode": summary.get("core_only_mode"),
             "snapshot_count": summary.get("snapshot_count"),
+            "timeline_frame_count": timeline_summary.get("timeline_frame_count"),
+            "snapshot_timeline_frame_count": timeline_summary.get("snapshot_frame_count"),
+            "dense_replay_frame_count": timeline_summary.get("dense_replay_frame_count"),
             "runtime_growth_profile_sample_count": runtime_growth_summary.get("sample_count"),
             "runtime_growth_profile_interval_frames": runtime_growth_summary.get("profile_interval_frames"),
             "runtime_growth_risk_flag": runtime_growth_summary.get("runtime_risk_flag"),
@@ -381,6 +441,9 @@ def collect_scene_manifest(
             "backend_eval_relies_on_tier1_only": True,
             "legacy_root_policy": "migration_only_read_only_fallback",
         },
+        "artifact_contract": artifact_contract,
+        "artifact_capabilities": dict(artifact_contract.get("capabilities") or {}),
+        "artifact_surfaces": artifact_surface_summary,
         "artifact_tiers": {
             "tier1_core_backend": {
                 "artifact_keys": tier1_keys,

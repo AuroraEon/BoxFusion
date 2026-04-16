@@ -280,8 +280,12 @@ def test_repeated_candidate_to_blocked_transitions_are_counted() -> None:
 
     assert room_1["first_candidate_frame"] == 10
     assert room_1["last_candidate_frame"] == 40
+    assert room_1["first_finalized_private_frame"] == 30
     assert room_1["first_commit_ready_frame"] == 30
     assert room_1["first_committed_frame"] == 40
+    assert room_1["final_publication_state"] == "PUBLISHED"
+    assert room_1["final_finalization_blockers"] == []
+    assert room_1["final_publication_blockers"] == []
     assert room_1["candidate_to_blocked_transition_count"] == 1
     assert room_1["blocked_to_candidate_transition_count"] == 2
     assert room_1["total_candidate_refreshes"] == 3
@@ -302,6 +306,12 @@ def test_persistent_vs_transient_blockers_are_classified_conservatively() -> Non
 
     assert room_2["first_candidate_frame"] == 10
     assert room_2["first_committed_frame"] is None
+    assert room_2["final_publication_state"] == "FINALIZATION_PENDING"
+    assert room_2["final_finalization_blockers"] == [
+        "gateway_structure_not_stable",
+        "merge_or_split_pending",
+    ]
+    assert room_2["final_publication_blockers"] == []
     assert room_2["candidate_to_blocked_transition_count"] == 0
     assert room_2["total_candidate_but_blocked_refreshes"] == 4
     assert room_2["dominant_blocker"] == "gateway_structure_not_stable"
@@ -345,9 +355,13 @@ def test_final_blocker_heuristics_separate_structural_from_transient_like_cases(
 
     room_2_heuristic = next(row for row in scene_one["final_blocker_heuristics"] if row["room_id"] == "room_2")
     room_3_heuristic = next(row for row in scene_two["final_blocker_heuristics"] if row["room_id"] == "room_3")
+    room_3 = next(room for room in scene_two["rooms"] if room["room_id"] == "room_3")
 
     assert room_2_heuristic["classification"] == "likely_structural"
     assert room_3_heuristic["classification"] == "likely_noisy_or_transient"
+    assert room_3["final_publication_state"] == "FINALIZED_PRIVATE"
+    assert room_3["final_finalization_blockers"] == []
+    assert room_3["final_publication_blockers"] == ["room_currently_active"]
 
 
 def run_mock_test() -> None:

@@ -1,0 +1,8 @@
+# Empty request; this returns committed/public bundle metadata and an optional committed snapshot.
+---
+# `success=false` indicates a malformed request or invalid node configuration.
+bool success
+# Empty when the wrapper-level request succeeded.
+string error_code
+# JSON payload string carrying the current thin query-layer response body.
+string json_response

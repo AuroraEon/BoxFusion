@@ -9,6 +9,13 @@ from typing import Dict, List, Optional, Tuple
 
 import yaml
 
+from boxfusion.runtime_artifact_policy import (
+    RUNTIME_ARTIFACT_MODE_BENCHMARK,
+    RUNTIME_ARTIFACT_MODES,
+    RuntimeArtifactPolicy,
+    resolve_runtime_artifact_policy,
+)
+
 def _load_config(dataset_name: str, config_path: str, seq: Optional[str]) -> dict:
     if not os.path.exists(config_path):
         raise ValueError(f"Missing config path: {config_path}")
@@ -61,6 +68,72 @@ def _resolve_text_features_path(cli_value: Optional[str]) -> str:
     raise FileNotFoundError("Could not find a text-feature file. Pass --text-features explicitly.")
 
 
+def _load_text_features_tensor(torch_module, features_path: str, device: str):
+    try:
+        tensor = torch_module.load(features_path, map_location=device, weights_only=True)
+    except TypeError:
+        tensor = torch_module.load(features_path, map_location=device)
+    return tensor
+
+
+def _resolve_autogen_text_feature_path(cli_value: Optional[str], clip_model_name: str) -> str:
+    if cli_value:
+        return cli_value
+    if str(clip_model_name).lower() == "vit-b-32":
+        return "./data/class_features_small.pt"
+    safe_name = str(clip_model_name).replace("/", "_").replace(" ", "_")
+    return f"./data/class_features_{safe_name}.pt"
+
+
+def _load_or_build_text_features(
+    *,
+    torch_module,
+    open_clip_module,
+    clip_model,
+    clip_model_name: str,
+    text_class,
+    text_features_path: str,
+    requested_text_features_path: Optional[str],
+    device: str,
+):
+    text_features = _load_text_features_tensor(torch_module, text_features_path, device)
+    if not hasattr(text_features, "shape"):
+        raise TypeError(f"Expected a tensor in text feature file, got {type(text_features)}")
+    if len(text_features.shape) != 2:
+        raise ValueError(f"Expected [num_classes, dim] text features, got shape={tuple(text_features.shape)}")
+
+    clip_embed_dim = None
+    if hasattr(clip_model, "visual") and hasattr(clip_model.visual, "output_dim"):
+        clip_embed_dim = int(clip_model.visual.output_dim)
+    elif hasattr(clip_model, "text_projection") and clip_model.text_projection is not None:
+        clip_embed_dim = int(clip_model.text_projection.shape[-1])
+    else:
+        clip_embed_dim = int(clip_model.encode_image(torch_module.zeros((1, 3, 224, 224), device=device)).shape[-1])
+    text_embed_dim = int(text_features.shape[-1])
+
+    if text_embed_dim == clip_embed_dim:
+        return text_features.to(device), text_features_path, False
+
+    print(
+        "[warn] CLIP/text feature dim mismatch detected: "
+        f"clip={clip_embed_dim}, text={text_embed_dim}; rebuilding text features for {clip_model_name}."
+    )
+    tokenizer = open_clip_module.get_tokenizer(clip_model_name)
+    text_labels = text_class.tolist() if hasattr(text_class, "tolist") else list(text_class)
+    tokenized = tokenizer(text_labels).to(device)
+    with torch_module.no_grad():
+        rebuilt = clip_model.encode_text(tokenized)
+        rebuilt = rebuilt / rebuilt.norm(dim=-1, keepdim=True)
+
+    save_path = _resolve_autogen_text_feature_path(requested_text_features_path, clip_model_name)
+    save_dir = os.path.dirname(save_path)
+    if save_dir:
+        os.makedirs(save_dir, exist_ok=True)
+    torch_module.save(rebuilt.detach().cpu(), save_path)
+    print(f"[info] Rebuilt text features saved to: {save_path}")
+    return rebuilt.to(device), save_path, True
+
+
 def _infer_sequence_id(cfg: dict, seq: Optional[str]) -> str:
     if seq:
         return seq
@@ -77,6 +150,18 @@ def _infer_dataset_root_for_manifest(cfg: dict, sequence_id: str) -> Optional[st
     if datadir.name == sequence_id:
         return str(datadir.parent)
     return None
+
+
+def build_runtime_artifact_policy_from_args(args: argparse.Namespace) -> RuntimeArtifactPolicy:
+    return resolve_runtime_artifact_policy(
+        mode=getattr(args, "runtime_artifact_mode", RUNTIME_ARTIFACT_MODE_BENCHMARK),
+        service_mode=bool(getattr(args, "service_mode", False)),
+        core_only=bool(getattr(args, "core_only", False)),
+        requested_gt_visualization=bool(getattr(args, "viz_on_gt_points", True)),
+        requested_scene_graph_vis=bool(getattr(args, "save_scene_graph_vis", False)),
+        requested_full_rgb_replay=bool(getattr(args, "full_rgb_replay", False)),
+        requested_readonly_tail_reference_audit=bool(getattr(args, "enable_readonly_tail_reference_audit", False)),
+    )
 
 
 def _diagnostic_sort_key(item: dict) -> Tuple[float, float, int]:
@@ -105,13 +190,15 @@ def _run_single_sequence(
     cfg = _load_config(args.dataset_path, args.config, seq)
     if args.keyframe_gap is not None:
         cfg["data"]["gap"] = int(args.keyframe_gap)
+    artifact_policy = build_runtime_artifact_policy_from_args(args)
     cfg["vis"]["rerun"] = bool(args.enable_rerun)
     cfg["runtime_logging"] = {
         "quiet": bool(args.quiet),
         "log_level": str(args.log_level),
         "runtime_print_interval": args.runtime_print_interval,
         "per_profiled_frame_stdout": bool(str(args.log_level) == "verbose" and not args.no_per_profiled_frame_stdout),
-        "enable_readonly_tail_reference_audit": bool(args.enable_readonly_tail_reference_audit),
+        "enable_readonly_tail_reference_audit": bool(artifact_policy.readonly_tail_reference_audit),
+        "runtime_artifact_policy": artifact_policy.to_dict(),
     }
 
     dataset = get_dataset(cfg)
@@ -133,13 +220,13 @@ def _run_single_sequence(
         capture_stride_frames=args.capture_stride or int(cfg["data"]["gap"]),
         video_fps=args.video_fps,
         canvas_size=(args.canvas_width, args.canvas_height),
-        save_scene_graph_vis=bool(args.save_scene_graph_vis and not args.core_only),
-        spotlight_count=0 if args.core_only else args.spotlight_count,
+        save_scene_graph_vis=bool(artifact_policy.save_scene_graph_visualizations),
+        spotlight_count=0 if artifact_policy.core_only else args.spotlight_count,
         room_seg_interval=args.room_seg_interval,
         max_frames=args.max_frames,
-        full_rgb_replay=bool(args.full_rgb_replay and not args.core_only),
+        full_rgb_replay=bool(artifact_policy.full_rgb_replay),
         per_frame_pose_overlay=True,
-        core_only=args.core_only,
+        core_only=artifact_policy.core_only,
         runtime_profile_interval=args.runtime_profile_interval,
     )
 
@@ -154,17 +241,17 @@ def _run_single_sequence(
         augmentor,
         preprocessor,
         score_thresh=cfg["detection"]["score_thresh"],
-        viz_on_gt_points=args.viz_on_gt_points,
+        viz_on_gt_points=artifact_policy.prepare_gt_visualization_pointcloud,
         gap=cfg["data"]["gap"],
         re_vis=cfg["vis"]["rerun"],
         room_seg_interval=args.room_seg_interval,
         demo_recorder=recorder,
         debug_room_dir=str(recorder.output_root / "debug_room"),
-        save_scene_graph_vis=bool(args.save_scene_graph_vis and not args.core_only),
+        save_scene_graph_vis=artifact_policy.save_scene_graph_visualizations,
         max_frames=args.max_frames,
         total_frames=raw_total_frames,
-        save_point_cloud=not args.core_only,
-        write_debug_room_artifacts=not args.core_only,
+        save_point_cloud=artifact_policy.save_point_cloud,
+        write_debug_room_artifacts=artifact_policy.write_debug_room_artifacts,
         runtime_console_config=dict(cfg.get("runtime_logging") or {}),
     )
 
@@ -392,6 +479,17 @@ def main() -> None:
         action="store_true",
         help="Run the stage-5 shadow-reference readonly-tail audit. Disabled by default for normal runtime and benchmark runs.",
     )
+    parser.add_argument(
+        "--runtime-artifact-mode",
+        choices=RUNTIME_ARTIFACT_MODES,
+        default=RUNTIME_ARTIFACT_MODE_BENCHMARK,
+        help="benchmark/debug keeps current artifact defaults; service skips artifact-only work by default.",
+    )
+    parser.add_argument(
+        "--service-mode",
+        action="store_true",
+        help="Alias for --runtime-artifact-mode service.",
+    )
     parser.add_argument("--core-only", action="store_true", help="Keep Tier 1 backend artifacts only and suppress optional demo/showcase outputs")
     parser.add_argument(
         "--full-rgb-replay",
@@ -413,7 +511,11 @@ def main() -> None:
     parser.add_argument("--save-scene-graph-vis", action="store_true", help="Also save per-snapshot scene graph PNGs")
     args = parser.parse_args()
 
-    checkpoint = torch.load(args.model_path, map_location=args.device or "cpu")["model"]
+    try:
+        checkpoint_blob = torch.load(args.model_path, map_location=args.device or "cpu", weights_only=True)
+    except TypeError:
+        checkpoint_blob = torch.load(args.model_path, map_location=args.device or "cpu")
+    checkpoint = checkpoint_blob["model"]
     backbone_embedding_dimension = checkpoint["backbone.0.patch_embed.proj.weight"].shape[0]
     model = make_cubify_transformer(dimension=backbone_embedding_dimension, depth_model=True).eval()
     model.load_state_dict(checkpoint)
@@ -427,8 +529,19 @@ def main() -> None:
     )
     clip_model = clip_model.to(args.device).eval()
 
-    text_class = np.genfromtxt(args.class_txt, delimiter="\n", dtype=str)
-    text_features = torch.load(text_features_path, map_location=args.device).to(args.device)
+    text_class = np.atleast_1d(np.genfromtxt(args.class_txt, delimiter="\n", dtype=str))
+    text_features, resolved_text_features_path, rebuilt_text_features = _load_or_build_text_features(
+        torch_module=torch,
+        open_clip_module=open_clip,
+        clip_model=clip_model,
+        clip_model_name=args.clip_model_name,
+        text_class=text_class,
+        text_features_path=text_features_path,
+        requested_text_features_path=args.text_features,
+        device=args.device,
+    )
+    if rebuilt_text_features:
+        print(f"[info] Using rebuilt text features at: {resolved_text_features_path}")
 
     augmentor = Augmentor(("wide/image", "wide/depth"))
     preprocessor = Preprocessor()

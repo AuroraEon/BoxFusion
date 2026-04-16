@@ -50,6 +50,20 @@ from boxfusion.runtime_instrumentation import RuntimeInstrumentation
 WITHIN_FLOOR_RECENT_STEP_WINDOW = 25
 WITHIN_FLOOR_NEAR_XY_THRESHOLD_M = 4.0
 READONLY_TAIL_DRIFT_REFERENCE_MIN_RETAINED_COUNT = 60
+FAST_GT_RGB_RESIZE = os.environ.get("BOXFUSION_FAST_GT_RGB_RESIZE", "1").strip().lower() not in {"0", "false", "no", "off"}
+
+
+def _resize_rgb_to_depth(image_chw: torch.Tensor, target_hw) -> torch.Tensor:
+    if tuple(image_chw.shape[-2:]) == tuple(target_hw):
+        resized = image_chw
+    else:
+        resized = F.interpolate(
+            image_chw.unsqueeze(0).float(),
+            size=tuple(target_hw),
+            mode="bicubic",
+            align_corners=False,
+        )[0]
+    return resized.permute(1, 2, 0).float().div_(255.0)
 
 
 def _should_defer_stage3_full_export(
@@ -702,9 +716,16 @@ def run(
         sequence_id=str(getattr(demo_recorder, "sequence_id", "runtime_session")),
         output_dir=instrumentation_output_dir,
     )
+    preinfer_detail_enabled = str(os.environ.get("BOXFUSION_PREINFER_DETAIL", "")).strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     console_cfg = dict(cfg.get("runtime_logging", {}) or {})
     if runtime_console_config:
         console_cfg.update(runtime_console_config)
+    runtime_artifact_policy = dict(console_cfg.get("runtime_artifact_policy") or {})
     readonly_tail_reference_audit_enabled = _readonly_tail_reference_audit_enabled(console_cfg)
     runtime_console = RuntimeConsoleLogger(
         sequence_id=str(getattr(demo_recorder, "sequence_id", "runtime_session")),
@@ -858,6 +879,8 @@ def run(
         # 阶段 1: 数据加载与预处理 (Data Loading & Preprocessing)
         # ---------------------------------------------------------
         t_data_end = time.time()
+        preinfer_profile = {}
+        preinfer_sample_unpack_t0 = time.perf_counter()
         
         sample_video_id = sample["meta"]["video_id"] #(['sensor_info', 'wide', 'gt', 'meta'])
         pose = sample['sensor_info'].gt.RT
@@ -897,24 +920,81 @@ def run(
 
         if Box_Fuser.update_K_flag == False:
             Box_Fuser.update_intrinsics(sample["sensor_info"].wide.image.size,sample["sensor_info"].wide.image.K[-1].numpy()) #size:[W,H]
+        preinfer_profile["preinfer_sample_unpack_sec"] = float(time.perf_counter() - preinfer_sample_unpack_t0)
 
         xyzrgb = None
+        gt_pointcloud_t0 = time.perf_counter()
         if viz_on_gt_points and sample["sensor_info"].has("gt"):
             # Backproject GT depth to world so we can compare our predictions.
             depth_gt = sample["wide"]["depth"][-1]
-            matched_image = torch.tensor(np.array(Image.fromarray(image).resize((depth_gt.shape[1], depth_gt.shape[0]))))
+            if FAST_GT_RGB_RESIZE:
+                matched_image = _resize_rgb_to_depth(sample["wide"]["image"][-1], depth_gt.shape)
+            else:
+                matched_image = torch.tensor(
+                    np.array(Image.fromarray(image).resize((depth_gt.shape[1], depth_gt.shape[0]))),
+                    dtype=torch.float32,
+                ).div_(255.0)
             # Feel free to change max_depth, but know CA is only trained up to 5m.
             xyz, valid = unproject(depth_gt, sample["sensor_info"].gt.depth.K[-1], pose.squeeze(), max_depth=10.0)
-            xyzrgb = torch.cat((xyz, matched_image / 255.0), dim=-1)[valid]            
+            xyzrgb = torch.cat((xyz, matched_image), dim=-1)[valid]
+        preinfer_profile["preinfer_gt_pointcloud_prep_sec"] = float(time.perf_counter() - gt_pointcloud_t0)
                     
+        package_t0 = time.perf_counter()
         packaged = augmentor.package(sample)
+        preinfer_profile["preinfer_augmentor_package_sec"] = float(time.perf_counter() - package_t0)
+        augmentor_profile = dict(getattr(augmentor, "last_profile", {}) or {})
+        if preinfer_detail_enabled:
+            preinfer_profile["preinfer_augmentor_sensor_info_deepcopy_sec"] = float(
+                augmentor_profile.get("sensor_info_deepcopy_sec", 0.0)
+            )
+            preinfer_profile["preinfer_augmentor_measurement_wrap_sec"] = float(
+                augmentor_profile.get("measurement_wrap_sec", 0.0)
+            )
+        device_move_t0 = time.perf_counter()
         packaged = move_input_to_current_device(packaged, device)
+        preinfer_profile["preinfer_device_move_sec"] = float(time.perf_counter() - device_move_t0)
+        preprocess_t0 = time.perf_counter()
         packaged = preprocessor.preprocess([packaged])
+        preinfer_profile["preinfer_preprocess_total_sec"] = float(time.perf_counter() - preprocess_t0)
+        preprocessor_profile = dict(getattr(preprocessor, "last_profile", {}) or {})
+        if preinfer_detail_enabled:
+            preinfer_profile["preinfer_preprocess_normalize_sec"] = float(
+                preprocessor_profile.get("normalize_total_sec", 0.0)
+            )
+            preinfer_profile["preinfer_preprocess_depth_normalize_sec"] = float(
+                preprocessor_profile.get("depth_normalize_sec", 0.0)
+            )
+            preinfer_profile["preinfer_preprocess_image_normalize_sec"] = float(
+                preprocessor_profile.get("image_normalize_sec", 0.0)
+            )
+            preinfer_profile["preinfer_preprocess_batch_sec"] = float(
+                preprocessor_profile.get("batch_total_sec", 0.0)
+            )
+            preinfer_profile["preinfer_preprocess_image_batch_sec"] = float(
+                preprocessor_profile.get("image_batch_sec", 0.0)
+            )
+            preinfer_profile["preinfer_preprocess_depth_batch_sec"] = float(
+                preprocessor_profile.get("depth_batch_sec", 0.0)
+            )
 
         # ---------------------------------------------------------
         # 阶段 2: 主模型推理 (Network Inference)
         # ---------------------------------------------------------
         t_infer_start = time.time()
+        preinfer_total_sec = float(t_infer_start - t_data_end)
+        preinfer_profile["preinfer_total_sec"] = preinfer_total_sec
+        preinfer_accounted_sum_sec = float(
+            preinfer_profile.get("preinfer_sample_unpack_sec", 0.0)
+            + preinfer_profile.get("preinfer_gt_pointcloud_prep_sec", 0.0)
+            + preinfer_profile.get("preinfer_augmentor_package_sec", 0.0)
+            + preinfer_profile.get("preinfer_device_move_sec", 0.0)
+            + preinfer_profile.get("preinfer_preprocess_total_sec", 0.0)
+        )
+        preinfer_profile["preinfer_accounted_sum_sec"] = preinfer_accounted_sum_sec
+        preinfer_profile["preinfer_unaccounted_remainder_sec"] = float(
+            preinfer_total_sec - preinfer_accounted_sum_sec
+        )
+        runtime_profiler.add_values(count, preinfer_profile)
         frame_floor_observed = False
         
         # Every gap nth frame is selected as keyframe
@@ -1885,6 +1965,8 @@ def run(
                 "point_cloud_path": pc_save_name,
                 "final_vector_map_path": demo_recorder.latest_vector_map_path,
                 "runtime_instrumentation_summary": runtime_instrumentation_summary,
+                "runtime_artifact_mode": runtime_artifact_policy.get("mode"),
+                "runtime_artifact_policy": runtime_artifact_policy,
                 **runtime_instrumentation_paths,
             }
         )
@@ -1909,6 +1991,8 @@ def run(
         "point_cloud_path": pc_save_name,
         "demo_outputs": demo_outputs,
         "runtime_instrumentation_summary": runtime_instrumentation_summary,
+        "runtime_artifact_mode": runtime_artifact_policy.get("mode"),
+        "runtime_artifact_policy": runtime_artifact_policy,
         **runtime_instrumentation_paths,
     }
 

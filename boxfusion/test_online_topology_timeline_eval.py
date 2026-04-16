@@ -119,9 +119,17 @@ def test_refresh_history_is_exported_and_summarized() -> None:
 
     assert summary["history_mode"] == "refresh_history"
     assert room_1["first_seen_frame"] == 0
+    assert room_1["first_candidate_formed_frame"] == 10
     assert room_1["first_candidate_complete_frame"] == 10
+    assert room_1["first_finalized_private_frame"] == 20
     assert room_1["first_commit_ready_frame"] == 20
     assert room_1["first_committed_frame"] is None
+    assert room_1["final_publication_state"] == "COMMIT_READY"
+    assert room_1["publication_state_path"] == [
+        "ACTIVE_OBSERVING",
+        "FINALIZATION_PENDING",
+        "COMMIT_READY",
+    ]
     assert room_1["candidate_but_blocked_refresh_count"] == 1
     assert room_1["merge_or_split_pending_refresh_count"] == 1
     assert room_1["last_blocker_set_before_commit"] == [
@@ -147,6 +155,7 @@ def test_committed_frame_is_reported_from_finalized_artifact() -> None:
     room_1 = next(item for item in summary["rooms"] if item["room_id"] == "room_1")
 
     assert room_1["final_lifecycle_state"] == "committed"
+    assert room_1["final_publication_state"] == "PUBLISHED"
     assert room_1["first_commit_ready_frame"] == 20
     assert room_1["first_committed_frame"] == 20
     assert room_1["final_blocker_set"] == []
@@ -168,9 +177,12 @@ def test_final_only_artifact_falls_back_conservatively() -> None:
     assert summary["history_mode"] == "final_report_only"
     assert summary["history_limitations"]
     assert room_1["first_seen_frame"] == 0
+    assert room_1["first_candidate_formed_frame"] is None
     assert room_1["first_candidate_complete_frame"] is None
+    assert room_1["first_finalized_private_frame"] is None
     assert room_1["first_commit_ready_frame"] is None
     assert room_1["first_committed_frame"] == 20
+    assert room_1["final_publication_state"] == "PUBLISHED"
 
 
 def run_mock_test() -> None:

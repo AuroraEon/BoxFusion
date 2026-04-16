@@ -9,6 +9,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Deque, Dict, List, Optional, Set, Tuple
 
+from boxfusion.artifact_contract import ARTIFACT_SURFACE_LIFECYCLE
+
 
 _ROOM_SIGNATURE_GEOMETRY_QUANTIZATION_M = 0.10
 _ROOM_SIGNATURE_AREA_QUANTIZATION_M2 = 0.25
@@ -95,6 +97,40 @@ class CommitBlockReason(_StrEnum):
     ROOM_MISSING_FROM_LATEST_EXPORT = "room_missing_from_latest_export"
 
 
+class PublicationDiagnosticState(_StrEnum):
+    ACTIVE_OBSERVING = "ACTIVE_OBSERVING"
+    CANDIDATE_FORMED = "CANDIDATE_FORMED"
+    FINALIZATION_PENDING = "FINALIZATION_PENDING"
+    FINALIZED_PRIVATE = "FINALIZED_PRIVATE"
+    COMMIT_READY = "COMMIT_READY"
+    PUBLISHED = "PUBLISHED"
+
+
+PUBLICATION_STATE_MACHINE_VERSION = "candidate_room_publication_v1"
+PUBLICATION_STATE_ORDER = [
+    PublicationDiagnosticState.ACTIVE_OBSERVING.value,
+    PublicationDiagnosticState.CANDIDATE_FORMED.value,
+    PublicationDiagnosticState.FINALIZATION_PENDING.value,
+    PublicationDiagnosticState.FINALIZED_PRIVATE.value,
+    PublicationDiagnosticState.COMMIT_READY.value,
+    PublicationDiagnosticState.PUBLISHED.value,
+]
+FINALIZATION_BLOCKER_REASON_VALUES: Set[str] = {
+    CommitBlockReason.ROOM_SIGNATURE_NOT_STABLE.value,
+    CommitBlockReason.GATEWAY_STRUCTURE_NOT_STABLE.value,
+    CommitBlockReason.CONTAINMENT_NOT_STABLE.value,
+    CommitBlockReason.FLOOR_STATUS_NOT_STABLE.value,
+    CommitBlockReason.MERGE_OR_SPLIT_PENDING.value,
+    CommitBlockReason.VERTICAL_TRANSITION_PARTIAL.value,
+    CommitBlockReason.ROOM_FLOOR_VALIDATION_FAILED.value,
+    CommitBlockReason.ROOM_MISSING_FROM_LATEST_EXPORT.value,
+}
+PUBLICATION_BLOCKER_REASON_VALUES: Set[str] = {
+    CommitBlockReason.ROOM_CURRENTLY_ACTIVE.value,
+    CommitBlockReason.NO_LEAVE_LIKE_SIGNAL.value,
+}
+
+
 @dataclass
 class RoomWorkingTopologyStatus:
     room_id: str
@@ -136,8 +172,8 @@ class RoomWorkingTopologyStatus:
     gateway_signature_change_component_counts: Counter = field(default_factory=Counter)
     current_gateway_signature_components: Optional[Dict[str, Any]] = field(default=None, repr=False)
 
-    def to_dict(self) -> Dict[str, Any]:
-        return {
+    def to_dict(self, *, publication_diagnostics: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        payload = {
             "room_id": self.room_id,
             "lifecycle_state": self.lifecycle_state.value,
             "dirty": bool(self.dirty),
@@ -175,6 +211,9 @@ class RoomWorkingTopologyStatus:
             ),
             "recent_triggers": list(self.recent_triggers),
         }
+        if publication_diagnostics:
+            payload.update(dict(publication_diagnostics))
+        return payload
 
 
 class OnlineTopologyLifecycleManager:
@@ -588,10 +627,19 @@ class OnlineTopologyLifecycleManager:
                     status.dirty = False
                     status.dirty_reasons.clear()
 
-        rooms = [status.to_dict() for _, status in sorted(self.room_statuses.items())]
+        rooms = [
+            status.to_dict(
+                publication_diagnostics=self._publication_diagnostics_for_room(
+                    status,
+                    active_room_id=self.active_room_id,
+                )
+            )
+            for _, status in sorted(self.room_statuses.items())
+        ]
         dirty_rooms = [room["room_id"] for room in rooms if room["dirty"]]
         candidate_complete_rooms = [room["room_id"] for room in rooms if room["candidate_complete"]]
         committed_rooms = [room["room_id"] for room in rooms if room["lifecycle_state"] == RoomLifecycleState.COMMITTED.value]
+        publication_state_counts = Counter(str(room.get("publication_state")) for room in rooms if room.get("publication_state"))
         blocked_commit_rooms = {
             room["room_id"]: room["commit_block_reasons"]
             for room in rooms
@@ -599,12 +647,29 @@ class OnlineTopologyLifecycleManager:
         }
         return {
             "version": "0.1",
+            "artifact_kind": "online_topology_lifecycle_history",
+            "artifact_surface": ARTIFACT_SURFACE_LIFECYCLE,
+            "debug_only": True,
+            "public_default": False,
+            "non_public": True,
             "sequence_id": self.sequence_id,
             "frame_idx": None if frame_idx is None else int(frame_idx),
             "timestamp": None if timestamp is None else float(timestamp),
             "active_room_id": self.active_room_id,
             "active_floor_id": self.active_floor_id,
             "active_floor_status": self.active_floor_status,
+            "publication_state_machine": {
+                "version": PUBLICATION_STATE_MACHINE_VERSION,
+                "state_order": list(PUBLICATION_STATE_ORDER),
+                "finalization_blockers": sorted(FINALIZATION_BLOCKER_REASON_VALUES),
+                "publication_blockers": sorted(PUBLICATION_BLOCKER_REASON_VALUES),
+                "leave_like_signal_v1": (
+                    "room is not the active room and either last_departed_frame_idx is set "
+                    "or export_observation_count reached the stability refresh threshold"
+                ),
+                "debug_only": True,
+                "public_contract": False,
+            },
             "summary": {
                 "room_count": int(len(rooms)),
                 "refresh_count": int(len(self.refresh_history)),
@@ -614,6 +679,20 @@ class OnlineTopologyLifecycleManager:
                 "committed_room_count": int(len(committed_rooms)),
                 "commit_ready_room_count_pre_finalize": int(len(commit_ready_rooms_pre_finalize)),
                 "blocked_commit_room_count": int(len(blocked_commit_rooms)),
+                "publication_state_counts": dict(
+                    (state, int(publication_state_counts.get(state, 0)))
+                    for state in PUBLICATION_STATE_ORDER
+                    if int(publication_state_counts.get(state, 0)) > 0
+                ),
+                "finalized_private_room_count": int(
+                    sum(1 for room in rooms if room.get("publication_state") == PublicationDiagnosticState.FINALIZED_PRIVATE.value)
+                ),
+                "commit_ready_room_count": int(
+                    sum(1 for room in rooms if room.get("publication_state") == PublicationDiagnosticState.COMMIT_READY.value)
+                ),
+                "published_room_count": int(
+                    sum(1 for room in rooms if room.get("publication_state") == PublicationDiagnosticState.PUBLISHED.value)
+                ),
                 "trigger_count": int(sum(int(value) for value in self.trigger_counts.values())),
                 "trigger_counts": dict(sorted((str(key), int(value)) for key, value in self.trigger_counts.items())),
                 "public_topology_export_succeeded": bool(public_topology_export_succeeded),
@@ -716,10 +795,16 @@ class OnlineTopologyLifecycleManager:
         candidate_complete_rooms: List[str] = []
         commit_ready_rooms: List[str] = []
         blocked_commit_reasons: Dict[str, List[str]] = {}
+        publication_state_counts: Counter = Counter()
+        finalized_private_room_count = 0
 
         for room_id, status in sorted(self.room_statuses.items()):
             candidate_block_reasons = sorted(reason.value for reason in status.candidate_block_reasons)
             commit_block_reasons = sorted(reason.value for reason in status.commit_block_reasons)
+            publication_diagnostics = self._publication_diagnostics_for_room(
+                status,
+                active_room_id=self.active_room_id,
+            )
             room_payload = {
                 "room_id": room_id,
                 "first_seen_frame_idx": status.first_seen_frame_idx,
@@ -735,17 +820,24 @@ class OnlineTopologyLifecycleManager:
                 "present_in_latest_export": bool(status.present_in_latest_export),
                 "floor_id": status.floor_id,
                 "floor_status": status.floor_status,
+                "export_observation_count": int(status.export_observation_count),
                 "stable_refresh_opportunities_since_structural_delta": int(
                     status.stable_refresh_opportunities_since_structural_delta
                 ),
             }
+            room_payload.update(publication_diagnostics)
             rooms.append(room_payload)
+            publication_state = publication_diagnostics.get("publication_state")
+            if publication_state:
+                publication_state_counts[str(publication_state)] += 1
             if status.candidate_complete:
                 candidate_complete_rooms.append(room_id)
             if not status.commit_block_reasons:
                 commit_ready_rooms.append(room_id)
             if commit_block_reasons:
                 blocked_commit_reasons[room_id] = commit_block_reasons
+            if publication_diagnostics.get("publication_state") == PublicationDiagnosticState.FINALIZED_PRIVATE.value:
+                finalized_private_room_count += 1
 
         self.refresh_history.append(
             {
@@ -759,12 +851,39 @@ class OnlineTopologyLifecycleManager:
                     "candidate_complete_room_count": int(len(candidate_complete_rooms)),
                     "commit_ready_room_count": int(len(commit_ready_rooms)),
                     "blocked_commit_room_count": int(len(blocked_commit_reasons)),
+                    "publication_state_counts": dict(
+                        (state, int(publication_state_counts.get(state, 0)))
+                        for state in PUBLICATION_STATE_ORDER
+                        if int(publication_state_counts.get(state, 0)) > 0
+                    ),
+                    "finalized_private_room_count": int(finalized_private_room_count),
                 },
                 "candidate_complete_rooms": candidate_complete_rooms,
                 "commit_ready_rooms": commit_ready_rooms,
                 "blocked_commit_reasons": blocked_commit_reasons,
                 "rooms": rooms,
             }
+        )
+
+    def _publication_diagnostics_for_room(
+        self,
+        room: RoomWorkingTopologyStatus,
+        *,
+        active_room_id: Optional[str],
+    ) -> Dict[str, Any]:
+        room_payload = {
+            "room_id": room.room_id,
+            "lifecycle_state": room.lifecycle_state.value,
+            "candidate_complete": bool(room.candidate_complete),
+            "candidate_readiness_score": int(room.candidate_readiness_score),
+            "commit_block_reasons": sorted(reason.value for reason in room.commit_block_reasons),
+            "last_departed_frame_idx": room.last_departed_frame_idx,
+            "export_observation_count": int(room.export_observation_count),
+        }
+        return derive_publication_diagnostics_from_payload(
+            room_payload,
+            active_room_id=active_room_id,
+            stability_refresh_threshold=self.stability_refresh_threshold,
         )
 
     def _update_signature_state(
@@ -1137,6 +1256,115 @@ class OnlineTopologyLifecycleManager:
             if status.floor_id == floor_id:
                 return room_id
         return None
+
+
+def _sorted_str_values(values: List[Any]) -> List[str]:
+    return sorted(str(value) for value in values if value not in (None, ""))
+
+
+def split_commit_blockers(
+    commit_block_reasons: List[Any],
+) -> Tuple[List[str], List[str], List[str]]:
+    finalization_blockers: List[str] = []
+    publication_blockers: List[str] = []
+    unclassified_blockers: List[str] = []
+    for blocker in _sorted_str_values(list(commit_block_reasons or [])):
+        if blocker in FINALIZATION_BLOCKER_REASON_VALUES:
+            finalization_blockers.append(blocker)
+        elif blocker in PUBLICATION_BLOCKER_REASON_VALUES:
+            publication_blockers.append(blocker)
+        else:
+            unclassified_blockers.append(blocker)
+    return finalization_blockers, publication_blockers, unclassified_blockers
+
+
+def derive_leave_like_signal_v1(
+    room_payload: Dict[str, Any],
+    *,
+    active_room_id: Optional[Any],
+    stability_refresh_threshold: int,
+) -> Tuple[bool, Optional[str]]:
+    room_id = room_payload.get("room_id")
+    canonical_room_id = None if room_id in (None, "") else str(room_id)
+    canonical_active_room_id = None if active_room_id in (None, "") else str(active_room_id)
+    if canonical_room_id is not None and canonical_room_id == canonical_active_room_id:
+        return False, None
+    if room_payload.get("last_departed_frame_idx") is not None:
+        return True, "departed_active_room"
+    export_observation_count = room_payload.get("export_observation_count")
+    if export_observation_count is not None and int(export_observation_count) >= int(stability_refresh_threshold):
+        return True, "inactive_stable_observation_window"
+    return False, None
+
+
+def derive_publication_diagnostics_from_payload(
+    room_payload: Dict[str, Any],
+    *,
+    active_room_id: Optional[Any],
+    stability_refresh_threshold: int,
+) -> Dict[str, Any]:
+    finalization_blockers, publication_blockers, unclassified_blockers = split_commit_blockers(
+        list(room_payload.get("commit_block_reasons") or [])
+    )
+    effective_finalization_blockers = list(finalization_blockers) + list(unclassified_blockers)
+    leave_like_signal_v1, leave_like_signal_v1_source = derive_leave_like_signal_v1(
+        room_payload,
+        active_room_id=active_room_id,
+        stability_refresh_threshold=stability_refresh_threshold,
+    )
+    lifecycle_state = str(room_payload.get("lifecycle_state") or "")
+    candidate_complete = bool(room_payload.get("candidate_complete"))
+    export_observation_count = room_payload.get("export_observation_count")
+    candidate_readiness_score = room_payload.get("candidate_readiness_score")
+    candidate_room_formed_v1 = bool(
+        candidate_complete
+        or room_payload.get("last_departed_frame_idx") is not None
+        or lifecycle_state in {
+            RoomLifecycleState.CANDIDATE_COMPLETE.value,
+            RoomLifecycleState.MERGE_OR_SPLIT_PENDING.value,
+            RoomLifecycleState.REVISITABLE.value,
+        }
+        or (
+            export_observation_count is not None
+            and int(export_observation_count) >= int(stability_refresh_threshold)
+        )
+        or (
+            candidate_readiness_score is not None
+            and int(candidate_readiness_score) >= max(2, int(stability_refresh_threshold))
+        )
+    )
+    finalization_ready = not effective_finalization_blockers
+    finalized_private = bool(finalization_ready)
+    commit_ready = bool(finalization_ready and not publication_blockers)
+    published = lifecycle_state == RoomLifecycleState.COMMITTED.value
+
+    if published:
+        publication_state = PublicationDiagnosticState.PUBLISHED.value
+    elif commit_ready:
+        publication_state = PublicationDiagnosticState.COMMIT_READY.value
+    elif finalized_private:
+        publication_state = PublicationDiagnosticState.FINALIZED_PRIVATE.value
+    elif candidate_complete:
+        publication_state = PublicationDiagnosticState.FINALIZATION_PENDING.value
+    elif candidate_room_formed_v1:
+        publication_state = PublicationDiagnosticState.CANDIDATE_FORMED.value
+    else:
+        publication_state = PublicationDiagnosticState.ACTIVE_OBSERVING.value
+
+    return {
+        "publication_state_machine_version": PUBLICATION_STATE_MACHINE_VERSION,
+        "publication_state": publication_state,
+        "candidate_room_formed_v1": bool(candidate_room_formed_v1),
+        "leave_like_signal_v1": bool(leave_like_signal_v1),
+        "leave_like_signal_v1_source": leave_like_signal_v1_source,
+        "finalization_blockers": effective_finalization_blockers,
+        "publication_blockers": publication_blockers,
+        "unclassified_commit_blockers": unclassified_blockers,
+        "finalization_ready": bool(finalization_ready),
+        "finalized_private": bool(finalized_private),
+        "commit_ready": bool(commit_ready),
+        "published": bool(published),
+    }
 
 
 def _canonical_room_id(value: Optional[Any]) -> Optional[str]:

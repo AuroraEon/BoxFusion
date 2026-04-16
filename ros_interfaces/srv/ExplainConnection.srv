@@ -1,0 +1,11 @@
+# First room id in the committed/public topology export.
+string room_a
+# Second room id in the committed/public topology export.
+string room_b
+---
+# `success=false` indicates a malformed request or invalid node configuration.
+bool success
+# Empty when the wrapper-level request succeeded.
+string error_code
+# JSON payload string carrying the current thin query-layer response body.
+string json_response

@@ -9,6 +9,14 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import cv2
 import numpy as np
 
+from boxfusion.artifact_contract import (
+    TIMELINE_ROW_KIND_REPLAY,
+    TIMELINE_ROW_KIND_SNAPSHOT,
+    active_artifact_profile,
+    build_artifact_contract,
+    summarize_timeline_rows,
+    with_timeline_row_contract,
+)
 from boxfusion.floor_artifacts import display_floor_label as canonical_display_floor_label
 from boxfusion.online_topology_lifecycle import OnlineTopologyLifecycleManager
 from boxfusion.online_topology_working_snapshot import (
@@ -1143,6 +1151,7 @@ class ClosedLoopDemoRecorder:
         spotlight_paths: Dict[int, Dict[str, str]] = {}
         timeline_json = None
         timeline_csv = None
+        timeline_rows: List[Dict[str, Any]] = []
         revisit_json = None
         revisit_diagnostics_json = None
         revisit_diagnostics_csv = None
@@ -1239,6 +1248,12 @@ class ClosedLoopDemoRecorder:
                 f.write(f"- assessment: {quality.get('assessment')}\n")
                 f.write(f"- note: {quality.get('note')}\n")
 
+        timeline_summary = summarize_timeline_rows(
+            timeline_rows,
+            timeline_path=timeline_json,
+        )
+        artifact_profile = active_artifact_profile(core_only=self.core_only)
+
         summary_json = self.log_dir / "summary.json"
         final_snapshot = self.snapshots[-1]
         final_vector_map = final_snapshot.vector_map or {}
@@ -1270,9 +1285,14 @@ class ClosedLoopDemoRecorder:
                 transition_history=self._topology_transition_history(),
                 metadata={
                     "sequence_id": self.sequence_id,
+                    "artifact_profile": artifact_profile,
                     "snapshot_count": int(len(self.snapshots)),
-                    "replay_frame_count": int(len(self.replay_frames)),
-                    "replay_mode": "full_rgb_held_bev" if self.full_rgb_replay else "snapshot_only",
+                    "timeline_frame_count": int(timeline_summary.get("timeline_frame_count", 0)),
+                    "snapshot_frame_count": int(timeline_summary.get("snapshot_frame_count", 0)),
+                    "dense_replay_frame_count": int(timeline_summary.get("dense_replay_frame_count", 0)),
+                    "replay_frame_count": int(timeline_summary.get("dense_replay_frame_count", 0)),
+                    "replay_mode": timeline_summary.get("replay_mode"),
+                    "timeline_contract": dict(timeline_summary),
                     "room_seg_interval": self.room_seg_interval,
                 },
             )
@@ -1372,15 +1392,28 @@ class ClosedLoopDemoRecorder:
             working_vs_committed_timeline_export_error = str(exc)
         presentation_parameters = self._presentation_parameters()
         presentation_quality_note = self._presentation_quality_note()
+        artifact_contract = build_artifact_contract(
+            artifact_profile=artifact_profile,
+            timeline_summary=timeline_summary,
+            topology_json_exists=topology_export_error is None,
+            topology_query_report_exists=topology_export_error is None,
+            online_topology_lifecycle_exists=True,
+            working_vs_committed_timeline_exists=working_vs_committed_timeline_export_error is None,
+        )
         summary_payload = dict(run_summary)
         summary_payload.update(
             {
                 "sequence_id": self.sequence_id,
                 "output_mode": self.output_mode,
+                "artifact_profile": artifact_profile,
                 "core_only_mode": bool(self.core_only),
                 "optional_demo_artifacts_enabled": bool(self.enable_optional_demo_artifacts),
                 "snapshot_count": int(len(self.snapshots)),
-                "replay_frame_count": int(len(render_records)),
+                "timeline_schema": timeline_summary.get("schema_name"),
+                "timeline_frame_count": int(timeline_summary.get("timeline_frame_count", 0)),
+                "snapshot_timeline_frame_count": int(timeline_summary.get("snapshot_frame_count", 0)),
+                "dense_replay_frame_count": int(timeline_summary.get("dense_replay_frame_count", 0)),
+                "replay_frame_count": int(timeline_summary.get("dense_replay_frame_count", 0)),
                 "segmentation_cycle_count": int(max(snapshot.segmentation_cycle_idx for snapshot in self.snapshots)),
                 "revisit_event_count": int(len(self.revisit_events)),
                 "revisit_diagnostic_count": int(len(revisit_diagnostics)),
@@ -1420,7 +1453,10 @@ class ClosedLoopDemoRecorder:
                 "spotlight_count": int(len(spotlight_paths)),
                 "presentation_parameters": presentation_parameters,
                 "presentation_quality_note": presentation_quality_note,
-                "replay_mode": presentation_parameters.get("replay_mode"),
+                "timeline_contract": dict(timeline_summary),
+                "artifact_contract": artifact_contract,
+                "artifact_capabilities": dict(artifact_contract.get("capabilities") or {}),
+                "replay_mode": timeline_summary.get("replay_mode"),
                 "rgb_replay_frame_continuous": bool(self.full_rgb_replay),
                 "semantic_map_hold_enabled": bool(self.full_rgb_replay),
                 "per_frame_pose_overlay_enabled": bool(self.full_rgb_replay and self.per_frame_pose_overlay),
@@ -2202,43 +2238,47 @@ class ClosedLoopDemoRecorder:
                 tracking_matched_count, tracking_new_count = _tracking_counts(tracking_report)
                 diagnostic = diagnostics_by_frame.get(frame.frame_idx)
                 rows.append(
-                    {
-                        "row_type": "replay_frame",
-                        "replay_frame_idx": int(frame.index),
-                        "snapshot_idx": None if map_snapshot is None else int(map_snapshot.index),
-                        "frame_idx": int(frame.frame_idx),
-                        "timestamp": float(frame.timestamp),
-                        "segmentation_cycle_idx": int(frame.segmentation_cycle_idx),
-                        "last_segmentation_frame_idx": frame.last_segmentation_frame_idx,
-                        "segmentation_updated": bool(map_snapshot is not None and map_snapshot.frame_idx == frame.frame_idx and map_snapshot.segmentation_updated),
-                        "replay_mode": "full_rgb_held_bev",
-                        "rgb_frame_continuous": True,
-                        "map_display_state": map_context["display_state"],
-                        "semantic_map_held": bool(map_context["map_held"]),
-                        "map_refresh_triggered_here": bool(map_snapshot is not None and map_snapshot.frame_idx == frame.frame_idx),
-                        "map_refresh_frame_idx": map_context["refresh_frame_idx"],
-                        "map_refresh_type": map_context["refresh_type"],
-                        "current_room_id": frame.current_room_id,
-                        "room_count": int(len(vector_map.get("rooms", []))),
-                        "object_count": int(len(vector_map.get("objects", []))),
-                        "anchor_count": int(len(vector_map.get("anchors", []))),
-                        "gateway_count": int(topology["gateway_count"]),
-                        "adjacency_edge_count": int(topology["adjacency_edge_count"]),
-                        "doorway_count": int(topology["doorway_count"]),
-                        "open_passage_count": int(topology["open_passage_count"]),
-                        "tracking_matched_room_count": int(tracking_matched_count),
-                        "tracking_new_room_count": int(tracking_new_count),
-                        "revisit_event_count": 0 if map_snapshot is None or map_snapshot.frame_idx != frame.frame_idx else int(len(map_snapshot.revisit_events)),
-                        "cumulative_revisit_event_count": int(cumulative_revisit_events),
-                        "revisit_diagnostic_id": None if diagnostic is None else int(diagnostic["event_id"]),
-                        "revisit_trigger_reason": None if diagnostic is None else diagnostic["trigger_reason"],
-                        "matched_room_ids": "" if diagnostic is None else _join_ints(diagnostic["matched_room_ids"]),
-                        "map_reuse_happened": False if diagnostic is None else bool(diagnostic["new_room_avoided"]),
-                        "effect_frame_idx": None if diagnostic is None else int(diagnostic["effect_frame_idx"]),
-                        "pose_overlay_enabled": bool(self.per_frame_pose_overlay),
-                        "rgb_path": frame.rgb_path,
-                        "vector_map_path": None if map_snapshot is None else map_snapshot.vector_map_path,
-                    }
+                    with_timeline_row_contract(
+                        {
+                            "row_type": "replay_frame",
+                            "replay_frame_idx": int(frame.index),
+                            "snapshot_idx": None if map_snapshot is None else int(map_snapshot.index),
+                            "frame_idx": int(frame.frame_idx),
+                            "timestamp": float(frame.timestamp),
+                            "segmentation_cycle_idx": int(frame.segmentation_cycle_idx),
+                            "last_segmentation_frame_idx": frame.last_segmentation_frame_idx,
+                            "segmentation_updated": bool(map_snapshot is not None and map_snapshot.frame_idx == frame.frame_idx and map_snapshot.segmentation_updated),
+                            "replay_mode": "full_rgb_held_bev",
+                            "rgb_frame_continuous": True,
+                            "map_display_state": map_context["display_state"],
+                            "semantic_map_held": bool(map_context["map_held"]),
+                            "map_refresh_triggered_here": bool(map_snapshot is not None and map_snapshot.frame_idx == frame.frame_idx),
+                            "map_refresh_frame_idx": map_context["refresh_frame_idx"],
+                            "map_refresh_type": map_context["refresh_type"],
+                            "current_room_id": frame.current_room_id,
+                            "room_count": int(len(vector_map.get("rooms", []))),
+                            "object_count": int(len(vector_map.get("objects", []))),
+                            "anchor_count": int(len(vector_map.get("anchors", []))),
+                            "gateway_count": int(topology["gateway_count"]),
+                            "adjacency_edge_count": int(topology["adjacency_edge_count"]),
+                            "doorway_count": int(topology["doorway_count"]),
+                            "open_passage_count": int(topology["open_passage_count"]),
+                            "tracking_matched_room_count": int(tracking_matched_count),
+                            "tracking_new_room_count": int(tracking_new_count),
+                            "revisit_event_count": 0 if map_snapshot is None or map_snapshot.frame_idx != frame.frame_idx else int(len(map_snapshot.revisit_events)),
+                            "cumulative_revisit_event_count": int(cumulative_revisit_events),
+                            "revisit_diagnostic_id": None if diagnostic is None else int(diagnostic["event_id"]),
+                            "revisit_trigger_reason": None if diagnostic is None else diagnostic["trigger_reason"],
+                            "matched_room_ids": "" if diagnostic is None else _join_ints(diagnostic["matched_room_ids"]),
+                            "map_reuse_happened": False if diagnostic is None else bool(diagnostic["new_room_avoided"]),
+                            "effect_frame_idx": None if diagnostic is None else int(diagnostic["effect_frame_idx"]),
+                            "pose_overlay_enabled": bool(self.per_frame_pose_overlay),
+                            "rgb_path": frame.rgb_path,
+                            "vector_map_path": None if map_snapshot is None else map_snapshot.vector_map_path,
+                        },
+                        row_kind=TIMELINE_ROW_KIND_REPLAY,
+                        replay_mode="full_rgb_held_bev",
+                    )
                 )
             return rows
 
@@ -2249,43 +2289,47 @@ class ClosedLoopDemoRecorder:
             diagnostic = diagnostics_by_frame.get(snapshot.frame_idx)
             cumulative_revisit_events += len(snapshot.revisit_events)
             rows.append(
-                {
-                    "row_type": "snapshot",
-                    "replay_frame_idx": int(snapshot.index),
-                    "snapshot_idx": int(snapshot.index),
-                    "frame_idx": int(snapshot.frame_idx),
-                    "timestamp": float(snapshot.timestamp),
-                    "segmentation_cycle_idx": int(snapshot.segmentation_cycle_idx),
-                    "last_segmentation_frame_idx": snapshot.last_segmentation_frame_idx,
-                    "segmentation_updated": bool(snapshot.segmentation_updated),
-                    "replay_mode": "snapshot_only",
-                    "rgb_frame_continuous": False,
-                    "map_display_state": _update_mode(snapshot, diagnostic),
-                    "semantic_map_held": False,
-                    "map_refresh_triggered_here": True,
-                    "map_refresh_frame_idx": int(snapshot.frame_idx),
-                    "map_refresh_type": _update_mode(snapshot, diagnostic),
-                    "current_room_id": snapshot.current_room_id,
-                    "room_count": int(len(vector_map.get("rooms", []))),
-                    "object_count": int(len(vector_map.get("objects", []))),
-                    "anchor_count": int(len(vector_map.get("anchors", []))),
-                    "gateway_count": int(topology["gateway_count"]),
-                    "adjacency_edge_count": int(topology["adjacency_edge_count"]),
-                    "doorway_count": int(topology["doorway_count"]),
-                    "open_passage_count": int(topology["open_passage_count"]),
-                    "tracking_matched_room_count": int(tracking_matched_count),
-                    "tracking_new_room_count": int(tracking_new_count),
-                    "revisit_event_count": int(len(snapshot.revisit_events)),
-                    "cumulative_revisit_event_count": int(cumulative_revisit_events),
-                    "revisit_diagnostic_id": None if diagnostic is None else int(diagnostic["event_id"]),
-                    "revisit_trigger_reason": None if diagnostic is None else diagnostic["trigger_reason"],
-                    "matched_room_ids": "" if diagnostic is None else _join_ints(diagnostic["matched_room_ids"]),
-                    "map_reuse_happened": False if diagnostic is None else bool(diagnostic["new_room_avoided"]),
-                    "effect_frame_idx": None if diagnostic is None else int(diagnostic["effect_frame_idx"]),
-                    "pose_overlay_enabled": False,
-                    "rgb_path": snapshot.rgb_path,
-                    "vector_map_path": snapshot.vector_map_path,
-                }
+                with_timeline_row_contract(
+                    {
+                        "row_type": "snapshot",
+                        "replay_frame_idx": int(snapshot.index),
+                        "snapshot_idx": int(snapshot.index),
+                        "frame_idx": int(snapshot.frame_idx),
+                        "timestamp": float(snapshot.timestamp),
+                        "segmentation_cycle_idx": int(snapshot.segmentation_cycle_idx),
+                        "last_segmentation_frame_idx": snapshot.last_segmentation_frame_idx,
+                        "segmentation_updated": bool(snapshot.segmentation_updated),
+                        "replay_mode": "snapshot_only",
+                        "rgb_frame_continuous": False,
+                        "map_display_state": _update_mode(snapshot, diagnostic),
+                        "semantic_map_held": False,
+                        "map_refresh_triggered_here": True,
+                        "map_refresh_frame_idx": int(snapshot.frame_idx),
+                        "map_refresh_type": _update_mode(snapshot, diagnostic),
+                        "current_room_id": snapshot.current_room_id,
+                        "room_count": int(len(vector_map.get("rooms", []))),
+                        "object_count": int(len(vector_map.get("objects", []))),
+                        "anchor_count": int(len(vector_map.get("anchors", []))),
+                        "gateway_count": int(topology["gateway_count"]),
+                        "adjacency_edge_count": int(topology["adjacency_edge_count"]),
+                        "doorway_count": int(topology["doorway_count"]),
+                        "open_passage_count": int(topology["open_passage_count"]),
+                        "tracking_matched_room_count": int(tracking_matched_count),
+                        "tracking_new_room_count": int(tracking_new_count),
+                        "revisit_event_count": int(len(snapshot.revisit_events)),
+                        "cumulative_revisit_event_count": int(cumulative_revisit_events),
+                        "revisit_diagnostic_id": None if diagnostic is None else int(diagnostic["event_id"]),
+                        "revisit_trigger_reason": None if diagnostic is None else diagnostic["trigger_reason"],
+                        "matched_room_ids": "" if diagnostic is None else _join_ints(diagnostic["matched_room_ids"]),
+                        "map_reuse_happened": False if diagnostic is None else bool(diagnostic["new_room_avoided"]),
+                        "effect_frame_idx": None if diagnostic is None else int(diagnostic["effect_frame_idx"]),
+                        "pose_overlay_enabled": False,
+                        "rgb_path": snapshot.rgb_path,
+                        "vector_map_path": snapshot.vector_map_path,
+                    },
+                    row_kind=TIMELINE_ROW_KIND_SNAPSHOT,
+                    replay_mode="snapshot_only",
+                )
             )
         return rows
 
@@ -2546,7 +2590,8 @@ class ClosedLoopDemoRecorder:
             "## Key Numbers",
             "",
             f"- Snapshots exported: {int(summary.get('snapshot_count', 0))}",
-            f"- Replay frames exported: {int(summary.get('replay_frame_count', 0))}",
+            f"- Timeline rows exported: {int(summary.get('timeline_frame_count', 0))}",
+            f"- Dense replay frames exported: {int(summary.get('replay_frame_count', 0))}",
             f"- Segmentation refresh cycles: {int(summary.get('segmentation_cycle_count', 0))}",
             f"- Final rooms / objects / anchors: {len(vector_map.get('rooms', []))} / {len(vector_map.get('objects', []))} / {len(vector_map.get('anchors', []))}",
             f"- Final gateways / adjacency edges: {int(topology['gateway_count'])} / {int(topology['adjacency_edge_count'])}",

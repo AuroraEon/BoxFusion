@@ -6,6 +6,7 @@ from itertools import combinations
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
+from .online_topology_lifecycle import derive_publication_diagnostics_from_payload
 from .online_topology_timeline_eval import (
     DEFAULT_JSON_NAME as DEFAULT_TIMELINE_JSON_NAME,
     build_timeline_summary,
@@ -227,14 +228,25 @@ def _collect_room_refreshes(
             candidate_complete = bool(refresh_room.get("candidate_complete"))
             candidate_block_reasons = _sorted_str_list(refresh_room.get("candidate_block_reasons") or [])
             commit_block_reasons = _sorted_str_list(refresh_room.get("commit_block_reasons") or [])
+            publication_view = derive_publication_diagnostics_from_payload(
+                dict(refresh_room),
+                active_room_id=refresh.get("active_room_id"),
+                stability_refresh_threshold=2,
+            )
             refreshes.append(
                 {
                     "frame_idx": int(refresh.get("frame_idx")),
                     "timestamp": round(float(refresh.get("timestamp", 0.0)), 3),
                     "lifecycle_state": str(refresh_room.get("lifecycle_state") or "unknown"),
+                    "publication_state": str(publication_view.get("publication_state") or "unknown"),
                     "candidate_complete": candidate_complete,
                     "candidate_block_reasons": candidate_block_reasons,
                     "commit_block_reasons": commit_block_reasons,
+                    "finalization_blockers": _sorted_str_list(publication_view.get("finalization_blockers") or []),
+                    "publication_blockers": _sorted_str_list(publication_view.get("publication_blockers") or []),
+                    "finalized_private": bool(publication_view.get("finalized_private")),
+                    "commit_ready": bool(publication_view.get("commit_ready")),
+                    "published": bool(publication_view.get("published")),
                     "effective_blockers": commit_block_reasons if candidate_complete else candidate_block_reasons,
                     "effective_blocker_source": "commit_block_reasons" if candidate_complete else "candidate_block_reasons",
                 }
@@ -251,7 +263,13 @@ def _collect_room_refreshes(
                 "frame_idx": int(step.get("frame_idx")),
                 "timestamp": round(float(step.get("timestamp", 0.0)), 3),
                 "lifecycle_state": str(step.get("lifecycle_state") or "unknown"),
+                "publication_state": str(step.get("publication_state") or "unknown"),
                 "candidate_complete": candidate_complete,
+                "finalization_blockers": _sorted_str_list(step.get("finalization_blockers") or []),
+                "publication_blockers": _sorted_str_list(step.get("publication_blockers") or []),
+                "finalized_private": bool(step.get("finalized_private")),
+                "commit_ready": bool(step.get("commit_ready")),
+                "published": bool(step.get("published")),
                 "candidate_block_reasons": [],
                 "commit_block_reasons": commit_block_reasons,
                 "effective_blockers": commit_block_reasons if not candidate_complete else commit_block_reasons,
@@ -376,7 +394,7 @@ def _classify_blockers(
 def _room_final_state(
     final_room: Dict[str, Any],
     timeline_room: Dict[str, Any],
-) -> Tuple[str, List[str]]:
+) -> Tuple[str, List[str], str, List[str], List[str]]:
     final_state = str(
         final_room.get("lifecycle_state")
         or timeline_room.get("final_lifecycle_state")
@@ -389,7 +407,28 @@ def _room_final_state(
     )
     if final_state == "committed":
         final_blockers = []
-    return final_state, final_blockers
+    final_publication_state = str(
+        final_room.get("publication_state")
+        or timeline_room.get("final_publication_state")
+        or "unknown"
+    )
+    final_finalization_blockers = _sorted_str_list(
+        final_room.get("finalization_blockers")
+        or timeline_room.get("final_finalization_blockers")
+        or []
+    )
+    final_publication_blockers = _sorted_str_list(
+        final_room.get("publication_blockers")
+        or timeline_room.get("final_publication_blockers")
+        or []
+    )
+    return (
+        final_state,
+        final_blockers,
+        final_publication_state,
+        final_finalization_blockers,
+        final_publication_blockers,
+    )
 
 
 def _frame_from_final_commit(
@@ -476,13 +515,24 @@ def build_scene_blocker_diagnosis(scene_context: Dict[str, Any]) -> Dict[str, An
         timeline_room = timeline_rooms.get(room_id, {})
         refreshes, room_limitations = _collect_room_refreshes(scene_context, room_id)
         scene_limitations.extend(room_limitations)
-        final_state, final_unresolved_blockers = _room_final_state(final_room, timeline_room)
+        (
+            final_state,
+            final_unresolved_blockers,
+            final_publication_state,
+            final_finalization_blockers,
+            final_publication_blockers,
+        ) = _room_final_state(final_room, timeline_room)
 
         first_candidate_frame = _first_true_frame(refreshes, "candidate_complete") if refreshes else timeline_room.get("first_candidate_complete_frame")
         last_candidate_frame = _last_true_frame(refreshes, "candidate_complete") if refreshes else (
             timeline_room.get("first_candidate_complete_frame")
             if timeline_room.get("final_lifecycle_state") == "candidate_complete"
             else None
+        )
+        first_finalized_private_frame = (
+            _first_true_frame(refreshes, "finalized_private")
+            if refreshes
+            else timeline_room.get("first_finalized_private_frame")
         )
         first_commit_ready_frame = (
             _first_true_frame(
@@ -575,9 +625,13 @@ def build_scene_blocker_diagnosis(scene_context: Dict[str, Any]) -> Dict[str, An
             "first_seen_frame": final_room.get("first_seen_frame_idx", timeline_room.get("first_seen_frame")),
             "first_candidate_frame": first_candidate_frame,
             "last_candidate_frame": last_candidate_frame,
+            "first_finalized_private_frame": first_finalized_private_frame,
             "first_commit_ready_frame": first_commit_ready_frame,
             "first_committed_frame": first_committed_frame,
             "final_state": final_state,
+            "final_publication_state": final_publication_state,
+            "final_finalization_blockers": final_finalization_blockers,
+            "final_publication_blockers": final_publication_blockers,
             "candidate_to_blocked_transition_count": int(candidate_to_blocked_transition_count),
             "blocked_to_candidate_transition_count": int(blocked_to_candidate_transition_count),
             "total_candidate_refreshes": total_candidate_refreshes,

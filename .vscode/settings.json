@@ -1,6 +1,8 @@
 {
     "python-envs.defaultEnvManager": "ms-python.python:conda",
     "python-envs.defaultPackageManager": "ms-python.python:conda",
-    "python-envs.pythonProjects": [],
-    "ros.distro": "noetic"
+    "ros.distro": "noetic",
+    "remote.SSH.useExecServer": false,
+    "remote.SSH.useLocalServer": false,
+    "remote.SSH.showLoginTerminal": true
 }

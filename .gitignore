@@ -49,3 +49,11 @@ online_topology_v0_1_room4_residual_calibration_v2/representative_runs/00843-DYe
 online_topology_v0_1_polygon_signature_calibration/representative_runs/00843-DYehNKdT76V/
 online_topology_v0_1_room_signature_second_pass/representative_runs/00843-DYehNKdT76V/
 online_topology_v0_1_gateway_attribution_diag/representative_runs/00843-DYehNKdT76V/
+codex_perf_probe/
+codex_acceptance_audit/
+build/
+log/
+install/
+runtime_export_validation/
+ros2_sim_ingress_runs/
+.vscode/settings.json

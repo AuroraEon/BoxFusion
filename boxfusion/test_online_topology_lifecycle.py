@@ -11,6 +11,7 @@ from boxfusion.online_topology_lifecycle import (
     CandidateBlockReason,
     CommitBlockReason,
     OnlineTopologyLifecycleManager,
+    PublicationDiagnosticState,
     RoomLifecycleState,
 )
 
@@ -131,9 +132,11 @@ def test_candidate_complete_rooms_can_be_marked_committed_in_debug_report() -> N
     room_2_before = next(item for item in pre_finalize["rooms"] if item["room_id"] == "room_2")
     assert room_1_before["candidate_complete"] is True
     assert room_1_before["lifecycle_state"] == RoomLifecycleState.CANDIDATE_COMPLETE.value
+    assert room_1_before["publication_state"] == PublicationDiagnosticState.COMMIT_READY.value
     assert room_1_before["candidate_readiness_score"] == 5
     assert CommitBlockReason.ROOM_CURRENTLY_ACTIVE.value not in room_1_before["commit_block_reasons"]
     assert room_2_before["candidate_complete"] is False
+    assert room_2_before["publication_state"] == PublicationDiagnosticState.FINALIZED_PRIVATE.value
     assert CandidateBlockReason.ROOM_CURRENTLY_ACTIVE.value in room_2_before["candidate_block_reasons"]
     assert CommitBlockReason.ROOM_CURRENTLY_ACTIVE.value in room_2_before["commit_block_reasons"]
     assert pre_finalize["summary"]["candidate_complete_room_count"] == 1
@@ -147,10 +150,12 @@ def test_candidate_complete_rooms_can_be_marked_committed_in_debug_report() -> N
     )
     room_1_after = next(item for item in finalized["rooms"] if item["room_id"] == "room_1")
     assert room_1_after["lifecycle_state"] == RoomLifecycleState.COMMITTED.value
+    assert room_1_after["publication_state"] == PublicationDiagnosticState.PUBLISHED.value
     assert room_1_after["dirty"] is False
     assert finalized["summary"]["candidate_complete_room_count"] == 0
     assert finalized["summary"]["candidate_complete_room_count_pre_finalize"] == 1
     assert finalized["summary"]["commit_ready_room_count_pre_finalize"] == 1
+    assert finalized["summary"]["published_room_count"] == 1
     assert "room_1" in finalized["committed_rooms"]
     assert "room_2" in finalized["blocked_commit_reasons"]
 
@@ -241,12 +246,51 @@ def test_candidate_complete_can_emerge_before_commit_when_only_gateway_merge_blo
     room_1 = next(item for item in report["rooms"] if item["room_id"] == "room_1")
     assert room_1["candidate_complete"] is True
     assert room_1["lifecycle_state"] == RoomLifecycleState.MERGE_OR_SPLIT_PENDING.value
+    assert room_1["publication_state"] == PublicationDiagnosticState.FINALIZATION_PENDING.value
     assert room_1["candidate_readiness_score"] == 4
     assert room_1["candidate_block_reasons"] == []
     assert CommitBlockReason.GATEWAY_STRUCTURE_NOT_STABLE.value in room_1["commit_block_reasons"]
     assert CommitBlockReason.MERGE_OR_SPLIT_PENDING.value in room_1["commit_block_reasons"]
     assert room_1["stable_refresh_opportunities_since_structural_delta"] == 0
     assert room_1["last_structural_delta_frame_idx"] == 10
+
+
+def test_structurally_stable_active_room_is_finalized_private_but_not_commit_ready() -> None:
+    manager = OnlineTopologyLifecycleManager(sequence_id="finalized_private_active_room")
+
+    vector_map = _build_vector_map(
+        rooms=[_room(1)],
+        frame_floor_assignments=[{"frame_idx": 0, "floor_id": "floor_1", "status": "stable"}],
+    )
+    manager.observe_room_tracking(frame_idx=0, timestamp=0.0, current_room_id=1, source="snapshot")
+    manager.observe_export(
+        frame_idx=0,
+        timestamp=0.0,
+        vector_map=vector_map,
+        segmentation_updated=True,
+        export_profile={"changed_room_ids": "room_1"},
+    )
+    manager.observe_room_tracking(frame_idx=10, timestamp=1.0, current_room_id=1, source="snapshot")
+    manager.observe_export(
+        frame_idx=10,
+        timestamp=1.0,
+        vector_map=vector_map,
+        segmentation_updated=False,
+        export_profile={},
+    )
+
+    report = manager.finalize_report(
+        frame_idx=10,
+        timestamp=1.0,
+        public_topology_export_succeeded=False,
+    )
+    room_1 = next(item for item in report["rooms"] if item["room_id"] == "room_1")
+    assert room_1["candidate_complete"] is False
+    assert room_1["lifecycle_state"] == RoomLifecycleState.ACTIVE.value
+    assert room_1["finalization_blockers"] == []
+    assert room_1["publication_blockers"] == [CommitBlockReason.ROOM_CURRENTLY_ACTIVE.value]
+    assert room_1["publication_state"] == PublicationDiagnosticState.FINALIZED_PRIVATE.value
+    assert room_1["leave_like_signal_v1"] is False
 
 
 def test_merge_pending_clears_after_repeated_stable_refreshes() -> None:
@@ -1367,6 +1411,7 @@ def run_mock_test() -> None:
     test_candidate_complete_rooms_can_be_marked_committed_in_debug_report()
     test_merge_pending_and_partial_vertical_transition_block_commit()
     test_candidate_complete_can_emerge_before_commit_when_only_gateway_merge_blocks_remain()
+    test_structurally_stable_active_room_is_finalized_private_but_not_commit_ready()
     test_merge_pending_clears_after_repeated_stable_refreshes()
     test_repeated_room_signature_deltas_still_relatch_merge_pending_after_stable_window()
     test_late_room_signature_flicker_does_not_relatch_merge_pending_after_stable_window()

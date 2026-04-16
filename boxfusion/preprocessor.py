@@ -3,6 +3,7 @@
 
 import copy
 import os
+import time
 import torch
 
 from boxfusion.measurement import (
@@ -19,6 +20,7 @@ from boxfusion.batching import (
 from typing import Dict, List
 
 IGNORE_KEYS = ["sensor_info", "__key__", "gt", "video_info", "meta"]
+FAST_DEPTH_STATS_MODE = os.environ.get("BOXFUSION_FAST_DEPTH_STATS_MODE", "").strip().lower()
 
 def move_device_like(src: torch.Tensor, dst: torch.Tensor) -> torch.Tensor:
     try:
@@ -39,11 +41,18 @@ def move_input_to_current_device(batched_input: Sensors, t: torch.Tensor):
 class Augmentor(object):
     def __init__(self, measurement_keys=None):
         self.measurement_keys = measurement_keys
+        self.last_profile = {}
 
     def package(self, sample) -> Dict[str, Dict[str, Measurement]]:
         # Simply everything into "Packages" to make it more amenable for a training pipeline.
         # Essentially return Dict
         # Make sure everything is contiguous. channels -> first.
+        package_t0 = time.perf_counter()
+        profile = {
+            "sensor_info_deepcopy_sec": 0.0,
+            "measurement_wrap_sec": 0.0,
+            "total_sec": 0.0,
+        }
         result = {}
         for sensor_name, sensor_data in sample.items():
             if sensor_name in IGNORE_KEYS:
@@ -53,17 +62,19 @@ class Augmentor(object):
                 continue
 
             sensor_result = {}
+            deepcopy_t0 = time.perf_counter()
             sensor_info = copy.deepcopy(getattr(sample["sensor_info"], sensor_name))
+            profile["sensor_info_deepcopy_sec"] += float(time.perf_counter() - deepcopy_t0)
             for measurement_name, measurement in sensor_data.items():
                 measurement_key = os.path.join(sensor_name, measurement_name)
                 if (self.measurement_keys is not None) and (measurement_key not in self.measurement_keys):
                     # Make sure to delete from sensor info as well.
                     if sensor_info.has(measurement_name):
                         sensor_info.remove(measurement_name)
-                        
                     continue
 
                 measurement_info = getattr(sensor_info, measurement_name)
+                wrap_t0 = time.perf_counter()
                 if isinstance(measurement_info, DepthMeasurementInfo):
                     sensor_result[measurement_name] = PosedDepth(
                         sample[sensor_name][measurement_name][-1],
@@ -74,11 +85,14 @@ class Augmentor(object):
                         sample[sensor_name][measurement_name][-1],
                         measurement_info,
                         sensor_info)
+                profile["measurement_wrap_sec"] += float(time.perf_counter() - wrap_t0)
 
             # Don't include if empty.
             if sensor_result:
                 result[sensor_name] = sensor_result
 
+        profile["total_sec"] = float(time.perf_counter() - package_t0)
+        self.last_profile = profile
         return result
 
 class Preprocessor(object):
@@ -93,6 +107,7 @@ class Preprocessor(object):
         self.pixel_mean = torch.tensor(pixel_mean).view(-1, 1, 1)
         self.pixel_std = torch.tensor(pixel_std).view(-1, 1, 1)
         self.device = device
+        self.last_profile = {}
 
     @staticmethod
     def standardize_depth_map(img, trunc_value=0.1):
@@ -101,23 +116,40 @@ class Preprocessor(object):
         img = img.cpu()
         img[img <= 0.0] = torch.nan
 
-        sorted_img = torch.sort(torch.flatten(img))[0]
-        # Remove nan, nan at the end of sort
-        num_nan = sorted_img.isnan().sum()
-        if num_nan > 0:
-            sorted_img = sorted_img[:-num_nan]
-        # Remove outliers
-        trunc_img = sorted_img[int(trunc_value * len(sorted_img)): int((1 - trunc_value) * len(sorted_img))]
-        if len(trunc_img) <= 1:
-            # guard against no valid Jasper.
-            trunc_mean = torch.tensor(0.0).to(img)
-            trunc_std = torch.tensor(1.0).to(img)
+        if FAST_DEPTH_STATS_MODE == "kthvalue":
+            valid_img = img[torch.isfinite(img)]
+            if len(valid_img) <= 1:
+                trunc_mean = torch.tensor(0.0).to(img)
+                trunc_std = torch.tensor(1.0).to(img)
+            else:
+                lo_idx = max(1, int(trunc_value * len(valid_img)))
+                hi_idx = min(len(valid_img), max(lo_idx, int((1 - trunc_value) * len(valid_img))))
+                lo = torch.kthvalue(valid_img, lo_idx).values
+                hi = torch.kthvalue(valid_img, hi_idx).values
+                trunc_img = valid_img[(valid_img >= lo) & (valid_img <= hi)]
+                if len(trunc_img) <= 1:
+                    trunc_mean = valid_img.mean()
+                    trunc_std = torch.sqrt(valid_img.var() + 1e-2)
+                else:
+                    trunc_mean = trunc_img.mean()
+                    trunc_var = trunc_img.var()
+                    trunc_std = torch.sqrt(trunc_var + 1e-2)
         else:
-            trunc_mean = trunc_img.mean()
-            trunc_var = trunc_img.var()
-
-            eps = 1e-2
-            trunc_std = torch.sqrt(trunc_var + eps)
+            sorted_img = torch.sort(torch.flatten(img))[0]
+            # Remove nan, nan at the end of sort
+            num_nan = sorted_img.isnan().sum()
+            if num_nan > 0:
+                sorted_img = sorted_img[:-num_nan]
+            # Remove outliers
+            trunc_img = sorted_img[int(trunc_value * len(sorted_img)): int((1 - trunc_value) * len(sorted_img))]
+            if len(trunc_img) <= 1:
+                # guard against no valid Jasper.
+                trunc_mean = torch.tensor(0.0).to(img)
+                trunc_std = torch.tensor(1.0).to(img)
+            else:
+                trunc_mean = trunc_img.mean()
+                trunc_var = trunc_img.var()
+                trunc_std = torch.sqrt(trunc_var + 1e-2)
 
         # Replace nan by mean
         img = torch.nan_to_num(img, nan=trunc_mean)
@@ -128,7 +160,7 @@ class Preprocessor(object):
         # return the scale parameters for encoding.
         return img.to(device), torch.tensor([trunc_mean, trunc_std]).to(device)
 
-    def normalize(self, batched_input: Sensors):
+    def normalize(self, batched_input: Sensors, profile=None):
         # Happens in-place.
         for sensor_name, sensor in batched_input.items():
             for measurement_name, measurement in sensor.items():
@@ -136,14 +168,20 @@ class Preprocessor(object):
                     continue
 
                 if measurement.__orig_class__ in (PosedDepth,):
+                    t0 = time.perf_counter()
                     measurement.data, scaling = Preprocessor.standardize_depth_map(measurement.data)
                     measurement.info = measurement.info.normalize(scaling[None])
+                    if profile is not None:
+                        profile["depth_normalize_sec"] += float(time.perf_counter() - t0)
                 elif measurement.__orig_class__ in (PosedImage,):
+                    t0 = time.perf_counter()
                     measurement.data = (measurement.data.float() - self.pixel_mean.to(measurement.data)) / self.pixel_std.to(measurement.data)
+                    if profile is not None:
+                        profile["image_normalize_sec"] += float(time.perf_counter() - t0)
 
         return batched_input
 
-    def batch(self, batched_inputs: List[Sensors]) -> List[BatchedSensors]:
+    def batch(self, batched_inputs: List[Sensors], profile=None) -> List[BatchedSensors]:
         sensor_names = batched_inputs[0].keys()
         result = {}
         for sensor_name in sensor_names:
@@ -189,9 +227,16 @@ class Preprocessor(object):
                             "square_size": square_pad
                         })
 
+                batch_t0 = time.perf_counter()
                 batched_measurements = Measurement.batch(
                     batched_measurements,
                     **batching_kwargs)
+                batch_elapsed = float(time.perf_counter() - batch_t0)
+                if profile is not None:
+                    if batched_measurements.__orig_class__ in (PosedDepth,):
+                        profile["depth_batch_sec"] += batch_elapsed
+                    elif batched_measurements.__orig_class__ in (PosedImage,):
+                        profile["image_batch_sec"] += batch_elapsed
 
                 sensor_result[measurement_name] = batched_measurements
 
@@ -212,6 +257,23 @@ class Preprocessor(object):
                 yield self.preprocess(batch)
 
     def preprocess(self, batched_inputs: List[Sensors]) -> List[Sensors]:
-        batched_inputs = [self.normalize(bi) for bi in batched_inputs]
+        profile = {
+            "normalize_total_sec": 0.0,
+            "depth_normalize_sec": 0.0,
+            "image_normalize_sec": 0.0,
+            "batch_total_sec": 0.0,
+            "image_batch_sec": 0.0,
+            "depth_batch_sec": 0.0,
+            "total_sec": 0.0,
+        }
+        preprocess_t0 = time.perf_counter()
+        normalize_t0 = time.perf_counter()
+        batched_inputs = [self.normalize(bi, profile=profile) for bi in batched_inputs]
+        profile["normalize_total_sec"] = float(time.perf_counter() - normalize_t0)
 
-        return self.batch(batched_inputs)
+        batch_t0 = time.perf_counter()
+        result = self.batch(batched_inputs, profile=profile)
+        profile["batch_total_sec"] = float(time.perf_counter() - batch_t0)
+        profile["total_sec"] = float(time.perf_counter() - preprocess_t0)
+        self.last_profile = profile
+        return result

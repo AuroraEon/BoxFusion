@@ -579,7 +579,7 @@ class CA1MDataset(IterableDataset):
         self.has_depth = has_depth
         pattern = r'\b4\d{7}\b'  
         matches = re.findall(pattern, cfg['data']['datadir'])
-        self.video_id = matches
+        self.video_id = matches or [os.path.basename(os.path.normpath(self.basedir))]
 
 
     def load_poses(self, path):

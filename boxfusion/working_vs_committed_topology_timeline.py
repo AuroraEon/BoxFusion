@@ -6,6 +6,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
+from .artifact_contract import ARTIFACT_SURFACE_WORKING
 from .online_topology_timeline_eval import load_json, resolve_lifecycle_artifact
 from .online_topology_working_snapshot import WORKING_ELIGIBLE_LIFECYCLE_STATES
 
@@ -356,6 +357,7 @@ def build_working_vs_committed_timeline(
     summary: Dict[str, Any] = {
         "version": "0.1",
         "artifact_kind": "working_vs_committed_topology_timeline_debug",
+        "artifact_surface": ARTIFACT_SURFACE_WORKING,
         "debug_only": True,
         "public_default": False,
         "non_public": True,

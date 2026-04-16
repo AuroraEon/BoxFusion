@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
+from .online_topology_lifecycle import derive_publication_diagnostics_from_payload
+
 
 DEFAULT_JSON_NAME = "online_topology_timeline_eval_v0_1.json"
 DEFAULT_MARKDOWN_NAME = "online_topology_timeline_eval_v0_1.md"
@@ -93,6 +95,23 @@ def _sorted_reason_list(values: Iterable[Any]) -> List[str]:
     return sorted(str(item) for item in values if item not in (None, ""))
 
 
+def _refresh_publication_view(refresh: Dict[str, Any], refresh_room: Dict[str, Any]) -> Dict[str, Any]:
+    if refresh_room.get("publication_state"):
+        return {
+            "publication_state": str(refresh_room.get("publication_state")),
+            "finalization_blockers": _sorted_reason_list(refresh_room.get("finalization_blockers") or []),
+            "publication_blockers": _sorted_reason_list(refresh_room.get("publication_blockers") or []),
+            "finalized_private": bool(refresh_room.get("finalized_private")),
+            "commit_ready": bool(refresh_room.get("commit_ready")),
+            "published": bool(refresh_room.get("published")),
+        }
+    return derive_publication_diagnostics_from_payload(
+        dict(refresh_room),
+        active_room_id=refresh.get("active_room_id"),
+        stability_refresh_threshold=2,
+    )
+
+
 def build_timeline_summary(payload: Dict[str, Any], *, source_path: Optional[Path] = None) -> Dict[str, Any]:
     refresh_history = list(payload.get("refresh_history") or [])
     final_rooms = _room_lookup(payload.get("rooms") or [])
@@ -108,15 +127,20 @@ def build_timeline_summary(payload: Dict[str, Any], *, source_path: Optional[Pat
         blocker_stats: Dict[str, Dict[str, Any]] = {}
         refresh_steps: List[Dict[str, Any]] = []
         previous_state: Optional[str] = None
+        previous_publication_state: Optional[str] = None
         previous_blocks: Set[str] = set()
         first_seen_frame = _first_frame_from_final_room(final_room)
+        first_candidate_formed_frame: Optional[int] = None
         first_candidate_complete_frame: Optional[int] = None
+        first_finalized_private_frame: Optional[int] = None
         first_commit_ready_frame: Optional[int] = None
-        first_committed_frame: Optional[int] = None
+        first_published_frame: Optional[int] = None
         candidate_blocked_refresh_count = 0
         merge_pending_refresh_count = 0
         last_blocker_set_before_commit: Optional[List[str]] = None
         latest_nonempty_blocker_set: Optional[List[str]] = None
+        publication_state_path: List[str] = []
+        publication_state_transition_events: List[Dict[str, Any]] = []
 
         for refresh in refresh_history:
             refresh_frame = int(refresh.get("frame_idx"))
@@ -128,18 +152,28 @@ def build_timeline_summary(payload: Dict[str, Any], *, source_path: Optional[Pat
             commit_block_reasons = _sorted_reason_list(refresh_room.get("commit_block_reasons") or [])
             commit_block_set = set(commit_block_reasons)
             candidate_complete = bool(refresh_room.get("candidate_complete"))
-            commit_ready = not commit_block_reasons
+            publication_view = _refresh_publication_view(refresh, refresh_room)
+            publication_state = str(publication_view.get("publication_state") or "unknown")
+            finalization_blockers = _sorted_reason_list(publication_view.get("finalization_blockers") or [])
+            publication_blockers = _sorted_reason_list(publication_view.get("publication_blockers") or [])
+            finalized_private = bool(publication_view.get("finalized_private"))
+            commit_ready = bool(publication_view.get("commit_ready"))
+            published = bool(publication_view.get("published"))
 
             if first_seen_frame is None:
                 seen_frame = refresh_room.get("first_seen_frame_idx")
                 first_seen_frame = refresh_frame if seen_frame is None else int(seen_frame)
+            if first_candidate_formed_frame is None and publication_state != "ACTIVE_OBSERVING":
+                first_candidate_formed_frame = refresh_frame
             if first_candidate_complete_frame is None and candidate_complete:
                 first_candidate_complete_frame = refresh_frame
+            if first_finalized_private_frame is None and finalized_private:
+                first_finalized_private_frame = refresh_frame
             if first_commit_ready_frame is None and commit_ready:
                 first_commit_ready_frame = refresh_frame
                 last_blocker_set_before_commit = list(latest_nonempty_blocker_set or [])
-            if first_committed_frame is None and lifecycle_state == "committed":
-                first_committed_frame = refresh_frame
+            if first_published_frame is None and published:
+                first_published_frame = refresh_frame
 
             if candidate_complete and commit_block_reasons:
                 candidate_blocked_refresh_count += 1
@@ -158,6 +192,17 @@ def build_timeline_summary(payload: Dict[str, Any], *, source_path: Optional[Pat
                     }
                 )
                 previous_state = lifecycle_state
+
+            if publication_state != previous_publication_state:
+                publication_state_path.append(publication_state)
+                publication_state_transition_events.append(
+                    {
+                        "frame_idx": refresh_frame,
+                        "timestamp": round(float(refresh.get("timestamp", 0.0)), 3),
+                        "publication_state": publication_state,
+                    }
+                )
+                previous_publication_state = publication_state
 
             added_blocks = sorted(commit_block_set - previous_blocks)
             cleared_blocks = sorted(previous_blocks - commit_block_set)
@@ -201,19 +246,34 @@ def build_timeline_summary(payload: Dict[str, Any], *, source_path: Optional[Pat
                     "frame_idx": refresh_frame,
                     "timestamp": round(float(refresh.get("timestamp", 0.0)), 3),
                     "lifecycle_state": lifecycle_state,
+                    "publication_state": publication_state,
                     "candidate_complete": candidate_complete,
+                    "finalized_private": finalized_private,
                     "commit_ready": commit_ready,
+                    "published": published,
+                    "finalization_blockers": finalization_blockers,
+                    "publication_blockers": publication_blockers,
                     "commit_block_reasons": commit_block_reasons,
                 }
             )
             previous_blocks = commit_block_set
 
-        if first_committed_frame is None:
-            first_committed_frame = _final_committed_frame(payload, final_room)
+        if first_published_frame is None:
+            first_published_frame = _final_committed_frame(payload, final_room)
         final_lifecycle_state = str(final_room.get("lifecycle_state") or (state_path[-1] if state_path else "unknown"))
         final_blocker_set = _sorted_reason_list(final_room.get("commit_block_reasons") or [])
         if final_lifecycle_state == "committed":
             final_blocker_set = []
+        final_publication_view = derive_publication_diagnostics_from_payload(
+            dict(final_room),
+            active_room_id=payload.get("active_room_id"),
+            stability_refresh_threshold=2,
+        )
+        final_publication_state = str(
+            final_room.get("publication_state")
+            or final_publication_view.get("publication_state")
+            or (publication_state_path[-1] if publication_state_path else "unknown")
+        )
 
         ordered_blockers = sorted(
             blocker_stats.items(),
@@ -225,12 +285,18 @@ def build_timeline_summary(payload: Dict[str, Any], *, source_path: Optional[Pat
                 "history_available": history_available and bool(refresh_steps),
                 "refresh_count": int(len(refresh_steps)),
                 "first_seen_frame": first_seen_frame,
+                "first_candidate_formed_frame": first_candidate_formed_frame,
                 "first_candidate_complete_frame": first_candidate_complete_frame,
+                "first_finalized_private_frame": first_finalized_private_frame,
                 "first_commit_ready_frame": first_commit_ready_frame,
-                "first_committed_frame": first_committed_frame,
+                "first_published_frame": first_published_frame,
+                "first_committed_frame": first_published_frame,
                 "final_lifecycle_state": final_lifecycle_state,
+                "final_publication_state": final_publication_state,
                 "lifecycle_path": state_path,
+                "publication_state_path": publication_state_path,
                 "state_transition_events": state_transition_events,
+                "publication_state_transition_events": publication_state_transition_events,
                 "major_blockers_encountered": [name for name, _ in ordered_blockers],
                 "blocker_stats": {name: stats for name, stats in ordered_blockers},
                 "blocker_transition_events": blocker_transition_events,
@@ -238,6 +304,12 @@ def build_timeline_summary(payload: Dict[str, Any], *, source_path: Optional[Pat
                 "merge_or_split_pending_refresh_count": int(merge_pending_refresh_count),
                 "last_blocker_set_before_commit": last_blocker_set_before_commit if first_commit_ready_frame is not None else None,
                 "final_blocker_set": final_blocker_set,
+                "final_finalization_blockers": _sorted_reason_list(
+                    final_room.get("finalization_blockers") or final_publication_view.get("finalization_blockers") or []
+                ),
+                "final_publication_blockers": _sorted_reason_list(
+                    final_room.get("publication_blockers") or final_publication_view.get("publication_blockers") or []
+                ),
                 "refresh_timeline": refresh_steps,
             }
         )
@@ -298,10 +370,10 @@ def render_timeline_markdown(summary: Dict[str, Any]) -> str:
             "| {room_id} | {first_seen} | {first_candidate} | {first_commit_ready} | {first_committed} | {final_state} | {cand_blocked} | {merge_pending} | {final_blockers} |".format(
                 room_id=room.get("room_id"),
                 first_seen=_fmt_frame(room.get("first_seen_frame")),
-                first_candidate=_fmt_frame(room.get("first_candidate_complete_frame")),
+                first_candidate=_fmt_frame(room.get("first_candidate_formed_frame")),
                 first_commit_ready=_fmt_frame(room.get("first_commit_ready_frame")),
-                first_committed=_fmt_frame(room.get("first_committed_frame")),
-                final_state=room.get("final_lifecycle_state"),
+                first_committed=_fmt_frame(room.get("first_published_frame")),
+                final_state=room.get("final_publication_state"),
                 cand_blocked=room.get("candidate_but_blocked_refresh_count"),
                 merge_pending=room.get("merge_or_split_pending_refresh_count"),
                 final_blockers=_fmt_list(room.get("final_blocker_set") or []),
@@ -319,9 +391,10 @@ def render_timeline_markdown(summary: Dict[str, Any]) -> str:
         lines.append("")
         for room in detailed_rooms:
             lines.append(
-                "- `{room_id}`: states `{states}`; major blockers `{blockers}`; last blocker set before commit `{before_commit}`.".format(
+                "- `{room_id}`: lifecycle `{states}`; publication `{publication_states}`; major blockers `{blockers}`; last blocker set before commit `{before_commit}`.".format(
                     room_id=room.get("room_id"),
                     states=" -> ".join(room.get("lifecycle_path") or ["unknown"]),
+                    publication_states=" -> ".join(room.get("publication_state_path") or ["unknown"]),
                     blockers=_fmt_list(room.get("major_blockers_encountered") or []),
                     before_commit=_fmt_list(room.get("last_blocker_set_before_commit") or []),
                 )
