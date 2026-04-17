@@ -17,10 +17,12 @@ from boxfusion.online_topology_lifecycle import (
 )
 from boxfusion.ros_query_server import (
     BundleResolutionError,
+    CommittedPublicBundle,
     ServiceResult,
     _clean_optional_text,
     _discover_candidate_files,
     _infer_artifact_profile,
+    load_committed_public_bundle,
     _load_json,
     _normalize_search_root_tokens,
     _parse_utc,
@@ -313,8 +315,10 @@ class BoxFusionRosPublicationDiagnosticsBackend:
         self.bundle = bundle
         self.stability_refresh_threshold = max(1, int(stability_refresh_threshold))
         self.lifecycle_payload = self.bundle.lifecycle_payload
+        self.public_bundle = self._load_sibling_public_bundle()
         self._room_diagnostics_cache: Optional[List[Dict[str, Any]]] = None
         self._room_lookup_cache: Optional[Dict[str, Dict[str, Any]]] = None
+        self._authoritative_public_room_ids_cache: Optional[List[str]] = None
 
     @classmethod
     def from_bundle_path(
@@ -331,6 +335,41 @@ class BoxFusionRosPublicationDiagnosticsBackend:
 
     def _bundle_payload(self) -> Dict[str, Any]:
         return self.bundle.describe()
+
+    def _load_sibling_public_bundle(self) -> Optional[CommittedPublicBundle]:
+        candidate_inputs = (
+            self.bundle.manifest_path,
+            self.bundle.scene_root,
+            self.bundle.summary_path,
+            self.bundle.lifecycle_path,
+        )
+        for candidate in candidate_inputs:
+            if candidate is None:
+                continue
+            try:
+                return load_committed_public_bundle(candidate)
+            except BundleResolutionError:
+                continue
+        return None
+
+    def _authoritative_public_membership_available(self) -> bool:
+        return self.public_bundle is not None
+
+    def _authoritative_public_room_ids(self) -> List[str]:
+        if self._authoritative_public_room_ids_cache is None:
+            room_ids: List[str] = []
+            topology_payload = None if self.public_bundle is None else dict(self.public_bundle.topology_payload or {})
+            for room in list((topology_payload or {}).get("rooms") or []):
+                if not isinstance(room, dict):
+                    continue
+                room_id = _normalize_room_id(room.get("room_id", room.get("id")))
+                if room_id is not None:
+                    room_ids.append(room_id)
+            self._authoritative_public_room_ids_cache = sorted(set(room_ids))
+        return list(self._authoritative_public_room_ids_cache)
+
+    def _authoritative_public_room_id_set(self) -> set[str]:
+        return set(self._authoritative_public_room_ids())
 
     def _ok(self, service_name: str, payload: Dict[str, Any]) -> ServiceResult:
         return ServiceResult(
@@ -356,14 +395,21 @@ class BoxFusionRosPublicationDiagnosticsBackend:
 
     def _room_diagnostic_payload(self, room_payload: Dict[str, Any]) -> Dict[str, Any]:
         room = dict(room_payload)
+        room_id = _clean_optional_text(room.get("room_id"))
         publication_view = _publication_view_for_room(
             room,
             active_room_id=self.lifecycle_payload.get("active_room_id"),
             stability_refresh_threshold=self.stability_refresh_threshold,
         )
-        published = bool(publication_view.get("published"))
+        lifecycle_published = bool(publication_view.get("published"))
+        authoritative_public_membership_available = self._authoritative_public_membership_available()
+        authoritative_public_room_present = (
+            room_id in self._authoritative_public_room_id_set()
+            if authoritative_public_membership_available and room_id is not None
+            else lifecycle_published
+        )
         return {
-            "room_id": _clean_optional_text(room.get("room_id")),
+            "room_id": room_id,
             "lifecycle_state": _clean_optional_text(room.get("lifecycle_state")),
             "candidate_complete": bool(room.get("candidate_complete")),
             "present_in_latest_export": bool(room.get("present_in_latest_export")),
@@ -376,9 +422,19 @@ class BoxFusionRosPublicationDiagnosticsBackend:
             "leave_like_signal_v1_source": publication_view.get("leave_like_signal_v1_source"),
             "finalized_private": bool(publication_view.get("finalized_private")),
             "commit_ready": bool(publication_view.get("commit_ready")),
-            "published": published,
-            "pre_publication_only": not published,
-            "public_topology_membership": "published" if published else "debug_only_pre_publication",
+            "published": bool(authoritative_public_room_present),
+            "lifecycle_published": bool(lifecycle_published),
+            "pre_publication_only": not bool(authoritative_public_room_present),
+            "public_topology_membership": (
+                "published" if authoritative_public_room_present else "debug_only_pre_publication"
+            ),
+            "public_topology_membership_source": (
+                "authoritative_public_topology"
+                if authoritative_public_membership_available
+                else "lifecycle_fallback"
+            ),
+            "authoritative_public_membership_available": bool(authoritative_public_membership_available),
+            "authoritative_public_room_present": bool(authoritative_public_room_present),
             "debug_only": True,
             "public_contract": False,
         }
@@ -410,7 +466,15 @@ class BoxFusionRosPublicationDiagnosticsBackend:
             if _clean_optional_text(room.get("publication_state")) is not None
         )
         published_room_ids = [str(room["room_id"]) for room in rooms if bool(room.get("published"))]
+        lifecycle_published_room_ids = [str(room["room_id"]) for room in rooms if bool(room.get("lifecycle_published"))]
         pre_publication_room_ids = [str(room["room_id"]) for room in rooms if not bool(room.get("published"))]
+        authoritative_public_room_ids = self._authoritative_public_room_ids()
+        lifecycle_published_but_not_public_room_ids = sorted(
+            set(lifecycle_published_room_ids) - set(authoritative_public_room_ids)
+        )
+        public_but_not_lifecycle_published_room_ids = sorted(
+            set(authoritative_public_room_ids) - set(lifecycle_published_room_ids)
+        )
         payload_summary = dict(self.lifecycle_payload.get("summary") or {})
         return self._ok(
             "GetPublicationDiagnostics",
@@ -429,12 +493,24 @@ class BoxFusionRosPublicationDiagnosticsBackend:
                 "sequence_id": self.lifecycle_payload.get("sequence_id"),
                 "frame_idx": self.lifecycle_payload.get("frame_idx"),
                 "timestamp": self.lifecycle_payload.get("timestamp"),
+                "public_topology_path": None if self.public_bundle is None else str(self.public_bundle.topology_path),
                 "summary": {
                     "room_count": int(len(rooms)),
                     "published_room_count": int(len(published_room_ids)),
                     "pre_publication_room_count": int(len(pre_publication_room_ids)),
                     "published_room_ids": published_room_ids,
                     "pre_publication_room_ids": pre_publication_room_ids,
+                    "public_topology_room_count": int(len(authoritative_public_room_ids)),
+                    "public_topology_room_ids": list(authoritative_public_room_ids),
+                    "public_topology_membership_source": (
+                        "authoritative_public_topology"
+                        if self._authoritative_public_membership_available()
+                        else "lifecycle_fallback"
+                    ),
+                    "lifecycle_published_room_count": int(len(lifecycle_published_room_ids)),
+                    "lifecycle_published_room_ids": lifecycle_published_room_ids,
+                    "lifecycle_published_but_not_public_room_ids": lifecycle_published_but_not_public_room_ids,
+                    "public_but_not_lifecycle_published_room_ids": public_but_not_lifecycle_published_room_ids,
                     "publication_state_counts": {
                         state: int(publication_state_counts.get(state, 0))
                         for state in PUBLICATION_STATE_ORDER

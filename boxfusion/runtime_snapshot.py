@@ -604,6 +604,10 @@ class LifecycleDebugSurfaceSnapshot:
     publication_state_counts: Dict[str, int]
     committed_room_ids: Tuple[str, ...] = ()
     non_published_room_ids: Tuple[str, ...] = ()
+    lifecycle_published_room_count: int = 0
+    lifecycle_published_room_ids: Tuple[str, ...] = ()
+    lifecycle_published_but_not_public_room_ids: Tuple[str, ...] = ()
+    public_but_not_lifecycle_published_room_ids: Tuple[str, ...] = ()
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -619,6 +623,11 @@ class LifecycleDebugSurfaceSnapshot:
             "publication_state_counts": dict(self.publication_state_counts),
             "committed_room_ids": list(self.committed_room_ids),
             "non_published_room_ids": list(self.non_published_room_ids),
+            "committed_room_ids_source": "authoritative_public_topology",
+            "lifecycle_published_room_count": int(self.lifecycle_published_room_count),
+            "lifecycle_published_room_ids": list(self.lifecycle_published_room_ids),
+            "lifecycle_published_but_not_public_room_ids": list(self.lifecycle_published_but_not_public_room_ids),
+            "public_but_not_lifecycle_published_room_ids": list(self.public_but_not_lifecycle_published_room_ids),
             "non_published_rooms_public": False,
         }
 
@@ -720,6 +729,15 @@ def _lifecycle_non_published_room_ids(lifecycle_payload: Dict[str, Any]) -> Tupl
     return _stable_sorted(values)
 
 
+def _lifecycle_all_room_ids(lifecycle_payload: Dict[str, Any]) -> Tuple[str, ...]:
+    values: List[Optional[str]] = []
+    for room in list(lifecycle_payload.get("rooms") or []):
+        if not isinstance(room, dict):
+            continue
+        values.append(_lifecycle_room_id(room))
+    return _stable_sorted(values)
+
+
 def build_runtime_snapshot_from_bundles(
     *,
     committed_bundle: Any,
@@ -734,11 +752,10 @@ def build_runtime_snapshot_from_bundles(
     minimal_topology_subset = build_minimal_public_topology_subset_from_topology_payload(topology_payload)
     lifecycle_summary = dict(lifecycle_payload.get("summary") or {})
     publication_counts = _publication_state_counts(lifecycle_payload)
-    non_published_count = sum(
-        count
-        for state, count in publication_counts.items()
-        if str(state) != "PUBLISHED"
-    )
+    public_room_ids = tuple(public_subset["room_ids"])
+    lifecycle_published_ids = _lifecycle_committed_room_ids(lifecycle_payload)
+    lifecycle_all_room_ids = _lifecycle_all_room_ids(lifecycle_payload)
+    non_published_room_ids = tuple(sorted(set(lifecycle_all_room_ids) - set(public_room_ids)))
 
     runtime_state = RuntimeMaintainedStateSnapshot(
         sequence_id=summary_payload.get("sequence_id") or manifest_payload.get("sequence_name") or committed_bundle.sequence_name,
@@ -782,11 +799,19 @@ def build_runtime_snapshot_from_bundles(
         artifact_profile=diagnostics_bundle.artifact_profile,
         lifecycle_surface=None if diagnostics_bundle.lifecycle_record is None else diagnostics_bundle.lifecycle_record.get("artifact_surface"),
         lifecycle_semantics=None if diagnostics_bundle.lifecycle_record is None else diagnostics_bundle.lifecycle_record.get("artifact_semantics"),
-        committed_room_count=_as_int(lifecycle_summary.get("committed_room_count")),
-        non_published_room_count=int(non_published_count),
+        committed_room_count=public_subset["room_count"],
+        non_published_room_count=len(non_published_room_ids),
         publication_state_counts=publication_counts,
-        committed_room_ids=_lifecycle_committed_room_ids(lifecycle_payload),
-        non_published_room_ids=_lifecycle_non_published_room_ids(lifecycle_payload),
+        committed_room_ids=public_room_ids,
+        non_published_room_ids=non_published_room_ids,
+        lifecycle_published_room_count=len(lifecycle_published_ids),
+        lifecycle_published_room_ids=lifecycle_published_ids,
+        lifecycle_published_but_not_public_room_ids=tuple(
+            sorted(set(lifecycle_published_ids) - set(public_room_ids))
+        ),
+        public_but_not_lifecycle_published_room_ids=tuple(
+            sorted(set(public_room_ids) - set(lifecycle_published_ids))
+        ),
     )
     return RuntimeStateSnapshot(
         contract_version=RUNTIME_STATE_SNAPSHOT_CONTRACT_VERSION,
@@ -825,12 +850,12 @@ def build_runtime_snapshot_from_live_stage_state(
     )
     lifecycle_summary = dict(lifecycle.get("summary") or {})
     publication_counts = _publication_state_counts(lifecycle)
-    non_published_ids = _lifecycle_non_published_room_ids(lifecycle)
-    committed_ids = _lifecycle_committed_room_ids(lifecycle)
+    lifecycle_all_room_ids = _lifecycle_all_room_ids(lifecycle)
+    lifecycle_published_ids = _lifecycle_committed_room_ids(lifecycle)
     runtime_subset = _extract_public_subset_from_vector_map(vector_map)
     minimal_topology_subset = build_minimal_public_topology_subset_from_vector_map(
         vector_map,
-        committed_room_ids=committed_ids,
+        committed_room_ids=lifecycle_published_ids,
     )
     minimal_counts = dict(minimal_topology_subset.get("counts") or {})
     minimal_ids = dict(minimal_topology_subset.get("ids") or {})
@@ -845,6 +870,8 @@ def build_runtime_snapshot_from_live_stage_state(
         "object_ids": tuple(minimal_ids.get("object_ids") or ()),
         "anchor_ids": runtime_subset["anchor_ids"],
     }
+    public_room_ids = tuple(public_subset["room_ids"])
+    non_published_ids = tuple(sorted(set(lifecycle_all_room_ids) - set(public_room_ids)))
     snapshots = list(getattr(stage3_state, "snapshots", []) or [])
     segmentation_cycle_count = _state_attr(stage5_state, stage3_state, attr="segmentation_cycle_count")
     if segmentation_cycle_count is None and snapshots:
@@ -905,11 +932,19 @@ def build_runtime_snapshot_from_live_stage_state(
         artifact_profile=diagnostics_bundle.artifact_profile,
         lifecycle_surface=None if diagnostics_bundle.lifecycle_record is None else diagnostics_bundle.lifecycle_record.get("artifact_surface"),
         lifecycle_semantics=None if diagnostics_bundle.lifecycle_record is None else diagnostics_bundle.lifecycle_record.get("artifact_semantics"),
-        committed_room_count=_as_int(lifecycle_summary.get("committed_room_count"), default=len(committed_ids)),
+        committed_room_count=public_subset["room_count"],
         non_published_room_count=len(non_published_ids),
         publication_state_counts=publication_counts,
-        committed_room_ids=committed_ids,
+        committed_room_ids=public_room_ids,
         non_published_room_ids=non_published_ids,
+        lifecycle_published_room_count=len(lifecycle_published_ids),
+        lifecycle_published_room_ids=lifecycle_published_ids,
+        lifecycle_published_but_not_public_room_ids=tuple(
+            sorted(set(lifecycle_published_ids) - set(public_room_ids))
+        ),
+        public_but_not_lifecycle_published_room_ids=tuple(
+            sorted(set(public_room_ids) - set(lifecycle_published_ids))
+        ),
     )
     return RuntimeStateSnapshot(
         contract_version=RUNTIME_STATE_SNAPSHOT_CONTRACT_VERSION,

@@ -53,11 +53,29 @@ def build_validation_report(*, artifact_path: Path, coordination_root: Path) -> 
             "artifact_path": str(refresh_result.latest_scene_root),
             "topology_path": topology_payload.get("topology_path"),
             "room_count": len(dict(topology_payload.get("topology") or {}).get("rooms") or []),
+            "room_ids": [
+                str(room.get("id", room.get("room_id")))
+                for room in list(dict(topology_payload.get("topology") or {}).get("rooms") or [])
+                if isinstance(room, dict)
+            ],
         },
         "publication_diagnostics_check": {
             "artifact_path": str(refresh_result.latest_scene_root),
             "room_count": len(list(diagnostics_payload.get("rooms") or [])),
             "published_room_count": dict(diagnostics_payload.get("summary") or {}).get("published_room_count"),
+            "published_room_ids": dict(diagnostics_payload.get("summary") or {}).get("published_room_ids"),
+            "lifecycle_published_room_count": dict(diagnostics_payload.get("summary") or {}).get(
+                "lifecycle_published_room_count"
+            ),
+            "lifecycle_published_room_ids": dict(diagnostics_payload.get("summary") or {}).get(
+                "lifecycle_published_room_ids"
+            ),
+            "lifecycle_published_but_not_public_room_ids": dict(diagnostics_payload.get("summary") or {}).get(
+                "lifecycle_published_but_not_public_room_ids"
+            ),
+            "public_but_not_lifecycle_published_room_ids": dict(diagnostics_payload.get("summary") or {}).get(
+                "public_but_not_lifecycle_published_room_ids"
+            ),
         },
     }
 
