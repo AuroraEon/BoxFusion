@@ -158,6 +158,28 @@ def _infer_artifact_profile(summary_payload: Optional[Dict[str, Any]]) -> Option
     return None
 
 
+def _resolve_summary_world_snapshot_path(
+    summary_payload: Optional[Dict[str, Any]],
+    *,
+    scene_root: Path,
+    reference_path: Path,
+) -> Optional[Path]:
+    summary = dict(summary_payload or {})
+    for key in (
+        "public_world_snapshot_path",
+        "committed_world_snapshot_path",
+        "final_vector_map_path",
+    ):
+        resolved = _resolve_path_token(
+            summary.get(key),
+            scene_root=scene_root,
+            reference_path=reference_path,
+        )
+        if resolved is not None:
+            return resolved
+    return None
+
+
 @dataclass
 class CommittedPublicBundle:
     scene_root: Path
@@ -269,8 +291,8 @@ class CommittedPublicBundle:
         summary_payload = None if summary_path is None else dict(_load_json(summary_path))
         world_snapshot_path = None
         if summary_payload is not None:
-            world_snapshot_path = _resolve_path_token(
-                summary_payload.get("final_vector_map_path"),
+            world_snapshot_path = _resolve_summary_world_snapshot_path(
+                summary_payload,
                 scene_root=scene_root,
                 reference_path=summary_path,
             )
@@ -321,8 +343,8 @@ class CommittedPublicBundle:
                     topology_path=topology_path,
                     selection_reason=selection_reason,
                     summary_path=summary_path,
-                    world_snapshot_path=_resolve_path_token(
-                        summary_payload.get("final_vector_map_path"),
+                    world_snapshot_path=_resolve_summary_world_snapshot_path(
+                        summary_payload,
                         scene_root=scene_root,
                         reference_path=summary_path,
                     ),
@@ -352,8 +374,8 @@ class CommittedPublicBundle:
                 topology_path=topology_path,
                 selection_reason=selection_reason,
                 summary_path=summary_path if summary_path.exists() else None,
-                world_snapshot_path=_resolve_path_token(
-                    None if summary_payload is None else summary_payload.get("final_vector_map_path"),
+                world_snapshot_path=_resolve_summary_world_snapshot_path(
+                    summary_payload,
                     scene_root=scene_root,
                     reference_path=summary_path if summary_path.exists() else topology_path,
                 ),
