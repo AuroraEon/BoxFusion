@@ -5,6 +5,11 @@ Date: 2026-04-18
 This note lists the minimal commands needed to refresh or revalidate the frozen paper package.
 Use them only if a table entry or demo asset must be regenerated.
 
+For benchmark/paper reruns, the recommended path now includes
+`--suppress-service-debug-artifacts` by default.
+This does not change the general `stage_a_demo.py` default behavior; it only
+changes the benchmark/paper helper path and the recommended commands below.
+
 ## 1. Primary public-query validation
 
 ```bash
@@ -93,6 +98,7 @@ python3 stage_a_demo.py hm3d \
   --capture-stride 25 \
   --video-fps 12 \
   --core-only \
+  --suppress-service-debug-artifacts \
   --runtime-profile-interval 25 \
   --quiet
 ```
@@ -110,6 +116,7 @@ python3 stage_a_demo.py hm3d \
   --capture-stride 25 \
   --video-fps 12 \
   --core-only \
+  --suppress-service-debug-artifacts \
   --runtime-profile-interval 25
 ```
 
@@ -126,6 +133,7 @@ python3 stage_a_demo.py hm3d \
   --capture-stride 25 \
   --video-fps 12 \
   --core-only \
+  --suppress-service-debug-artifacts \
   --runtime-profile-interval 25 \
   --quiet
 ```
@@ -143,6 +151,7 @@ python3 stage_a_demo.py hm3d \
   --capture-stride 25 \
   --video-fps 12 \
   --core-only \
+  --suppress-service-debug-artifacts \
   --runtime-profile-interval 25 \
   --quiet
 ```
@@ -150,5 +159,9 @@ python3 stage_a_demo.py hm3d \
 ## Notes
 
 - Main paper/default downstream consumption stays on committed/public artifacts only.
+- `stage_a_eval/run_paper_ablation_harness.py` now adds `--suppress-service-debug-artifacts`
+  by default for benchmark/paper ablation reruns. Pass
+  `--materialize-service-debug-artifacts` only if the richer non-authoritative
+  service/debug exports are intentionally needed.
 - The current freeze does not require new reruns unless a frozen artifact is missing or a table cell must be refreshed.
 - `00824` is the preferred smallest-cost rerun if only one supporting sequence needs to be regenerated.

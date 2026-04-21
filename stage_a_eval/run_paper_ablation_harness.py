@@ -82,6 +82,8 @@ def _build_command(args: argparse.Namespace, *, condition_root: Path, room_seg_i
         cmd.extend(["--runtime-profile-interval", str(int(args.runtime_profile_interval))])
     if args.runtime_artifact_mode:
         cmd.extend(["--runtime-artifact-mode", args.runtime_artifact_mode])
+    if not args.materialize_service_debug_artifacts:
+        cmd.append("--suppress-service-debug-artifacts")
     if args.quiet:
         cmd.append("--quiet")
     if args.log_level:
@@ -177,6 +179,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--capture-stride", default=None, type=int)
     parser.add_argument("--runtime-profile-interval", default=None, type=int)
     parser.add_argument("--runtime-artifact-mode", default="benchmark")
+    parser.add_argument(
+        "--materialize-service-debug-artifacts",
+        action="store_true",
+        help=(
+            "Opt out of the paper/benchmark default suppressor and keep the richer non-authoritative "
+            "service/debug artifacts in ablation reruns."
+        ),
+    )
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--log-level", choices=["summary", "verbose"], default="summary")
     parser.add_argument("--runtime-print-interval", default=50, type=int)

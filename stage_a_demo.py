@@ -161,6 +161,7 @@ def build_runtime_artifact_policy_from_args(args: argparse.Namespace) -> Runtime
         requested_scene_graph_vis=bool(getattr(args, "save_scene_graph_vis", False)),
         requested_full_rgb_replay=bool(getattr(args, "full_rgb_replay", False)),
         requested_readonly_tail_reference_audit=bool(getattr(args, "enable_readonly_tail_reference_audit", False)),
+        suppress_service_debug_artifacts=bool(getattr(args, "suppress_service_debug_artifacts", False)),
     )
 
 
@@ -239,6 +240,7 @@ def _run_single_sequence(
         per_frame_pose_overlay=True,
         core_only=artifact_policy.core_only,
         runtime_profile_interval=args.runtime_profile_interval,
+        materialize_rich_service_debug_artifacts=artifact_policy.materialize_rich_service_debug_artifacts,
     )
 
     result = run(
@@ -512,6 +514,14 @@ def main() -> None:
         "--service-mode",
         action="store_true",
         help="Alias for --runtime-artifact-mode service.",
+    )
+    parser.add_argument(
+        "--suppress-service-debug-artifacts",
+        action="store_true",
+        help=(
+            "Keep the authoritative committed/public bundle and lifecycle export, "
+            "but skip rich non-authoritative service/debug artifact materialization in finalize()."
+        ),
     )
     parser.add_argument("--core-only", action="store_true", help="Keep Tier 1 backend artifacts only and suppress optional demo/showcase outputs")
     parser.add_argument(

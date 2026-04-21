@@ -196,3 +196,113 @@ def test_recorder_exports_committed_only_public_artifacts_from_room_trigger(tmp_
     assert diagnostics_payload["summary"]["published_room_count"] == 1
     assert diagnostics_payload["summary"]["pre_publication_room_count"] >= 1
     assert diagnostics_payload["public_topology_definition"] == "committed/published only"
+
+
+def test_recorder_can_suppress_rich_service_debug_artifacts_without_breaking_public_bundle(tmp_path: Path) -> None:
+    recorder = ClosedLoopDemoRecorder(
+        output_root=str(tmp_path),
+        sequence_id="suppressed_service_debug_sequence",
+        capture_stride_frames=1,
+        core_only=True,
+        materialize_rich_service_debug_artifacts=False,
+    )
+
+    image = np.zeros((4, 4, 3), dtype=np.uint8)
+    vector_map_a = _vector_map(
+        rooms=[_room(1)],
+        objects=[{"id": 11, "label": "chair", "category": "chair", "room_uuid": 1, "floor_id": "floor_1"}],
+    )
+    vector_map_b = _vector_map(
+        rooms=[
+            _room(1),
+            _room(2, polygon=[[2.2, 0.0], [4.2, 0.0], [4.2, 2.0], [2.2, 2.0]]),
+        ],
+        gateways=[{"connects": [1, 2], "type": "door", "pos_world": [2.1, 1.0]}],
+        objects=[
+            {"id": 11, "label": "chair", "category": "chair", "room_uuid": 1, "floor_id": "floor_1"},
+            {"id": 12, "label": "table", "category": "table", "room_uuid": 2, "floor_id": "floor_1"},
+        ],
+    )
+
+    recorder.record_snapshot(
+        frame_idx=0,
+        timestamp=0.0,
+        image_rgb=image,
+        pose=_pose(1.0),
+        trajectory_xy=[(1.0, 1.0)],
+        vector_map=vector_map_a,
+        tracking_report={},
+        segmentation_updated=True,
+        segmentation_cycle_idx=0,
+        export_profile={"changed_room_ids": "room_1"},
+    )
+    recorder.record_snapshot(
+        frame_idx=10,
+        timestamp=1.0,
+        image_rgb=image,
+        pose=_pose(3.0),
+        trajectory_xy=[(1.0, 1.0), (3.0, 1.0)],
+        vector_map=vector_map_b,
+        tracking_report={},
+        segmentation_updated=True,
+        segmentation_cycle_idx=1,
+        export_profile={"changed_room_ids": "room_2"},
+    )
+    recorder.record_snapshot(
+        frame_idx=20,
+        timestamp=2.0,
+        image_rgb=image,
+        pose=_pose(3.0),
+        trajectory_xy=[(1.0, 1.0), (3.0, 1.0), (3.0, 1.0)],
+        vector_map=vector_map_b,
+        tracking_report={},
+        segmentation_updated=False,
+        segmentation_cycle_idx=2,
+        export_profile={},
+    )
+
+    outputs = recorder.finalize(
+        {
+            "processed_frames": 3,
+            "duration_sec": 2.0,
+            "average_fps": 1.5,
+        }
+    )
+
+    scene_root = Path(outputs["output_root"])
+    summary = json.loads(scene_root.joinpath("logs", "summary.json").read_text(encoding="utf-8"))
+    query_backend = BoxFusionRosQueryServerBackend.from_bundle_path(scene_root)
+    diagnostics_backend = BoxFusionRosPublicationDiagnosticsBackend.from_bundle_path(scene_root)
+
+    topology_payload = dict(query_backend.get_topology().payload["payload"]["topology"])
+    diagnostics_payload = dict(diagnostics_backend.get_publication_diagnostics().payload["payload"])
+
+    assert summary["materialize_rich_service_debug_artifacts"] is False
+    assert summary["future_narrow_sidecar_target"] == "minimal_public_topology_subset"
+    assert summary["room_scoped_runtime_state_json"] is None
+    assert summary["working_topology_json"] is None
+    assert summary["working_vs_committed_topology_report_json"] is None
+    assert summary["working_vs_committed_topology_timeline_json"] is None
+    assert summary["room_commit_diagnosis_json"] is None
+    assert summary["full_final_vector_map_path"] is None
+    assert sorted(summary["rich_service_debug_artifact_keys_suppressed"]) == [
+        "full_vector_map_snapshot_json",
+        "room_commit_diagnosis_json",
+        "room_commit_diagnosis_md",
+        "room_scoped_runtime_state_json",
+        "working_topology_json",
+        "working_vs_committed_topology_report_json",
+        "working_vs_committed_topology_timeline_json",
+        "working_vs_committed_topology_timeline_md",
+    ]
+    assert scene_root.joinpath("logs", "topology_v0_1.json").exists()
+    assert scene_root.joinpath("logs", "topology_query_report.json").exists()
+    assert scene_root.joinpath("logs", "committed_room_world_model_v0_1.json").exists()
+    assert scene_root.joinpath("logs", "committed_room_world_snapshot_v0_1.json").exists()
+    assert scene_root.joinpath("logs", "online_topology_lifecycle_v0_1.json").exists()
+    assert not scene_root.joinpath("logs", "room_scoped_runtime_state_v0_1.json").exists()
+    assert not scene_root.joinpath("logs", "working_topology_v0_1.json").exists()
+    assert not scene_root.joinpath("logs", "room_commit_diagnosis_v0_1.json").exists()
+    assert [room["id"] for room in topology_payload["rooms"]] == ["room_1"]
+    assert diagnostics_payload["summary"]["published_room_count"] == 1
+    assert float(summary["finalize_export_timing_sec"]["rich_service_debug_artifact_materialization_sec"]) == 0.0

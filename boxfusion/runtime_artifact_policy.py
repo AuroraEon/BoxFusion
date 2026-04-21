@@ -26,6 +26,7 @@ class RuntimeArtifactPolicy:
     write_debug_room_artifacts: bool
     save_point_cloud: bool
     optional_demo_artifacts: bool
+    materialize_rich_service_debug_artifacts: bool
     deferred_artifact_work: Tuple[str, ...]
     notes: Tuple[str, ...]
 
@@ -46,6 +47,7 @@ class RuntimeArtifactPolicy:
             "write_debug_room_artifacts": bool(self.write_debug_room_artifacts),
             "save_point_cloud": bool(self.save_point_cloud),
             "optional_demo_artifacts": bool(self.optional_demo_artifacts),
+            "materialize_rich_service_debug_artifacts": bool(self.materialize_rich_service_debug_artifacts),
             "deferred_artifact_work": list(self.deferred_artifact_work),
             "notes": list(self.notes),
         }
@@ -76,11 +78,23 @@ def resolve_runtime_artifact_policy(
     requested_scene_graph_vis: bool = False,
     requested_full_rgb_replay: bool = False,
     requested_readonly_tail_reference_audit: bool = False,
+    suppress_service_debug_artifacts: bool = False,
 ) -> RuntimeArtifactPolicy:
     normalized_mode = normalize_runtime_artifact_mode(mode, service_mode=service_mode)
     service = normalized_mode == RUNTIME_ARTIFACT_MODE_SERVICE
     effective_core_only = bool(core_only or service)
     optional_demo_artifacts = not effective_core_only
+    materialize_rich_service_debug_artifacts = not bool(suppress_service_debug_artifacts)
+    rich_service_debug_deferred = (
+        "room_scoped_runtime_state_json",
+        "full_vector_map_snapshot_json",
+        "working_topology_json",
+        "working_vs_committed_topology_report_json",
+        "working_vs_committed_topology_timeline_json",
+        "working_vs_committed_topology_timeline_md",
+        "room_commit_diagnosis_json",
+        "room_commit_diagnosis_md",
+    )
 
     if service:
         deferred = (
@@ -92,6 +106,8 @@ def resolve_runtime_artifact_policy(
             "debug_room_artifacts",
             "global_point_cloud_ply",
         )
+        if not materialize_rich_service_debug_artifacts:
+            deferred = deferred + rich_service_debug_deferred
         return RuntimeArtifactPolicy(
             mode=normalized_mode,
             core_only=True,
@@ -103,13 +119,16 @@ def resolve_runtime_artifact_policy(
             write_debug_room_artifacts=False,
             save_point_cloud=False,
             optional_demo_artifacts=False,
+            materialize_rich_service_debug_artifacts=materialize_rich_service_debug_artifacts,
             deferred_artifact_work=deferred,
             notes=(
                 "Service mode keeps runtime state and committed/public query outputs, but skips artifact-only visualization work by default.",
+                "The optional service/debug suppression switch trims rich diagnostic materialization while leaving the authoritative committed/public bundle unchanged.",
                 "Benchmark/debug modes retain the previous default behavior unless core_only is explicitly requested.",
             ),
         )
 
+    deferred = rich_service_debug_deferred if not materialize_rich_service_debug_artifacts else ()
     return RuntimeArtifactPolicy(
         mode=normalized_mode,
         core_only=effective_core_only,
@@ -121,9 +140,11 @@ def resolve_runtime_artifact_policy(
         write_debug_room_artifacts=bool(optional_demo_artifacts),
         save_point_cloud=bool(optional_demo_artifacts),
         optional_demo_artifacts=bool(optional_demo_artifacts),
-        deferred_artifact_work=(),
+        materialize_rich_service_debug_artifacts=materialize_rich_service_debug_artifacts,
+        deferred_artifact_work=deferred,
         notes=(
             "This mode preserves the existing synchronous export path as authoritative.",
+            "The optional service/debug suppression switch trims only rich non-authoritative debug/service artifacts and keeps the committed/public benchmark-facing contract intact.",
             "core_only still suppresses optional demo artifacts without changing public committed-query semantics.",
         ),
     )
@@ -142,6 +163,7 @@ def artifact_policy_from_mapping(payload: Dict[str, Any]) -> RuntimeArtifactPoli
         write_debug_room_artifacts=bool(data.get("write_debug_room_artifacts", False)),
         save_point_cloud=bool(data.get("save_point_cloud", False)),
         optional_demo_artifacts=bool(data.get("optional_demo_artifacts", False)),
+        materialize_rich_service_debug_artifacts=bool(data.get("materialize_rich_service_debug_artifacts", True)),
         deferred_artifact_work=tuple(str(item) for item in data.get("deferred_artifact_work", []) or []),
         notes=tuple(str(item) for item in data.get("notes", []) or []),
     )

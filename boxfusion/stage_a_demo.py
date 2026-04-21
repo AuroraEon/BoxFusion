@@ -2,6 +2,7 @@ import csv
 import json
 import math
 import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -75,6 +76,16 @@ def _mean_or_none(values: Sequence[Any], digits: int = 4) -> Optional[float]:
     if not cleaned:
         return None
     return round(sum(cleaned) / float(len(cleaned)), digits)
+
+
+def _unlink_file_if_exists(path: Optional[Path]) -> None:
+    if path is None:
+        return
+    try:
+        if Path(path).exists():
+            Path(path).unlink()
+    except FileNotFoundError:
+        return
 
 
 def _join_ints(values: Sequence[int]) -> str:
@@ -709,6 +720,7 @@ class ClosedLoopDemoRecorder:
         per_frame_pose_overlay: bool = True,
         core_only: bool = False,
         runtime_profile_interval: Optional[int] = None,
+        materialize_rich_service_debug_artifacts: bool = True,
     ):
         self.output_root = Path(output_root) / str(sequence_id)
         self.sequence_id = str(sequence_id)
@@ -731,6 +743,7 @@ class ClosedLoopDemoRecorder:
         self.write_graphml = bool(self.enable_optional_demo_artifacts)
         self.write_room_segmentation_diagnostics = bool(self.enable_optional_demo_artifacts)
         self.write_report_md = bool(self.enable_optional_demo_artifacts)
+        self.materialize_rich_service_debug_artifacts = bool(materialize_rich_service_debug_artifacts)
 
         self.rgb_dir = self.output_root / "rgb_frames"
         self.render_dir = self.output_root / "rendered_frames"
@@ -1131,6 +1144,7 @@ class ClosedLoopDemoRecorder:
         self,
         run_summary: Dict[str, Any],
     ) -> Dict[str, Any]:
+        finalize_started_at = time.perf_counter()
         if not self.snapshots:
             summary_path = self.log_dir / "summary.json"
             with open(summary_path, "w", encoding="utf-8") as f:
@@ -1300,6 +1314,26 @@ class ClosedLoopDemoRecorder:
         room_commit_diagnosis_json = self.log_dir / "room_commit_diagnosis_v0_1.json"
         room_commit_diagnosis_md = self.log_dir / "room_commit_diagnosis_v0_1.md"
         full_vector_map_snapshot_json = self.log_dir / "final_vector_map_snapshot.json"
+        rich_service_debug_artifact_paths = {
+            "room_scoped_runtime_state_json": room_scoped_runtime_state_json,
+            "full_vector_map_snapshot_json": full_vector_map_snapshot_json,
+            "working_topology_json": working_topology_json,
+            "working_vs_committed_topology_report_json": working_vs_committed_topology_report_json,
+            "working_vs_committed_topology_timeline_json": working_vs_committed_topology_timeline_json,
+            "working_vs_committed_topology_timeline_md": working_vs_committed_topology_timeline_md,
+            "room_commit_diagnosis_json": room_commit_diagnosis_json,
+            "room_commit_diagnosis_md": room_commit_diagnosis_md,
+        }
+        rich_service_debug_artifact_keys = tuple(sorted(rich_service_debug_artifact_paths))
+        rich_service_debug_artifact_keys_materialized = list(rich_service_debug_artifact_keys)
+        rich_service_debug_artifact_keys_suppressed: List[str] = []
+        export_timing_sec = {
+            "public_authoritative_export_sec": 0.0,
+            "mandatory_supporting_export_sec": 0.0,
+            "rich_service_debug_artifact_materialization_sec": 0.0,
+            "manifest_refresh_sec": 0.0,
+            "total_finalize_export_sec": 0.0,
+        }
         topology_export_error = None
         working_topology_export_error = None
         working_vs_committed_timeline_export_error = None
@@ -1309,6 +1343,8 @@ class ClosedLoopDemoRecorder:
         room_scoped_export_result = None
         working_topology_payload = None
         working_vs_committed_report_payload = None
+        online_topology_working_lifecycle_payload = None
+        public_export_started_at = time.perf_counter()
         try:
             room_topology = RoomTopologyBuilder().build(
                 final_vector_map,
@@ -1332,6 +1368,7 @@ class ClosedLoopDemoRecorder:
                 log_dir=self.log_dir,
                 final_vector_map=final_vector_map,
                 full_topology_payload=full_public_topology_payload,
+                materialize_runtime_state_report=self.materialize_rich_service_debug_artifacts,
             )
             if topology_graphml is not None:
                 from boxfusion.room_topology import RoomTopology
@@ -1339,8 +1376,8 @@ class ClosedLoopDemoRecorder:
                 RoomTopology.from_dict(room_scoped_export_result["committed_topology_payload"]).export_graphml(topology_graphml)
         except Exception as exc:
             topology_export_error = str(exc)
-        with open(full_vector_map_snapshot_json, "w", encoding="utf-8") as f:
-            json.dump(final_vector_map, f, indent=2)
+        export_timing_sec["public_authoritative_export_sec"] = round(float(time.perf_counter() - public_export_started_at), 6)
+        mandatory_supporting_started_at = time.perf_counter()
         with open(vertical_transition_evidence_json, "w", encoding="utf-8") as f:
             json.dump(
                 {
@@ -1358,11 +1395,6 @@ class ClosedLoopDemoRecorder:
         floor_diagnostics_payload["sequence_id"] = self.sequence_id
         with open(floor_diagnostics_summary_json, "w", encoding="utf-8") as f:
             json.dump(floor_diagnostics_payload, f, indent=2)
-        online_topology_working_lifecycle_payload = self.online_topology_lifecycle.finalize_report(
-            frame_idx=int(final_snapshot.frame_idx),
-            timestamp=float(final_snapshot.timestamp),
-            public_topology_export_succeeded=False,
-        )
         self.online_topology_lifecycle.export_json(
             online_topology_lifecycle_json,
             frame_idx=int(final_snapshot.frame_idx),
@@ -1371,7 +1403,28 @@ class ClosedLoopDemoRecorder:
         )
         with open(online_topology_lifecycle_json, "r", encoding="utf-8") as f:
             online_topology_lifecycle_payload = json.load(f)
-        if topology_export_error is None and full_public_topology_payload is not None:
+        export_timing_sec["mandatory_supporting_export_sec"] = round(float(time.perf_counter() - mandatory_supporting_started_at), 6)
+        if self.materialize_rich_service_debug_artifacts:
+            rich_debug_started_at = time.perf_counter()
+            with open(full_vector_map_snapshot_json, "w", encoding="utf-8") as f:
+                json.dump(final_vector_map, f, indent=2)
+            online_topology_working_lifecycle_payload = self.online_topology_lifecycle.finalize_report(
+                frame_idx=int(final_snapshot.frame_idx),
+                timestamp=float(final_snapshot.timestamp),
+                public_topology_export_succeeded=False,
+            )
+        else:
+            rich_service_debug_artifact_keys_suppressed = list(rich_service_debug_artifact_keys)
+            rich_service_debug_artifact_keys_materialized = []
+            for path in rich_service_debug_artifact_paths.values():
+                _unlink_file_if_exists(path)
+            rich_debug_started_at = None
+        if (
+            self.materialize_rich_service_debug_artifacts
+            and topology_export_error is None
+            and full_public_topology_payload is not None
+            and online_topology_working_lifecycle_payload is not None
+        ):
             try:
                 working_topology_payload = build_working_topology_snapshot(
                     full_public_topology_payload,
@@ -1401,41 +1454,51 @@ class ClosedLoopDemoRecorder:
                 )
             except Exception as exc:
                 working_topology_export_error = str(exc)
-        try:
-            working_vs_committed_timeline_payload = build_working_vs_committed_timeline(
-                online_topology_lifecycle_payload,
-                source_artifacts={
-                    "lifecycle_json": str(online_topology_lifecycle_json),
-                    "working_topology_json": None if working_topology_payload is None else str(working_topology_json),
-                    "working_vs_committed_topology_report_json": None
-                    if working_vs_committed_report_payload is None
-                    else str(working_vs_committed_topology_report_json),
-                    "topology_json": None if topology_export_error else str(topology_json),
-                },
-                source_path=online_topology_lifecycle_json,
-                final_comparison_payload=working_vs_committed_report_payload,
+        if self.materialize_rich_service_debug_artifacts:
+            try:
+                working_vs_committed_timeline_payload = build_working_vs_committed_timeline(
+                    online_topology_lifecycle_payload,
+                    source_artifacts={
+                        "lifecycle_json": str(online_topology_lifecycle_json),
+                        "working_topology_json": None if working_topology_payload is None else str(working_topology_json),
+                        "working_vs_committed_topology_report_json": None
+                        if working_vs_committed_report_payload is None
+                        else str(working_vs_committed_topology_report_json),
+                        "topology_json": None if topology_export_error else str(topology_json),
+                    },
+                    source_path=online_topology_lifecycle_json,
+                    final_comparison_payload=working_vs_committed_report_payload,
+                )
+                working_vs_committed_timeline_markdown = render_working_vs_committed_timeline_markdown(
+                    working_vs_committed_timeline_payload
+                )
+                write_debug_timeline_json(
+                    working_vs_committed_topology_timeline_json,
+                    working_vs_committed_timeline_payload,
+                )
+                write_debug_timeline_markdown(
+                    working_vs_committed_topology_timeline_md,
+                    working_vs_committed_timeline_markdown,
+                )
+            except Exception as exc:
+                working_vs_committed_timeline_export_error = str(exc)
+        if self.materialize_rich_service_debug_artifacts:
+            try:
+                room_commit_scene_artifacts = load_room_commit_scene_artifacts(self.log_dir)
+                room_commit_diagnosis_payload = build_room_commit_diagnosis(room_commit_scene_artifacts)
+                room_commit_diagnosis_markdown = render_room_commit_diagnosis_markdown(room_commit_diagnosis_payload)
+                write_room_commit_diagnosis_json(room_commit_diagnosis_json, room_commit_diagnosis_payload)
+                write_room_commit_diagnosis_markdown(room_commit_diagnosis_md, room_commit_diagnosis_markdown)
+            except Exception as exc:
+                room_commit_diagnosis_export_error = str(exc)
+        rich_materialization_sec = 0.0
+        if rich_debug_started_at is not None:
+            rich_materialization_sec += time.perf_counter() - rich_debug_started_at
+        if room_scoped_export_result is not None:
+            rich_materialization_sec += float(
+                dict(room_scoped_export_result.get("export_timing_sec") or {}).get("runtime_state_export_sec", 0.0)
             )
-            working_vs_committed_timeline_markdown = render_working_vs_committed_timeline_markdown(
-                working_vs_committed_timeline_payload
-            )
-            write_debug_timeline_json(
-                working_vs_committed_topology_timeline_json,
-                working_vs_committed_timeline_payload,
-            )
-            write_debug_timeline_markdown(
-                working_vs_committed_topology_timeline_md,
-                working_vs_committed_timeline_markdown,
-            )
-        except Exception as exc:
-            working_vs_committed_timeline_export_error = str(exc)
-        try:
-            room_commit_scene_artifacts = load_room_commit_scene_artifacts(self.log_dir)
-            room_commit_diagnosis_payload = build_room_commit_diagnosis(room_commit_scene_artifacts)
-            room_commit_diagnosis_markdown = render_room_commit_diagnosis_markdown(room_commit_diagnosis_payload)
-            write_room_commit_diagnosis_json(room_commit_diagnosis_json, room_commit_diagnosis_payload)
-            write_room_commit_diagnosis_markdown(room_commit_diagnosis_md, room_commit_diagnosis_markdown)
-        except Exception as exc:
-            room_commit_diagnosis_export_error = str(exc)
+        export_timing_sec["rich_service_debug_artifact_materialization_sec"] = round(float(rich_materialization_sec), 6)
         presentation_parameters = self._presentation_parameters()
         presentation_quality_note = self._presentation_quality_note()
         artifact_contract = build_artifact_contract(
@@ -1444,7 +1507,10 @@ class ClosedLoopDemoRecorder:
             topology_json_exists=topology_export_error is None,
             topology_query_report_exists=topology_export_error is None,
             online_topology_lifecycle_exists=True,
-            working_vs_committed_timeline_exists=working_vs_committed_timeline_export_error is None,
+            working_vs_committed_timeline_exists=(
+                bool(self.materialize_rich_service_debug_artifacts)
+                and working_vs_committed_timeline_export_error is None
+            ),
         )
         summary_payload = dict(run_summary)
         summary_payload.update(
@@ -1484,13 +1550,25 @@ class ClosedLoopDemoRecorder:
                 "room_segmentation_diagnostics_json": None if room_segmentation_diagnostics_json is None else str(room_segmentation_diagnostics_json),
                 "floor_diagnostics_summary_json": str(floor_diagnostics_summary_json),
                 "online_topology_lifecycle_json": str(online_topology_lifecycle_json),
-                "working_topology_json": None if topology_export_error or working_topology_export_error else str(working_topology_json),
-                "working_vs_committed_topology_report_json": None if topology_export_error or working_topology_export_error else str(working_vs_committed_topology_report_json),
+                "working_topology_json": None
+                if (
+                    topology_export_error
+                    or working_topology_export_error
+                    or not self.materialize_rich_service_debug_artifacts
+                )
+                else str(working_topology_json),
+                "working_vs_committed_topology_report_json": None
+                if (
+                    topology_export_error
+                    or working_topology_export_error
+                    or not self.materialize_rich_service_debug_artifacts
+                )
+                else str(working_vs_committed_topology_report_json),
                 "working_vs_committed_topology_timeline_json": None
-                if working_vs_committed_timeline_export_error
+                if working_vs_committed_timeline_export_error or not self.materialize_rich_service_debug_artifacts
                 else str(working_vs_committed_topology_timeline_json),
                 "working_vs_committed_topology_timeline_md": None
-                if working_vs_committed_timeline_export_error
+                if working_vs_committed_timeline_export_error or not self.materialize_rich_service_debug_artifacts
                 else str(working_vs_committed_topology_timeline_md),
                 "runtime_growth_profile_csv": str(runtime_growth_profile_csv),
                 "runtime_growth_profile_json": str(runtime_growth_profile_json),
@@ -1512,13 +1590,26 @@ class ClosedLoopDemoRecorder:
                 "online_topology_candidate_complete_room_count": int(online_topology_lifecycle_payload.get("summary", {}).get("candidate_complete_room_count", 0)),
                 "online_topology_committed_room_count": int(online_topology_lifecycle_payload.get("summary", {}).get("committed_room_count", 0)),
                 "online_topology_blocked_commit_room_count": int(online_topology_lifecycle_payload.get("summary", {}).get("blocked_commit_room_count", 0)),
-                "room_scoped_runtime_state_json": None if topology_export_error else str(room_scoped_runtime_state_json),
+                "materialize_rich_service_debug_artifacts": bool(self.materialize_rich_service_debug_artifacts),
+                "future_narrow_sidecar_target": "minimal_public_topology_subset",
+                "rich_service_debug_artifact_keys_materialized": list(rich_service_debug_artifact_keys_materialized),
+                "rich_service_debug_artifact_keys_suppressed": list(rich_service_debug_artifact_keys_suppressed),
+                "finalize_export_timing_sec": dict(export_timing_sec),
+                "room_scoped_runtime_state_json": None
+                if topology_export_error or room_scoped_export_result is None
+                else room_scoped_export_result.get("room_scoped_runtime_state_path"),
                 "committed_room_world_model_json": None if topology_export_error else str(committed_room_world_model_json),
                 "public_world_snapshot_path": None if topology_export_error else str(public_world_snapshot_json),
-                "room_commit_diagnosis_json": None if room_commit_diagnosis_export_error else str(room_commit_diagnosis_json),
-                "room_commit_diagnosis_md": None if room_commit_diagnosis_export_error else str(room_commit_diagnosis_md),
+                "room_commit_diagnosis_json": None
+                if room_commit_diagnosis_export_error or not self.materialize_rich_service_debug_artifacts
+                else str(room_commit_diagnosis_json),
+                "room_commit_diagnosis_md": None
+                if room_commit_diagnosis_export_error or not self.materialize_rich_service_debug_artifacts
+                else str(room_commit_diagnosis_md),
                 "final_vector_map_path": None if topology_export_error else str(public_world_snapshot_json),
-                "full_final_vector_map_path": str(full_vector_map_snapshot_json),
+                "full_final_vector_map_path": None
+                if not self.materialize_rich_service_debug_artifacts
+                else str(full_vector_map_snapshot_json),
                 "topology_v0_1_json": None if topology_export_error else str(topology_json),
                 "topology_query_report_json": None if topology_export_error else str(topology_query_report_json),
                 "topology_v0_1_graphml": None if topology_export_error or topology_graphml is None else str(topology_graphml),
@@ -1535,11 +1626,17 @@ class ClosedLoopDemoRecorder:
                 f.write(self._build_report(summary_payload, final_snapshot, revisit_diagnostics, spotlight_paths))
         from boxfusion.backend_eval_scaffold import write_scene_manifest
 
+        manifest_started_at = time.perf_counter()
         write_scene_manifest(
             self.output_root,
             dataset_root=None if self.dataset_root is None else Path(self.dataset_root),
             sequence_name=self.sequence_id,
         )
+        export_timing_sec["manifest_refresh_sec"] = round(float(time.perf_counter() - manifest_started_at), 6)
+        export_timing_sec["total_finalize_export_sec"] = round(float(time.perf_counter() - finalize_started_at), 6)
+        with open(summary_json, "w", encoding="utf-8") as f:
+            summary_payload["finalize_export_timing_sec"] = dict(export_timing_sec)
+            json.dump(summary_payload, f, indent=2)
 
         return {
             "output_root": str(self.output_root),
@@ -1558,22 +1655,40 @@ class ClosedLoopDemoRecorder:
             "room_segmentation_diagnostics_json": None if room_segmentation_diagnostics_json is None else str(room_segmentation_diagnostics_json),
             "floor_diagnostics_summary_json": str(floor_diagnostics_summary_json),
             "online_topology_lifecycle_json": str(online_topology_lifecycle_json),
-            "working_topology_json": None if topology_export_error or working_topology_export_error else str(working_topology_json),
-            "working_vs_committed_topology_report_json": None if topology_export_error or working_topology_export_error else str(working_vs_committed_topology_report_json),
+            "working_topology_json": None
+            if (
+                topology_export_error
+                or working_topology_export_error
+                or not self.materialize_rich_service_debug_artifacts
+            )
+            else str(working_topology_json),
+            "working_vs_committed_topology_report_json": None
+            if (
+                topology_export_error
+                or working_topology_export_error
+                or not self.materialize_rich_service_debug_artifacts
+            )
+            else str(working_vs_committed_topology_report_json),
             "working_vs_committed_topology_timeline_json": None
-            if working_vs_committed_timeline_export_error
+            if working_vs_committed_timeline_export_error or not self.materialize_rich_service_debug_artifacts
             else str(working_vs_committed_topology_timeline_json),
             "working_vs_committed_topology_timeline_md": None
-            if working_vs_committed_timeline_export_error
+            if working_vs_committed_timeline_export_error or not self.materialize_rich_service_debug_artifacts
             else str(working_vs_committed_topology_timeline_md),
             "runtime_growth_profile_csv": str(runtime_growth_profile_csv),
             "runtime_growth_profile_json": str(runtime_growth_profile_json),
             "spotlight_dir": None if not spotlight_paths else str(self.spotlight_dir),
-            "room_scoped_runtime_state_json": None if topology_export_error else str(room_scoped_runtime_state_json),
+            "room_scoped_runtime_state_json": None
+            if topology_export_error or room_scoped_export_result is None
+            else room_scoped_export_result.get("room_scoped_runtime_state_path"),
             "committed_room_world_model_json": None if topology_export_error else str(committed_room_world_model_json),
             "public_world_snapshot_path": None if topology_export_error else str(public_world_snapshot_json),
-            "room_commit_diagnosis_json": None if room_commit_diagnosis_export_error else str(room_commit_diagnosis_json),
-            "room_commit_diagnosis_md": None if room_commit_diagnosis_export_error else str(room_commit_diagnosis_md),
+            "room_commit_diagnosis_json": None
+            if room_commit_diagnosis_export_error or not self.materialize_rich_service_debug_artifacts
+            else str(room_commit_diagnosis_json),
+            "room_commit_diagnosis_md": None
+            if room_commit_diagnosis_export_error or not self.materialize_rich_service_debug_artifacts
+            else str(room_commit_diagnosis_md),
             "topology_v0_1_json": None if topology_export_error else str(topology_json),
             "topology_query_report_json": None if topology_export_error else str(topology_query_report_json),
             "topology_v0_1_graphml": None if topology_export_error or topology_graphml is None else str(topology_graphml),

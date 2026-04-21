@@ -135,6 +135,10 @@ class RuntimeInstrumentation:
         "stage5_assoc_reference_mask_prep_sec",
         "stage5_assoc_candidate_mask_prep_sec",
         "stage5_boxfusion_mask_prep_sec",
+        "stage5_candidate_floor_assignment_eval_sec",
+        "stage5_candidate_readonly_room_lookup_sec",
+        "stage5_candidate_floor_assignment_cache_hit_count",
+        "stage5_candidate_floor_assignment_cache_miss_count",
         "stage5_pre_assoc_clone_sec",
         "stage5_bookkeeping_sec",
         "stage5_tail_reference_audit_sec",
@@ -722,6 +726,22 @@ class RuntimeInstrumentation:
             ),
             "stage5_boxfusion_mask_prep_stats_sec": _safe_stats(
                 [row.get("stage5_boxfusion_mask_prep_sec") for row in profiled_rows],
+                digits=6,
+            ),
+            "stage5_candidate_floor_assignment_eval_stats_sec": _safe_stats(
+                [row.get("stage5_candidate_floor_assignment_eval_sec") for row in profiled_rows],
+                digits=6,
+            ),
+            "stage5_candidate_readonly_room_lookup_stats_sec": _safe_stats(
+                [row.get("stage5_candidate_readonly_room_lookup_sec") for row in profiled_rows],
+                digits=6,
+            ),
+            "stage5_candidate_floor_assignment_cache_hit_stats": _safe_stats(
+                [row.get("stage5_candidate_floor_assignment_cache_hit_count") for row in profiled_rows],
+                digits=6,
+            ),
+            "stage5_candidate_floor_assignment_cache_miss_stats": _safe_stats(
+                [row.get("stage5_candidate_floor_assignment_cache_miss_count") for row in profiled_rows],
                 digits=6,
             ),
             "stage5_pre_assoc_clone_stats_sec": _safe_stats(

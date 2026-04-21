@@ -30,6 +30,7 @@ def test_service_mode_disables_artifact_only_work_by_default() -> None:
     assert policy.readonly_tail_reference_audit is False
     assert policy.write_debug_room_artifacts is False
     assert policy.save_point_cloud is False
+    assert policy.materialize_rich_service_debug_artifacts is True
     assert "gt_visualization_pointcloud" in policy.deferred_artifact_work
     assert "debug_room_artifacts" in policy.deferred_artifact_work
 
@@ -54,12 +55,27 @@ def test_benchmark_mode_preserves_existing_requested_defaults() -> None:
     assert policy.readonly_tail_reference_audit is True
     assert policy.write_debug_room_artifacts is True
     assert policy.save_point_cloud is True
+    assert policy.materialize_rich_service_debug_artifacts is True
+
+
+def test_explicit_service_debug_suppression_keeps_public_policy_but_disables_rich_debug_materialization() -> None:
+    policy = resolve_runtime_artifact_policy(
+        mode=RUNTIME_ARTIFACT_MODE_BENCHMARK,
+        core_only=True,
+        suppress_service_debug_artifacts=True,
+    )
+
+    assert policy.core_only is True
+    assert policy.materialize_rich_service_debug_artifacts is False
+    assert "working_topology_json" in policy.deferred_artifact_work
+    assert "room_commit_diagnosis_json" in policy.deferred_artifact_work
 
 
 def test_stage_a_launcher_policy_helper_wires_service_switch() -> None:
     args = argparse.Namespace(
         runtime_artifact_mode=RUNTIME_ARTIFACT_MODE_BENCHMARK,
         service_mode=True,
+        suppress_service_debug_artifacts=True,
         core_only=False,
         viz_on_gt_points=True,
         save_scene_graph_vis=True,
@@ -72,3 +88,4 @@ def test_stage_a_launcher_policy_helper_wires_service_switch() -> None:
     assert policy.mode == RUNTIME_ARTIFACT_MODE_SERVICE
     assert policy.to_dict()["service_mode"] is True
     assert policy.to_dict()["prepare_gt_visualization_pointcloud"] is False
+    assert policy.to_dict()["materialize_rich_service_debug_artifacts"] is False

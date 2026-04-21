@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import copy
 import json
+import os
+import time
 from collections import Counter, deque
 from datetime import datetime, timezone
 from pathlib import Path
@@ -136,6 +138,17 @@ def _write_json(path: Path, payload: Dict[str, Any]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
+
+
+def _unlink_if_exists(path: Path) -> None:
+    try:
+        if path.exists():
+            path.unlink()
+    except FileNotFoundError:
+        return
+    except OSError:
+        if os.path.isdir(path):
+            raise
 
 
 class RoomScopedRuntimeManager:
@@ -475,6 +488,7 @@ class RoomScopedRuntimeManager:
         log_dir: Path,
         final_vector_map: Optional[Dict[str, Any]],
         full_topology_payload: Dict[str, Any],
+        materialize_runtime_state_report: bool = True,
     ) -> Dict[str, Any]:
         log_dir = Path(log_dir)
         committed_topology_payload = self.build_public_topology_payload(full_topology_payload)
@@ -492,22 +506,37 @@ class RoomScopedRuntimeManager:
 
         from boxfusion.room_topology import RoomTopology
 
+        public_export_start = time.perf_counter()
         RoomTopology.from_dict(committed_topology_payload).export_json(topology_path)
         RoomTopology.from_dict(committed_topology_payload).export_query_report(topology_report_path)
         _write_json(world_model_path, committed_room_world_model_payload)
-        _write_json(runtime_state_path, runtime_state_payload)
         _write_json(public_snapshot_path, committed_world_snapshot_payload)
+        public_export_sec = time.perf_counter() - public_export_start
+
+        runtime_state_export_sec = 0.0
+        runtime_state_exported = False
+        if materialize_runtime_state_report:
+            runtime_state_start = time.perf_counter()
+            _write_json(runtime_state_path, runtime_state_payload)
+            runtime_state_export_sec = time.perf_counter() - runtime_state_start
+            runtime_state_exported = True
+        else:
+            _unlink_if_exists(runtime_state_path)
 
         return {
             "topology_path": str(topology_path),
             "topology_query_report_path": str(topology_report_path),
             "committed_room_world_model_path": str(world_model_path),
-            "room_scoped_runtime_state_path": str(runtime_state_path),
+            "room_scoped_runtime_state_path": None if not runtime_state_exported else str(runtime_state_path),
             "public_world_snapshot_path": str(public_snapshot_path),
             "committed_room_ids": self.committed_room_ids(),
             "committed_topology_payload": committed_topology_payload,
             "committed_room_world_model_payload": committed_room_world_model_payload,
             "runtime_state_payload": runtime_state_payload,
+            "export_timing_sec": {
+                "public_bundle_export_sec": round(float(public_export_sec), 6),
+                "runtime_state_export_sec": round(float(runtime_state_export_sec), 6),
+            },
         }
 
     def _changed_room_ids(self, export_profile: Optional[Dict[str, Any]]) -> List[str]:

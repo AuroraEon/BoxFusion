@@ -64,6 +64,61 @@
           "semantic_target": "bathtub"
         }
       ]
+    },
+    {
+      "scene_root": "runtime_stage1_frozen_evidence/demo_sequence_selection_20260417/scenes/00862-LT9Jq6dN3Ea",
+      "display_name": "00862-LT9Jq6dN3Ea",
+      "role": "supporting",
+      "summary": "Largest current paper-usable supporting scene in the frozen evidence set. It exposes 30 public committed rooms and several long committed/public routes, making it useful for advisor-facing demonstrations of non-trivial graph traversal without changing the query contract.",
+      "recommended_semantic_whitelist": [
+        "bed",
+        "refrigerator",
+        "showerhead",
+        "chair"
+      ],
+      "queries": [
+        {
+          "slug": "room_target_room_40",
+          "title": "Explicit room target: room_1 -> room_40",
+          "explanation": "Shows a longer committed/public room-goal route on the largest currently paper-usable frozen scene. The route crosses seven public rooms and demonstrates that the advisor page still comes strictly from the committed/public graph.",
+          "start_room": "room_1",
+          "goal_room": "room_40"
+        },
+        {
+          "slug": "semantic_refrigerator",
+          "title": "Semantic target: refrigerator from room_1",
+          "explanation": "Shows semantic-room-summary routing on the same larger scene. The target resolves to room_39 from committed room summaries and then routes there over the public room graph.",
+          "start_room": "room_1",
+          "semantic_target": "refrigerator"
+        }
+      ]
+    },
+    {
+      "scene_root": "runtime_stage1_frozen_evidence/room_graph_vln_crosscheck_20260417/scenes/00829-QaLdnwvtxbs",
+      "display_name": "00829-QaLdnwvtxbs",
+      "role": "supporting",
+      "summary": "Compact two-room supporting scene retained as a lightweight cross-check. It is less presentation-rich than 00824 or 00862, but it remains paper-usable and is useful as a minimal advisor-facing sanity page generated from the same committed/public query surface.",
+      "recommended_semantic_whitelist": [
+        "bathtub",
+        "bed",
+        "stool"
+      ],
+      "queries": [
+        {
+          "slug": "room_target_room_7",
+          "title": "Explicit room target: room_3 -> room_7",
+          "explanation": "Shows the smallest non-trivial committed/public route in the current four-scene set. This page is intentionally simple and serves as a compact advisor-facing sanity check rather than a long-route showcase.",
+          "start_room": "room_3",
+          "goal_room": "room_7"
+        },
+        {
+          "slug": "semantic_bathtub",
+          "title": "Semantic target: bathtub from room_3",
+          "explanation": "Shows semantic-room-summary routing on the compact cross-check scene. The target resolves to room_7 using the committed room summaries and preserves the same public routing contract as the larger scenes.",
+          "start_room": "room_3",
+          "semantic_target": "bathtub"
+        }
+      ]
     }
   ]
 }

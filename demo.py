@@ -51,6 +51,48 @@ WITHIN_FLOOR_RECENT_STEP_WINDOW = 25
 WITHIN_FLOOR_NEAR_XY_THRESHOLD_M = 4.0
 READONLY_TAIL_DRIFT_REFERENCE_MIN_RETAINED_COUNT = 60
 FAST_GT_RGB_RESIZE = os.environ.get("BOXFUSION_FAST_GT_RGB_RESIZE", "1").strip().lower() not in {"0", "false", "no", "off"}
+STAGE5_CANDIDATE_INDEX_CACHE_ENABLED = (
+    os.environ.get("BOXFUSION_STAGE5_CANDIDATE_INDEX_CACHE", "1").strip().lower() not in {"0", "false", "no", "off"}
+)
+
+
+def _floor_assignment_cache_token(room_segmenter) -> tuple:
+    floor_manager = None if room_segmenter is None else getattr(room_segmenter, "floor_manager", None)
+    if floor_manager is None or not hasattr(floor_manager, "_ordered_floor_ids"):
+        return ()
+    token = []
+    for floor_id in floor_manager._ordered_floor_ids():
+        floor_state = (floor_manager.floors or {}).get(str(floor_id))
+        token.append(
+            (
+                str(floor_id),
+                round(float(getattr(floor_state, "z_center", 0.0) or 0.0), 5),
+                round(float(getattr(floor_state, "z_min", 0.0) or 0.0), 5),
+                round(float(getattr(floor_state, "z_max", 0.0) or 0.0), 5),
+                str(getattr(floor_state, "status", "") or ""),
+                int(getattr(floor_state, "frame_count", 0) or 0),
+                int(getattr(floor_state, "keyframe_count", 0) or 0),
+            )
+        )
+    return tuple(token)
+
+
+def _sync_candidate_index_cache(candidate_index_cache, *, room_segmenter):
+    if candidate_index_cache is None:
+        return None, False
+    cache = candidate_index_cache.setdefault(
+        "stage5_candidate_indices",
+        {
+            "floor_assignment_token": None,
+            "floor_assignment_by_object_id": {},
+        },
+    )
+    current_token = _floor_assignment_cache_token(room_segmenter)
+    floor_token_changed = cache.get("floor_assignment_token") != current_token
+    if floor_token_changed:
+        cache["floor_assignment_token"] = current_token
+        cache["floor_assignment_by_object_id"] = {}
+    return cache, floor_token_changed
 
 
 def _resize_rgb_to_depth(image_chw: torch.Tensor, target_hw) -> torch.Tensor:
@@ -122,6 +164,7 @@ def _build_floor_scoped_candidate_mask(
     current_pose_matrix=None,
     recent_step_window=WITHIN_FLOOR_RECENT_STEP_WINDOW,
     nearby_xy_threshold_m=WITHIN_FLOOR_NEAR_XY_THRESHOLD_M,
+    candidate_index_cache=None,
 ):
     total_count = 0 if all_pred_box is None else int(len(all_pred_box))
     retained_count = int(max(0, min(retained_count, total_count)))
@@ -169,6 +212,12 @@ def _build_floor_scoped_candidate_mask(
         "cheap_room_pruning_tail_retained_count": 0,
         "cheap_room_pruning_same_room_kept_count": 0,
         "cheap_room_pruning_untrusted_kept_count": 0,
+        "candidate_index_cache_enabled": bool(candidate_index_cache is not None),
+        "candidate_index_floor_token_changed": False,
+        "candidate_index_floor_assignment_cache_hits": 0,
+        "candidate_index_floor_assignment_cache_misses": 0,
+        "candidate_index_floor_assignment_eval_sec": 0.0,
+        "candidate_index_readonly_room_lookup_sec": 0.0,
         "reason": "no_retained_history",
     }
     if str(candidate_history_scope_mode or "selective_floor_aware") == "broad_history":
@@ -199,6 +248,15 @@ def _build_floor_scoped_candidate_mask(
     if box_manager is not None and current_frame_idx is not None:
         latest_step_indices, _ = box_manager.latest_contributing_profiled_steps()
         current_step_index = box_manager.profiled_step_index_for_frame(current_frame_idx)
+    cache, floor_token_changed = _sync_candidate_index_cache(candidate_index_cache, room_segmenter=room_segmenter)
+    profile["candidate_index_floor_token_changed"] = bool(floor_token_changed)
+    retained_init_ids = _instances_field_numpy(
+        None if all_pred_box is None else all_pred_box[:retained_count],
+        "init_id",
+        np.int64,
+    )
+    floor_assignment_by_object_id = {} if cache is None else dict(cache.get("floor_assignment_by_object_id") or {})
+
     ambiguous_count = 0
     pruned_count = 0
     same_floor_stable_count = 0
@@ -211,12 +269,36 @@ def _build_floor_scoped_candidate_mask(
     same_floor_missing_xy_count = 0
     ambiguous_kept_mask = np.zeros((retained_count,), dtype=np.bool_)
     fallback_kept_mask = np.zeros((retained_count,), dtype=np.bool_)
+    floor_assignment_eval_start = time.perf_counter()
+    floor_assignment_cache_hits = 0
+    floor_assignment_cache_misses = 0
     for idx, center_z in enumerate(retained_center_z.tolist()):
         if current_frame_mask[idx]:
             continue
-        assignment = dict(room_segmenter.floor_manager.assign_height(float(center_z)) or {})
-        assigned_floor_id = assignment.get("floor_id")
-        assigned_status = assignment.get("status")
+        object_id = None
+        if idx < len(retained_init_ids):
+            object_id = int(retained_init_ids[idx])
+        assigned_floor_id = None
+        assigned_status = None
+        cache_entry = None if object_id is None else floor_assignment_by_object_id.get(int(object_id))
+        if (
+            cache_entry is not None
+            and abs(float(cache_entry.get("center_z", 0.0) or 0.0) - float(center_z)) <= 1e-5
+        ):
+            assigned_floor_id = cache_entry.get("assigned_floor_id")
+            assigned_status = cache_entry.get("assigned_status")
+            floor_assignment_cache_hits += 1
+        else:
+            assignment = dict(room_segmenter.floor_manager.assign_height(float(center_z)) or {})
+            assigned_floor_id = assignment.get("floor_id")
+            assigned_status = assignment.get("status")
+            floor_assignment_cache_misses += 1
+            if object_id is not None and cache is not None:
+                floor_assignment_by_object_id[int(object_id)] = {
+                    "center_z": float(center_z),
+                    "assigned_floor_id": None if assigned_floor_id is None else str(assigned_floor_id),
+                    "assigned_status": None if assigned_status is None else str(assigned_status),
+                }
         if assigned_floor_id is None or assigned_status != "stable":
             ambiguous_count += 1
             ambiguous_kept_mask[idx] = True
@@ -263,6 +345,11 @@ def _build_floor_scoped_candidate_mask(
 
         active_mask[idx] = False
         pruned_count += 1
+    profile["candidate_index_floor_assignment_eval_sec"] = float(time.perf_counter() - floor_assignment_eval_start)
+    profile["candidate_index_floor_assignment_cache_hits"] = int(floor_assignment_cache_hits)
+    profile["candidate_index_floor_assignment_cache_misses"] = int(floor_assignment_cache_misses)
+    if cache is not None:
+        cache["floor_assignment_by_object_id"] = floor_assignment_by_object_id
 
     profile.update(
         {
@@ -321,7 +408,7 @@ def _build_floor_scoped_candidate_mask(
         profile["cheap_room_pruning_reason"] = "readonly_room_snapshot_unavailable"
         return active_mask, profile
 
-    retained_init_ids = np.asarray(all_pred_box.init_id[:retained_count].detach().cpu().numpy(), dtype=np.int64)
+    readonly_room_lookup_start = time.perf_counter()
     cached_room_uuid = np.full((retained_count,), -1, dtype=np.int64)
     cached_room_floor_id = np.empty((retained_count,), dtype=object)
     cached_room_floor_id[:] = None
@@ -334,6 +421,7 @@ def _build_floor_scoped_candidate_mask(
         floor_id = snapshot_entry.get("floor_id")
         cached_room_floor_id[idx] = None if floor_id in (None, "") else str(floor_id)
         cached_room_pruning_trusted[idx] = bool(snapshot_entry.get("trusted", False))
+    profile["candidate_index_readonly_room_lookup_sec"] = float(time.perf_counter() - readonly_room_lookup_start)
 
     trusted_tail_mask = np.asarray(tail_candidate_mask & cached_room_pruning_trusted, dtype=np.bool_)
     trusted_candidate_count = int(np.count_nonzero(trusted_tail_mask))
@@ -746,6 +834,7 @@ def run(
     runtime_artifact_policy = dict(console_cfg.get("runtime_artifact_policy") or {})
     readonly_tail_reference_audit_enabled = _readonly_tail_reference_audit_enabled(console_cfg)
     history_scope_mode = _history_scope_mode(console_cfg)
+    stage5_candidate_index_cache = {} if STAGE5_CANDIDATE_INDEX_CACHE_ENABLED else None
     runtime_console = RuntimeConsoleLogger(
         sequence_id=str(getattr(demo_recorder, "sequence_id", "runtime_session")),
         quiet=bool(console_cfg.get("quiet", False)),
@@ -1406,7 +1495,7 @@ def run(
                 with runtime_profiler.timer(count, "stage5_candidate_mask_prep_sec"):
                     if readonly_tail_reference_audit_enabled:
                         with runtime_profiler.timer(count, "stage5_assoc_reference_mask_prep_sec"):
-                            association_reference_floor_mask, _ = _build_floor_scoped_candidate_mask(
+                            association_reference_floor_mask, association_reference_floor_profile = _build_floor_scoped_candidate_mask(
                                 all_pred_box,
                                 retained_count=num_before_cat,
                                 room_segmenter=room_segmenter,
@@ -1417,9 +1506,11 @@ def run(
                                 current_frame_idx=count,
                                 current_pose_xy=RT[:2, 3],
                                 current_pose_matrix=RT,
+                                candidate_index_cache=stage5_candidate_index_cache,
                             )
                     else:
                         association_reference_floor_mask = None
+                        association_reference_floor_profile = {}
                         runtime_profiler.set_value(count, "stage5_assoc_reference_mask_prep_sec", 0.0)
                     with runtime_profiler.timer(count, "stage5_assoc_candidate_mask_prep_sec"):
                         association_floor_mask, association_floor_profile = _build_floor_scoped_candidate_mask(
@@ -1432,7 +1523,48 @@ def run(
                             current_frame_idx=count,
                             current_pose_xy=RT[:2, 3],
                             current_pose_matrix=RT,
+                            candidate_index_cache=stage5_candidate_index_cache,
                         )
+                    runtime_profiler.add_value(
+                        count,
+                        "stage5_candidate_floor_assignment_eval_sec",
+                        float(association_reference_floor_profile.get("candidate_index_floor_assignment_eval_sec", 0.0)),
+                    )
+                    runtime_profiler.add_value(
+                        count,
+                        "stage5_candidate_floor_assignment_eval_sec",
+                        float(association_floor_profile.get("candidate_index_floor_assignment_eval_sec", 0.0)),
+                    )
+                    runtime_profiler.add_value(
+                        count,
+                        "stage5_candidate_readonly_room_lookup_sec",
+                        float(association_reference_floor_profile.get("candidate_index_readonly_room_lookup_sec", 0.0)),
+                    )
+                    runtime_profiler.add_value(
+                        count,
+                        "stage5_candidate_readonly_room_lookup_sec",
+                        float(association_floor_profile.get("candidate_index_readonly_room_lookup_sec", 0.0)),
+                    )
+                    runtime_profiler.add_value(
+                        count,
+                        "stage5_candidate_floor_assignment_cache_hit_count",
+                        int(association_reference_floor_profile.get("candidate_index_floor_assignment_cache_hits", 0)),
+                    )
+                    runtime_profiler.add_value(
+                        count,
+                        "stage5_candidate_floor_assignment_cache_hit_count",
+                        int(association_floor_profile.get("candidate_index_floor_assignment_cache_hits", 0)),
+                    )
+                    runtime_profiler.add_value(
+                        count,
+                        "stage5_candidate_floor_assignment_cache_miss_count",
+                        int(association_reference_floor_profile.get("candidate_index_floor_assignment_cache_misses", 0)),
+                    )
+                    runtime_profiler.add_value(
+                        count,
+                        "stage5_candidate_floor_assignment_cache_miss_count",
+                        int(association_floor_profile.get("candidate_index_floor_assignment_cache_misses", 0)),
+                    )
                 with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
                     runtime_profiler.add_values(
                         count,
@@ -1587,11 +1719,32 @@ def run(
                                     room_segmenter=room_segmenter,
                                     candidate_history_scope_mode=history_scope_mode,
                                     readonly_object_room_snapshot=readonly_object_room_snapshot,
-                                    box_manager=box_manager,
-                                    current_frame_idx=count,
-                                    current_pose_xy=RT[:2, 3],
-                                    current_pose_matrix=RT,
+                                box_manager=box_manager,
+                                current_frame_idx=count,
+                                current_pose_xy=RT[:2, 3],
+                                current_pose_matrix=RT,
+                                candidate_index_cache=stage5_candidate_index_cache,
                                 )
+                        runtime_profiler.add_value(
+                            count,
+                            "stage5_candidate_floor_assignment_eval_sec",
+                            float(boxfusion_floor_profile.get("candidate_index_floor_assignment_eval_sec", 0.0)),
+                        )
+                        runtime_profiler.add_value(
+                            count,
+                            "stage5_candidate_readonly_room_lookup_sec",
+                            float(boxfusion_floor_profile.get("candidate_index_readonly_room_lookup_sec", 0.0)),
+                        )
+                        runtime_profiler.add_value(
+                            count,
+                            "stage5_candidate_floor_assignment_cache_hit_count",
+                            int(boxfusion_floor_profile.get("candidate_index_floor_assignment_cache_hits", 0)),
+                        )
+                        runtime_profiler.add_value(
+                            count,
+                            "stage5_candidate_floor_assignment_cache_miss_count",
+                            int(boxfusion_floor_profile.get("candidate_index_floor_assignment_cache_misses", 0)),
+                        )
                         with runtime_profiler.timer(count, "stage5_bookkeeping_sec"):
                             runtime_profiler.add_values(
                                 count,
