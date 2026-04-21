@@ -113,6 +113,7 @@ def _build_floor_scoped_candidate_mask(
     retained_count,
     room_segmenter,
     *,
+    candidate_history_scope_mode="selective_floor_aware",
     readonly_object_room_snapshot=None,
     enable_readonly_tail_pruning=True,
     box_manager=None,
@@ -170,6 +171,16 @@ def _build_floor_scoped_candidate_mask(
         "cheap_room_pruning_untrusted_kept_count": 0,
         "reason": "no_retained_history",
     }
+    if str(candidate_history_scope_mode or "selective_floor_aware") == "broad_history":
+        profile.update(
+            {
+                "active": False,
+                "retained_after_count": int(retained_history_count),
+                "cheap_room_pruning_reason": "disabled_for_broad_history_baseline",
+                "reason": "broad_history_enabled",
+            }
+        )
+        return active_mask, profile
     if retained_history_count <= 0:
         return active_mask, profile
     if active_floor_id is None or active_floor_status != "stable":
@@ -453,6 +464,13 @@ def _readonly_tail_reference_audit_enabled(runtime_logging_cfg):
     return bool((runtime_logging_cfg or {}).get("enable_readonly_tail_reference_audit", False))
 
 
+def _history_scope_mode(runtime_logging_cfg):
+    mode = str((runtime_logging_cfg or {}).get("history_scope_mode") or "selective_floor_aware").strip().lower()
+    if mode in {"selective_floor_aware", "broad_history"}:
+        return mode
+    return "selective_floor_aware"
+
+
 def _readonly_tail_reference_audit_disabled_metrics(reason="audit_disabled"):
     return {
         "assoc_readonly_tail_reference_compared": False,
@@ -727,6 +745,7 @@ def run(
         console_cfg.update(runtime_console_config)
     runtime_artifact_policy = dict(console_cfg.get("runtime_artifact_policy") or {})
     readonly_tail_reference_audit_enabled = _readonly_tail_reference_audit_enabled(console_cfg)
+    history_scope_mode = _history_scope_mode(console_cfg)
     runtime_console = RuntimeConsoleLogger(
         sequence_id=str(getattr(demo_recorder, "sequence_id", "runtime_session")),
         quiet=bool(console_cfg.get("quiet", False)),
@@ -1391,6 +1410,7 @@ def run(
                                 all_pred_box,
                                 retained_count=num_before_cat,
                                 room_segmenter=room_segmenter,
+                                candidate_history_scope_mode=history_scope_mode,
                                 readonly_object_room_snapshot=readonly_object_room_snapshot,
                                 enable_readonly_tail_pruning=False,
                                 box_manager=box_manager,
@@ -1406,6 +1426,7 @@ def run(
                             all_pred_box,
                             retained_count=num_before_cat,
                             room_segmenter=room_segmenter,
+                            candidate_history_scope_mode=history_scope_mode,
                             readonly_object_room_snapshot=readonly_object_room_snapshot,
                             box_manager=box_manager,
                             current_frame_idx=count,
@@ -1419,6 +1440,7 @@ def run(
                             "object_floor_pruning_active": bool(association_floor_profile.get("active")),
                             "object_floor_pruning_active_floor_id": association_floor_profile.get("active_floor_id"),
                             "object_floor_pruning_reason": association_floor_profile.get("reason"),
+                            "object_history_scope_mode": history_scope_mode,
                             "object_floor_pruning_retained_before_count": int(association_floor_profile.get("retained_before_count", 0)),
                             "object_floor_pruning_retained_after_count": int(association_floor_profile.get("retained_after_count", 0)),
                             "object_floor_pruning_retained_pruned_count": int(association_floor_profile.get("retained_pruned_count", 0)),
@@ -1563,6 +1585,7 @@ def run(
                                     all_pred_box,
                                     retained_count=len(all_pred_box),
                                     room_segmenter=room_segmenter,
+                                    candidate_history_scope_mode=history_scope_mode,
                                     readonly_object_room_snapshot=readonly_object_room_snapshot,
                                     box_manager=box_manager,
                                     current_frame_idx=count,
@@ -1576,6 +1599,7 @@ def run(
                                     "boxfusion_floor_pruning_active": bool(boxfusion_floor_profile.get("active")),
                                     "boxfusion_floor_pruning_active_floor_id": boxfusion_floor_profile.get("active_floor_id"),
                                     "boxfusion_floor_pruning_reason": boxfusion_floor_profile.get("reason"),
+                                    "boxfusion_history_scope_mode": history_scope_mode,
                                     "boxfusion_floor_pruning_retained_before_count": int(boxfusion_floor_profile.get("retained_before_count", 0)),
                                     "boxfusion_floor_pruning_retained_after_count": int(boxfusion_floor_profile.get("retained_after_count", 0)),
                                     "boxfusion_floor_pruning_retained_pruned_count": int(boxfusion_floor_profile.get("retained_pruned_count", 0)),

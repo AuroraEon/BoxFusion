@@ -164,6 +164,14 @@ def build_runtime_artifact_policy_from_args(args: argparse.Namespace) -> Runtime
     )
 
 
+def apply_ablation_overrides(cfg: dict, args: argparse.Namespace) -> None:
+    box_fusion_mode = str(getattr(args, "box_fusion_mode", "config") or "config").strip().lower()
+    if box_fusion_mode == "on":
+        cfg.setdefault("box_fusion", {})["use"] = True
+    elif box_fusion_mode == "off":
+        cfg.setdefault("box_fusion", {})["use"] = False
+
+
 def _diagnostic_sort_key(item: dict) -> Tuple[float, float, int]:
     return (
         -float(item.get("teacher_evidence_score", 0.0)),
@@ -188,6 +196,7 @@ def _run_single_sequence(
     from tools.utils import get_dataset
 
     cfg = _load_config(args.dataset_path, args.config, seq)
+    apply_ablation_overrides(cfg, args)
     if args.keyframe_gap is not None:
         cfg["data"]["gap"] = int(args.keyframe_gap)
     artifact_policy = build_runtime_artifact_policy_from_args(args)
@@ -198,6 +207,8 @@ def _run_single_sequence(
         "runtime_print_interval": args.runtime_print_interval,
         "per_profiled_frame_stdout": bool(str(args.log_level) == "verbose" and not args.no_per_profiled_frame_stdout),
         "enable_readonly_tail_reference_audit": bool(artifact_policy.readonly_tail_reference_audit),
+        "history_scope_mode": str(args.history_scope_mode),
+        "box_fusion_mode": str(args.box_fusion_mode),
         "runtime_artifact_policy": artifact_policy.to_dict(),
     }
 
@@ -468,6 +479,18 @@ def main() -> None:
     parser.add_argument("--max-frames", default=None, type=int)
     parser.add_argument("--keyframe-gap", default=None, type=int)
     parser.add_argument("--room-seg-interval", default=100, type=int)
+    parser.add_argument(
+        "--box-fusion-mode",
+        choices=["config", "on", "off"],
+        default="config",
+        help="Keep the YAML setting or force BoxFusion on/off for paper ablations.",
+    )
+    parser.add_argument(
+        "--history-scope-mode",
+        choices=["selective_floor_aware", "broad_history"],
+        default="selective_floor_aware",
+        help="Keep the current selective floor-aware history mask or disable it for a broader-history baseline.",
+    )
     parser.add_argument("--capture-stride", default=None, type=int, help="Snapshot stride in frames")
     parser.add_argument("--runtime-profile-interval", default=None, type=int, help="Frame interval used for runtime-growth profile sampling")
     parser.add_argument("--quiet", action="store_true", help="Keep stdout to warnings plus final summary lines")

@@ -311,6 +311,11 @@ def collect_scene_manifest(
     topology_report = load_json(artifacts["topology_query_report_json"]) if artifacts["topology_query_report_json"].exists() else {}
     floor_diag = load_json(artifacts["floor_diagnostics_summary_json"]) if artifacts["floor_diagnostics_summary_json"].exists() else {}
     vertical = load_json(artifacts["vertical_transition_evidence_json"]) if artifacts["vertical_transition_evidence_json"].exists() else {}
+    working_vs_committed = (
+        load_json(artifacts["working_vs_committed_topology_report_json"])
+        if artifacts["working_vs_committed_topology_report_json"].exists()
+        else {}
+    )
     runtime_growth_summary = dict(summary.get("runtime_growth_summary") or {})
     artifact_profile = str(summary.get("artifact_profile") or active_artifact_profile(core_only=bool(summary.get("core_only_mode"))))
     timeline_rows = load_timeline_rows(artifacts["timeline_json"]) if artifacts["timeline_json"].exists() else []
@@ -337,9 +342,36 @@ def collect_scene_manifest(
     object_count = topology_report.get("object_count")
     anchor_count = topology_report.get("anchor_count")
     edge_count = topology_report.get("edge_count")
+    object_label_count = topology_report.get("object_label_count")
     node_count = None
     if room_count is not None or object_count is not None or anchor_count is not None:
         node_count = int(room_count or 0) + int(object_count or 0) + int(anchor_count or 0)
+
+    committed_projection = dict(working_vs_committed.get("committed_topology_projection") or {})
+    working_projection = dict(working_vs_committed.get("working_topology") or {})
+    withheld_summary = dict(working_vs_committed.get("withheld_topology_summary") or {})
+    difference_summary = dict(working_vs_committed.get("difference_summary") or {})
+    topology_comparison_summary = {
+        "public_room_count": None if committed_projection.get("room_count") is None else int(committed_projection.get("room_count")),
+        "public_edge_count": None if committed_projection.get("edge_count") is None else int(committed_projection.get("edge_count")),
+        "public_gateway_count": None if committed_projection.get("gateway_count") is None else int(committed_projection.get("gateway_count")),
+        "working_room_count": None if working_projection.get("room_count") is None else int(working_projection.get("room_count")),
+        "working_edge_count": None if working_projection.get("edge_count") is None else int(working_projection.get("edge_count")),
+        "working_gateway_count": None if working_projection.get("gateway_count") is None else int(working_projection.get("gateway_count")),
+        "withheld_room_count": None if withheld_summary.get("withheld_room_count") is None else int(withheld_summary.get("withheld_room_count")),
+        "withheld_edge_count": None if withheld_summary.get("withheld_edge_count") is None else int(withheld_summary.get("withheld_edge_count")),
+        "withheld_gateway_count": None if withheld_summary.get("withheld_gateway_count") is None else int(withheld_summary.get("withheld_gateway_count")),
+        "working_only_room_count": None if difference_summary.get("working_only_room_count") is None else int(difference_summary.get("working_only_room_count")),
+        "edge_count_difference": None if difference_summary.get("edge_count_difference") is None else int(difference_summary.get("edge_count_difference")),
+    }
+    query_support_summary = {
+        "room_count": None if topology_report.get("room_count") is None else int(topology_report.get("room_count")),
+        "edge_count": None if topology_report.get("edge_count") is None else int(topology_report.get("edge_count")),
+        "object_count": None if topology_report.get("object_count") is None else int(topology_report.get("object_count")),
+        "anchor_count": None if topology_report.get("anchor_count") is None else int(topology_report.get("anchor_count")),
+        "object_label_count": None if object_label_count is None else int(object_label_count),
+        "capabilities": dict(topology_report.get("capabilities") or {}),
+    }
 
     artifact_records = {
         str(spec["key"]): _artifact_record(scene_root, spec)
@@ -435,6 +467,8 @@ def collect_scene_manifest(
             "bytes_per_room": bytes_per_room,
             "all_tier_bytes_per_room": all_tier_bytes_per_room,
         },
+        "topology_comparison_summary": topology_comparison_summary,
+        "query_support_summary": query_support_summary,
         "artifact_policy": {
             "tier1_label": "core_backend_artifacts",
             "tier2_label": "optional_demo_artifacts",

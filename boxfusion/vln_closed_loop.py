@@ -3,8 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from boxfusion.floor_artifacts import display_floor_label
 from boxfusion.query_api import RoomTopologyQueryAPI
 from boxfusion.replay_timeline import load_replay_observations
+from boxfusion.room_topology import _canonical_room_id
 
 
 def extract_room_transition_observations(observations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

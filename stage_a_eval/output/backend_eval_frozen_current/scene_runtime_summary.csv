@@ -1,0 +1,5 @@
+sequence_name,scene_id,status,floor_count,public_room_count,public_edge_count,working_room_count,working_edge_count,withheld_room_count,withheld_edge_count,room_count,object_count,object_label_count,anchor_count,node_count,edge_count,vertical_transition_count,backend_artifact_size_total_bytes,optional_demo_artifact_size_total_bytes,artifact_size_total_bytes,processed_frames,duration_sec,average_fps,objects_per_room,anchors_per_room,bytes_per_room
+00824-Dd4bFSTQ8gi,00824,ready,1,3,2,8,28,5,26,8,142,52,27,177,28,0,2308011,0,2308011,2253,450.378,5.002,17.75,3.375,288501.375
+00829-QaLdnwvtxbs,00829,ready,1,0,0,2,2,2,2,2,145,61,14,161,2,0,1342526,0,1342526,1804,552.318,3.266,72.5,7.0,671263.0
+00843-DYehNKdT76V,00843,ready,2,10,15,11,25,1,10,11,86,44,23,120,25,1,2271452,0,2271452,2710,783.198,3.46,7.818,2.091,206495.636
+00862-LT9Jq6dN3Ea,00862,ready,3,23,73,30,107,7,34,30,469,102,67,566,107,2,12845002,0,12845002,7498,2260.149,3.317,15.633,2.233,428166.733

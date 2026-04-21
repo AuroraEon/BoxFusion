@@ -1,0 +1,4 @@
+route_policy,task_count,task_success_rate,route_found_rate,latency_mean_ms,route_found_raw
+balanced,32,0.9688,0.9583,0.899,23/24
+exploratory,6,1.0,1.0,3.752,6/6
+strict,6,1.0,1.0,0.962,6/6

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import glob
 import json
 import os
 import sys
@@ -118,6 +119,71 @@ def ordered_scene_lookup(registry: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         for item in registry.get("scenes", [])
         if item.get("sequence_name") is not None
     }
+
+
+def discover_scene_roots(
+    *,
+    explicit_scene_roots: Sequence[str],
+    manifest_globs: Sequence[str],
+) -> Dict[str, Path]:
+    discovered_paths: List[Path] = []
+    for raw_path in explicit_scene_roots:
+        text = str(raw_path or "").strip()
+        if not text:
+            continue
+        path = Path(text)
+        discovered_paths.append(path.parent if path.name == "manifest.json" else path)
+    for pattern in manifest_globs:
+        for raw_match in sorted(glob.glob(str(pattern), recursive=True)):
+            path = Path(raw_match)
+            discovered_paths.append(path.parent if path.name == "manifest.json" else path)
+
+    scene_roots: Dict[str, Path] = {}
+    for scene_root in discovered_paths:
+        if not scene_root.exists():
+            continue
+        manifest_path = scene_root / "manifest.json"
+        sequence_name = scene_root.name
+        if manifest_path.exists():
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            sequence_name = str(manifest.get("sequence_name") or sequence_name)
+        if sequence_name not in scene_roots:
+            scene_roots[sequence_name] = scene_root
+    return scene_roots
+
+
+def build_registry_from_scene_roots(scene_roots_by_sequence: Dict[str, Path]) -> Dict[str, Any]:
+    scenes: List[Dict[str, Any]] = []
+    for sequence_name, scene_root in sorted(scene_roots_by_sequence.items()):
+        manifest = collect_scene_manifest(scene_root, sequence_name=sequence_name)
+        scenes.append(
+            {
+                "scene_id": manifest.get("scene_id"),
+                "sequence_name": sequence_name,
+                "artifact_root": str(scene_root),
+                "discovered_artifact_root": str(scene_root),
+                "manifest_path": str(scene_root / "manifest.json"),
+                "discovered_manifest_path": str(scene_root / "manifest.json"),
+                "artifact_source": "explicit_scene_root",
+                "status": manifest.get("status"),
+                "notes": list(manifest.get("notes") or []),
+            }
+        )
+    return {
+        "version": "0.1",
+        "scene_output_root": None,
+        "legacy_scene_output_root": None,
+        "scenes": scenes,
+    }
+
+
+def filter_tasks_to_available_sequences(
+    tasks: Sequence[Dict[str, Any]],
+    *,
+    available_sequences: Sequence[str],
+) -> List[Dict[str, Any]]:
+    allowed = {str(item) for item in available_sequences}
+    return [dict(task) for task in tasks if str(task.get("sequence_name")) in allowed]
 
 
 def load_registry(path: Path) -> Dict[str, Any]:
@@ -304,13 +370,22 @@ def scene_runtime_row(sequence_name: str, manifest: Dict[str, Any]) -> Dict[str,
     world = dict(manifest.get("world_model_summary") or {})
     runtime = dict(manifest.get("runtime_summary") or {})
     compactness = dict(manifest.get("compactness_summary") or {})
+    topology_comparison = dict(manifest.get("topology_comparison_summary") or {})
+    query_support = dict(manifest.get("query_support_summary") or {})
     return {
         "sequence_name": sequence_name,
         "scene_id": manifest.get("scene_id"),
         "status": manifest.get("status"),
         "floor_count": world.get("floor_count"),
+        "public_room_count": topology_comparison.get("public_room_count", world.get("room_count")),
+        "public_edge_count": topology_comparison.get("public_edge_count", world.get("edge_count")),
+        "working_room_count": topology_comparison.get("working_room_count"),
+        "working_edge_count": topology_comparison.get("working_edge_count"),
+        "withheld_room_count": topology_comparison.get("withheld_room_count"),
+        "withheld_edge_count": topology_comparison.get("withheld_edge_count"),
         "room_count": world.get("room_count"),
         "object_count": world.get("object_count"),
+        "object_label_count": query_support.get("object_label_count"),
         "anchor_count": world.get("anchor_count"),
         "node_count": world.get("node_count"),
         "edge_count": world.get("edge_count"),
@@ -414,6 +489,14 @@ def summarize_results(
         scene_runtime_row(sequence_name, manifest)
         for sequence_name, manifest in sorted(scene_manifests.items())
     ]
+    scene_task_breakdown = [
+        summarize_task_group(
+            [row for row in task_results if str(row.get("sequence_name")) == sequence_name],
+            "sequence_name",
+            sequence_name,
+        )
+        for sequence_name in sorted({str(row.get("sequence_name")) for row in task_results if row.get("sequence_name")})
+    ]
 
     aggregate_backend_artifact_bytes = sum(
         int((manifest.get("runtime_summary") or {}).get("backend_artifact_size_total_bytes") or 0)
@@ -444,6 +527,7 @@ def summarize_results(
         "policy_breakdown": policy_breakdown,
         "task_type_breakdown": task_type_breakdown,
         "probe_slice_breakdown": probe_slice_breakdown,
+        "scene_task_breakdown": scene_task_breakdown,
         "scene_runtime_summary": scene_rows,
     }
 
@@ -454,6 +538,7 @@ def render_outputs(report_root: Path, payload: Dict[str, Any]) -> Dict[str, str]
     aggregate = dict(payload.get("aggregate_summary") or {})
     task_results = list(payload.get("task_results") or [])
     scene_rows = list(aggregate.get("scene_runtime_summary") or [])
+    scene_task_rows = list(aggregate.get("scene_task_breakdown") or [])
     policy_rows = list(aggregate.get("policy_breakdown") or [])
     task_type_rows = list(aggregate.get("task_type_breakdown") or [])
     probe_slice_rows = list(aggregate.get("probe_slice_breakdown") or [])
@@ -464,6 +549,7 @@ def render_outputs(report_root: Path, payload: Dict[str, Any]) -> Dict[str, str]
     aggregate_md = report_root / "aggregate_summary.md"
     task_results_csv = report_root / "task_results.csv"
     scene_runtime_csv = report_root / "scene_runtime_summary.csv"
+    scene_task_csv = report_root / "scene_task_breakdown.csv"
     policy_csv = report_root / "policy_breakdown.csv"
     task_type_csv = report_root / "task_type_breakdown.csv"
     probe_slice_csv = report_root / "probe_slice_breakdown.csv"
@@ -543,6 +629,8 @@ def render_outputs(report_root: Path, payload: Dict[str, Any]) -> Dict[str, str]
         )
     if scene_rows:
         write_csv(scene_runtime_csv, scene_rows, list(scene_rows[0].keys()))
+    if scene_task_rows:
+        write_csv(scene_task_csv, scene_task_rows, list(scene_task_rows[0].keys()))
     if policy_rows:
         write_csv(policy_csv, policy_rows, list(policy_rows[0].keys()))
     if task_type_rows:
@@ -607,11 +695,26 @@ def render_outputs(report_root: Path, payload: Dict[str, Any]) -> Dict[str, str]
             f"| {row.get('task_type')} | {row.get('task_count')} | {format_rate(row.get('task_success_rate'))} | {format_rate(row.get('route_found_rate'))} | {row.get('latency_mean_ms')} |"
         )
 
-    lines.extend(["", "## Scene Runtime Summary", "", "| Scene | Floors | Rooms | Objects | Nodes | Edges | VT | Tier 1 Bytes | Tier 2 Bytes | Tier 1 Bytes/Room |", "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"])
+    lines.extend(["", "## Scene Runtime Summary", "", "| Scene | Floors | Public Rooms | Objects | Nodes | Public Edges | VT | Tier 1 Bytes | Tier 2 Bytes | Tier 1 Bytes/Room |", "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"])
     for row in scene_rows:
         lines.append(
-            f"| {row.get('sequence_name')} | {row.get('floor_count')} | {row.get('room_count')} | {row.get('object_count')} | {row.get('node_count')} | {row.get('edge_count')} | {row.get('vertical_transition_count')} | {row.get('backend_artifact_size_total_bytes')} | {row.get('optional_demo_artifact_size_total_bytes')} | {row.get('bytes_per_room')} |"
+            f"| {row.get('sequence_name')} | {row.get('floor_count')} | {row.get('public_room_count')} | {row.get('object_count')} | {row.get('node_count')} | {row.get('public_edge_count')} | {row.get('vertical_transition_count')} | {row.get('backend_artifact_size_total_bytes')} | {row.get('optional_demo_artifact_size_total_bytes')} | {row.get('bytes_per_room')} |"
         )
+
+    if scene_task_rows:
+        lines.extend(
+            [
+                "",
+                "## Scene Task Breakdown",
+                "",
+                "| Scene | Tasks | Success Rate | Room Hit | Floor Hit | Route Found | Mean Latency (ms) |",
+                "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for row in scene_task_rows:
+            lines.append(
+                f"| {row.get('sequence_name')} | {row.get('task_count')} | {format_rate(row.get('task_success_rate'))} | {format_rate(row.get('exact_room_hit_rate'))} | {format_rate(row.get('exact_floor_hit_rate'))} | {format_rate(row.get('route_found_rate'))} | {row.get('latency_mean_ms')} |"
+            )
 
     aggregate_md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return {
@@ -621,6 +724,7 @@ def render_outputs(report_root: Path, payload: Dict[str, Any]) -> Dict[str, str]
         "aggregate_md": str(aggregate_md),
         "task_results_csv": str(task_results_csv),
         "scene_runtime_csv": str(scene_runtime_csv),
+        "scene_task_csv": str(scene_task_csv),
         "policy_csv": str(policy_csv),
         "task_type_csv": str(task_type_csv),
         "probe_slice_csv": str(probe_slice_csv),
@@ -633,6 +737,7 @@ def run_evaluation(
     tasks: Sequence[Dict[str, Any]],
     scene_output_root: Path,
     legacy_scene_output_root: Path | None,
+    scene_roots_by_sequence: Dict[str, Path] | None = None,
 ) -> Dict[str, Any]:
     registry_lookup = ordered_scene_lookup(registry)
     context_cache: Dict[str, Dict[str, Any]] = {}
@@ -641,11 +746,14 @@ def run_evaluation(
 
     for task in tasks:
         sequence_name = str(task.get("sequence_name"))
-        scene_root = find_scene_root(
-            sequence_name,
-            preferred_root=scene_output_root,
-            fallback_roots=[] if legacy_scene_output_root is None else [legacy_scene_output_root],
-        )
+        if scene_roots_by_sequence and sequence_name in scene_roots_by_sequence:
+            scene_root = Path(scene_roots_by_sequence[sequence_name])
+        else:
+            scene_root = find_scene_root(
+                sequence_name,
+                preferred_root=scene_output_root,
+                fallback_roots=[] if legacy_scene_output_root is None else [legacy_scene_output_root],
+            )
         if scene_root is None:
             task_results.append(
                 {
@@ -748,6 +856,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default="",
         help="If set, skip task execution and re-render reports from an existing backend_eval_results.json payload.",
     )
+    parser.add_argument(
+        "--scene-root",
+        action="append",
+        default=[],
+        help="Explicit per-sequence scene root. Can be passed multiple times and can also point at manifest.json files.",
+    )
+    parser.add_argument(
+        "--manifest-glob",
+        action="append",
+        default=[],
+        help="Recursive glob for manifest.json or scene directories, e.g. 'runtime_stage1_frozen_evidence/**/manifest.json'.",
+    )
     return parser
 
 
@@ -759,8 +879,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.render_only:
         payload = json.loads(Path(args.render_only).read_text(encoding="utf-8"))
     else:
-        registry = load_registry(Path(args.registry))
         tasks = load_jsonl(Path(args.tasks))
+        explicit_scene_roots = discover_scene_roots(
+            explicit_scene_roots=args.scene_root,
+            manifest_globs=args.manifest_glob,
+        )
+        if explicit_scene_roots:
+            registry = build_registry_from_scene_roots(explicit_scene_roots)
+            tasks = filter_tasks_to_available_sequences(tasks, available_sequences=explicit_scene_roots.keys())
+        else:
+            registry = load_registry(Path(args.registry))
         legacy_scene_output_root = resolve_legacy_scene_output_root(
             allow_legacy_fallback=bool(args.allow_legacy_fallback),
             legacy_scene_output_root=args.legacy_scene_output_root,
@@ -770,6 +898,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             tasks=tasks,
             scene_output_root=Path(args.scene_output_root),
             legacy_scene_output_root=legacy_scene_output_root,
+            scene_roots_by_sequence=None if not explicit_scene_roots else explicit_scene_roots,
         )
 
     outputs = render_outputs(report_root, payload)

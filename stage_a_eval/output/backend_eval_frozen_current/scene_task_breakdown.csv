@@ -1,0 +1,5 @@
+sequence_name,task_count,expected_failure_task_count,task_success_rate,task_success_raw,exact_room_hit_rate,exact_room_hit_raw,exact_floor_hit_rate,exact_floor_hit_raw,route_found_rate,route_found_raw,latency_mean_ms,actual_status_histogram
+00824-Dd4bFSTQ8gi,8,0,1.0,8/8,1.0,8/8,1.0,8/8,1.0,6/6,0.806,"{""success"": 8}"
+00829-QaLdnwvtxbs,8,0,0.875,7/8,0.875,7/8,0.875,7/8,0.8333,5/6,0.187,"{""not_found"": 1, ""success"": 7}"
+00843-DYehNKdT76V,14,0,1.0,14/14,1.0,14/14,1.0,14/14,1.0,12/12,0.908,"{""success"": 14}"
+00862-LT9Jq6dN3Ea,14,0,1.0,14/14,1.0,14/14,1.0,14/14,1.0,12/12,2.6,"{""success"": 14}"

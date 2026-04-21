@@ -1,0 +1,2 @@
+task_count,scene_count,task_success_rate,resolve_success_rate,exact_room_hit_rate,exact_floor_hit_rate,route_found_rate,task_success_raw,resolve_success_raw,exact_room_hit_raw,exact_floor_hit_raw,route_found_raw,query_api_mean_ms,query_api_p50_ms,query_api_p90_ms,symbolic_plan_mean_ms,symbolic_plan_p50_ms,symbolic_plan_p90_ms,aggregate_backend_artifact_size_bytes,aggregate_optional_demo_artifact_size_bytes
+44,4,0.9773,1.0,0.9773,0.9773,0.9722,43/44,8/8,43/44,43/44,35/36,1.304,0.702,2.694,1.248,0.895,2.349,18766991,0

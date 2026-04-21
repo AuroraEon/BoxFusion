@@ -1,0 +1,2 @@
+probe_slice,task_count,expected_failure_task_count,task_success_rate,task_success_raw,exact_room_hit_rate,exact_room_hit_raw,exact_floor_hit_rate,exact_floor_hit_raw,route_found_rate,route_found_raw,latency_mean_ms,actual_status_histogram
+positive_seeded,44,0,0.9773,43/44,0.9773,43/44,0.9773,43/44,0.9722,35/36,1.297,"{""not_found"": 1, ""success"": 43}"
