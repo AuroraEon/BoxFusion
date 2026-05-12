@@ -33,6 +33,11 @@ def main() -> None:
         default=None,
         help="Optional logs/committed_room_world_model_v0_1.json path.",
     )
+    parser.add_argument(
+        "--committed-room-world-snapshot-json",
+        default=None,
+        help="Optional logs/committed_room_world_snapshot_v0_1.json path for committed snapshot overlays.",
+    )
     parser.add_argument("--start-room", default=None, help="Start room id or room name if available.")
     parser.add_argument("--goal-room", default=None, help="Explicit goal room id or room name if available.")
     parser.add_argument(
@@ -44,6 +49,29 @@ def main() -> None:
     parser.add_argument("--title", default=None, help="Optional custom page title.")
     parser.add_argument("--html-out", default=None, help="Output HTML path.")
     parser.add_argument("--json-out", default=None, help="Optional JSON summary path.")
+    parser.add_argument("--include-snapshot-overlays", action="store_true", help="Load committed snapshot overlay records.")
+    parser.add_argument("--include-gateway-overlays", action="store_true", help="Show normalized gateway overlay records.")
+    parser.add_argument(
+        "--include-vertical-transition-overlays",
+        action="store_true",
+        help="Show normalized vertical-transition overlay records.",
+    )
+    parser.add_argument(
+        "--include-route-edge-explanation",
+        action="store_true",
+        help="Emit and render edge-by-edge route explanation.",
+    )
+    parser.add_argument(
+        "--include-semantic-room-summary",
+        action="store_true",
+        help="Emit and render enhanced semantic room summary records.",
+    )
+    parser.add_argument(
+        "--include-audit-overlays",
+        action="store_true",
+        help="Render optional non-authoritative topology audit candidate overlays.",
+    )
+    parser.add_argument("--audit-dir", default=None, help="Directory containing topology audit CSV files.")
     parser.add_argument("--print-json", action="store_true", help="Print the JSON summary to stdout.")
     args = parser.parse_args()
 
@@ -57,6 +85,9 @@ def main() -> None:
         committed_room_world_model_json=(
             None if args.committed_room_world_model_json is None else Path(args.committed_room_world_model_json)
         ),
+        committed_room_world_snapshot_json=(
+            None if args.committed_room_world_snapshot_json is None else Path(args.committed_room_world_snapshot_json)
+        ),
     )
     demo_result = build_room_graph_vln_demo(
         scene_root=None if args.scene_root is None else Path(args.scene_root),
@@ -65,11 +96,21 @@ def main() -> None:
         committed_room_world_model_json=(
             None if args.committed_room_world_model_json is None else Path(args.committed_room_world_model_json)
         ),
+        committed_room_world_snapshot_json=(
+            None if args.committed_room_world_snapshot_json is None else Path(args.committed_room_world_snapshot_json)
+        ),
         start_room=args.start_room,
         goal_room=args.goal_room,
         semantic_target=args.semantic_target,
         route_policy=args.route_policy,
         title=args.title,
+        include_snapshot_overlays=args.include_snapshot_overlays,
+        include_gateway_overlays=args.include_gateway_overlays,
+        include_vertical_transition_overlays=args.include_vertical_transition_overlays,
+        include_route_edge_explanation=args.include_route_edge_explanation,
+        include_semantic_room_summary=args.include_semantic_room_summary,
+        include_audit_overlays=args.include_audit_overlays,
+        audit_dir=None if args.audit_dir is None else Path(args.audit_dir),
     )
 
     sequence_id = str(demo_result.get("sequence_id") or demo.sequence_id or "sequence")

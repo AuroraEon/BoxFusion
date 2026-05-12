@@ -1,0 +1,7 @@
+category,item,status,claim_boundary
+environment,ros2,/opt/ros/foxy/bin/ros2,feasibility_audit_only
+environment,gazebo,missing,not_executed
+environment,nav2,not_installed_locally,not_executed
+asset,00829 maps/world/waypoints,generated,approximate_unvalidated
+asset,00843 maps/world/waypoints,generated,approximate_unvalidated
+claim,robot_enabled_edges,0,no_promotion_without_real_validation

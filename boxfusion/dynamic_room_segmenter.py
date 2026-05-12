@@ -1247,18 +1247,31 @@ class DynamicRoomSegmenter:
             return None
 
         hist_t0 = time.perf_counter()
-        hist, _, _ = np.histogram2d(pts_walls[:, 0], pts_walls[:, 1], bins=num_bins, range=hist_range)
-        hist = hist.T  # <--- 【千万别漏】：必须转置，把 (W, H) 变成图像需要的 (H, W)！
+        hist_raw, _, _ = np.histogram2d(pts_walls[:, 0], pts_walls[:, 1], bins=num_bins, range=hist_range)
+        hist_raw = hist_raw.T.astype(np.float32)  # <--- 【千万别漏】：必须转置，把 (W, H) 变成图像需要的 (H, W)！
 
         # 【核心修复 1】：过滤点云密度异常值！截断前 2% 的极高密度点
+        hist = hist_raw.copy()
         hist_nonzero = hist[hist > 0]
+        p98 = None
         if len(hist_nonzero) > 0:
             p98 = np.percentile(hist_nonzero, 98)
             hist = np.clip(hist, 0, p98)
 
-        hist = cv2.normalize(hist, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-        hist = cv2.GaussianBlur(hist, (5, 5), 1)
+        hist_clipped = hist.astype(np.float32, copy=False)
+        hist_normalized = cv2.normalize(hist_clipped, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        hist = cv2.GaussianBlur(hist_normalized, (5, 5), 1)
         self.last_segmentation_profile["histogram_build_sec"] = float(time.perf_counter() - hist_t0)
+        wall_layer_debug = self._build_wall_layer_debug_exports(
+            all_pts_np=all_pts_np,
+            hist_range=hist_range,
+            num_bins=num_bins,
+            hist_raw=hist_raw,
+            hist_clipped_or_normalized=hist_normalized,
+            hist_blurred=hist,
+            wall_point_count=len(pts_walls),
+            p98=p98,
+        )
 
         hist_threshold = 0.15 * np.max(hist)
         _, walls_skeleton = cv2.threshold(hist, hist_threshold, 255, cv2.THRESH_BINARY)
@@ -1437,6 +1450,7 @@ class DynamicRoomSegmenter:
                 full_map,
                 full_map_before_doors if door_boxes_present else None,
                 self.last_door_debug,
+                wall_layer_debug,
             )
 
         return markers
@@ -1786,6 +1800,185 @@ class DynamicRoomSegmenter:
             vis[watershed_cuts] = [0, 0, 255]
         return vis
 
+    def _json_safe(self, value):
+        if isinstance(value, dict):
+            return {str(k): self._json_safe(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [self._json_safe(v) for v in value]
+        if isinstance(value, np.ndarray):
+            return self._json_safe(value.tolist())
+        if isinstance(value, (np.integer,)):
+            return int(value)
+        if isinstance(value, (np.floating,)):
+            return float(value)
+        if isinstance(value, (np.bool_,)):
+            return bool(value)
+        return value
+
+    def _threshold_name(self, factor: float) -> str:
+        return f"thr_{factor:.2f}".replace(".", "p")
+
+    def _preclose_binary_from_blurred_density(self, hist_blurred: np.ndarray, factor: float) -> np.ndarray:
+        max_value = float(np.max(hist_blurred)) if hist_blurred.size else 0.0
+        threshold = float(factor) * max_value
+        return (hist_blurred >= threshold).astype(np.uint8) * 255
+
+    def _histogram_stack_for_wall_band(self, all_pts_np, hist_range, num_bins, z_min, z_max):
+        z_mask = (all_pts_np[:, 2] >= float(z_min)) & (all_pts_np[:, 2] <= float(z_max))
+        pts = all_pts_np[z_mask][:, [0, 1]]
+        if len(pts) == 0:
+            raw = np.zeros((int(num_bins[1]), int(num_bins[0])), dtype=np.float32)
+        else:
+            raw, _, _ = np.histogram2d(pts[:, 0], pts[:, 1], bins=num_bins, range=hist_range)
+            raw = raw.T.astype(np.float32)
+        nonzero = raw[raw > 0]
+        p98 = float(np.percentile(nonzero, 98)) if len(nonzero) > 0 else None
+        clipped = np.clip(raw, 0, p98).astype(np.float32) if p98 is not None else raw.astype(np.float32, copy=True)
+        normalized = cv2.normalize(clipped, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        blurred = cv2.GaussianBlur(normalized, (5, 5), 1)
+        preclose = self._preclose_binary_from_blurred_density(blurred, 0.25)
+        return {
+            "raw": raw,
+            "clipped_or_normalized": normalized,
+            "blurred": blurred,
+            "gateway_wall_preclose_thr_0p25": preclose,
+            "metadata": {
+                "slice_z_min": float(z_min),
+                "slice_z_max": float(z_max),
+                "floor_relative": True,
+                "wall_slice_point_count": int(len(pts)),
+                "p98_clip_value": p98,
+                "threshold_factor": 0.25,
+                "morphological_close_applied": False,
+                "dilation_applied": False,
+                "erosion_applied": False,
+            },
+        }
+
+    def _build_wall_layer_debug_exports(
+        self,
+        *,
+        all_pts_np,
+        hist_range,
+        num_bins,
+        hist_raw,
+        hist_clipped_or_normalized,
+        hist_blurred,
+        wall_point_count,
+        p98,
+    ):
+        threshold_factors = [0.18, 0.20, 0.25, 0.30]
+        preclose_layers = {
+            self._threshold_name(factor): self._preclose_binary_from_blurred_density(hist_blurred, factor)
+            for factor in threshold_factors
+        }
+
+        height = dict(self.last_height_slice_debug or {})
+        floor_z = height.get("floor_z")
+        band_sweep = {}
+        band_metadata = {}
+        if floor_z is not None:
+            floor_z = float(floor_z)
+            bands = {
+                "band_default_current": (
+                    float(self.slice_z_min),
+                    float(self.slice_z_max),
+                    False,
+                ),
+                "band_0p35_1p20": (floor_z + 0.35, floor_z + 1.20, True),
+                "band_0p35_1p00": (floor_z + 0.35, floor_z + 1.00, True),
+                "band_0p35_0p90": (floor_z + 0.35, floor_z + 0.90, True),
+                "band_0p45_1p10": (floor_z + 0.45, floor_z + 1.10, True),
+                "band_0p50_1p00": (floor_z + 0.50, floor_z + 1.00, True),
+            }
+            for name, (z_min, z_max, relative) in bands.items():
+                if name == "band_default_current":
+                    band_sweep[f"{name}__raw"] = hist_raw.astype(np.float32, copy=False)
+                    band_sweep[f"{name}__clipped_or_normalized"] = hist_clipped_or_normalized
+                    band_sweep[f"{name}__blurred"] = hist_blurred
+                    band_sweep[f"{name}__gateway_wall_preclose_thr_0p25"] = preclose_layers["thr_0p25"]
+                    band_metadata[name] = {
+                        "slice_z_min": float(z_min),
+                        "slice_z_max": float(z_max),
+                        "floor_relative": bool(relative),
+                        "height_convention": "current Stage-A absolute/world z slice",
+                        "wall_slice_point_count": int(wall_point_count),
+                        "p98_clip_value": None if p98 is None else float(p98),
+                        "threshold_factor": 0.25,
+                        "morphological_close_applied": False,
+                        "dilation_applied": False,
+                        "erosion_applied": False,
+                    }
+                    continue
+                stack = self._histogram_stack_for_wall_band(all_pts_np, hist_range, num_bins, z_min, z_max)
+                for layer_name in ("raw", "clipped_or_normalized", "blurred", "gateway_wall_preclose_thr_0p25"):
+                    band_sweep[f"{name}__{layer_name}"] = stack[layer_name]
+                band_metadata[name] = stack["metadata"]
+                band_metadata[name]["height_convention"] = "floor-relative z offsets converted to absolute/world z"
+
+        metadata = {
+            "artifact_type": "stage_a_dual_wall_layer_debug",
+            "height_slice": {
+                **height,
+                "height_convention": "slice_z_min/slice_z_max are absolute map/world z values; sweep bands are floor-relative offsets converted to absolute z.",
+                "wall_slice_point_count": int(wall_point_count),
+            },
+            "wall_density_raw_or_hist_current": {
+                "available": True,
+                "source": "np.histogram2d(pts_walls[:,0], pts_walls[:,1]) before clipping/normalization/blur",
+                "dtype": str(hist_raw.dtype),
+                "shape": list(hist_raw.shape),
+                "nonzero_count": int(np.count_nonzero(hist_raw)),
+            },
+            "wall_density_clipped_or_normalized": {
+                "available": True,
+                "p98_clip_value": None if p98 is None else float(p98),
+                "normalization": "cv2.normalize(..., 0, 255, cv2.NORM_MINMAX)",
+                "dtype": str(hist_clipped_or_normalized.dtype),
+                "shape": list(hist_clipped_or_normalized.shape),
+            },
+            "wall_density_blurred": {
+                "available": True,
+                "gaussian_blur_kernel": [5, 5],
+                "gaussian_blur_sigma": 1,
+                "dtype": str(hist_blurred.dtype),
+                "shape": list(hist_blurred.shape),
+                "max_value": float(np.max(hist_blurred)) if hist_blurred.size else 0.0,
+            },
+            "gateway_wall_preclose": {
+                "recommended_layer": "gateway_wall_preclose_thr_0p25",
+                "generation": "wall_density_blurred >= 0.25 * max(wall_density_blurred)",
+                "threshold_factor": 0.25,
+                "automatic": True,
+                "calibrated_from_user_labels": False,
+                "morphological_close_applied": False,
+                "dilation_applied": False,
+                "erosion_applied": False,
+                "purpose": "gateway and doorway filtering; preserves real gaps better than segmentation_wall_processed",
+            },
+            "segmentation_wall_processed": {
+                "generation": "existing Stage-A wall skeleton path: blurred density threshold 0.15, 10 px padding, 3x3 cross morphological close",
+                "threshold_factor": 0.15,
+                "morphological_close_applied": True,
+                "morphology_kernel": "cv2.MORPH_CROSS 3x3",
+                "purpose": "room segmentation / watershed support",
+            },
+            "threshold_sweep_factors": threshold_factors,
+            "height_band_sweep": {
+                "feasible": bool(band_sweep),
+                "bands": band_metadata,
+            },
+        }
+        return {
+            "wall_density_raw_or_hist_current": hist_raw.astype(np.float32, copy=False),
+            "wall_density_clipped_or_normalized": hist_clipped_or_normalized,
+            "wall_density_blurred": hist_blurred,
+            "gateway_wall_preclose": preclose_layers["thr_0p25"],
+            "gateway_wall_preclose_thresholds": preclose_layers,
+            "height_band_sweep": band_sweep,
+            "metadata": metadata,
+        }
+
     # def save_room_mapping_to_yaml(self, all_pred_box, output_path="room_objects.yaml"):
     #     if all_pred_box is None or self.last_room_markers is None: return
 
@@ -1836,9 +2029,44 @@ class DynamicRoomSegmenter:
         full_map,
         full_map_before_doors=None,
         door_debug=None,
+        wall_layer_debug=None,
     ):
         os.makedirs(path, exist_ok=True)
         cv2.imwrite(f"{path}/run_{count}_01_density_hist.png", hist)
+        if wall_layer_debug:
+            np.save(
+                f"{path}/run_{count}_01a_wall_density_raw_or_hist_current.npy",
+                wall_layer_debug["wall_density_raw_or_hist_current"],
+            )
+            np.save(
+                f"{path}/run_{count}_01b_wall_density_clipped_or_normalized.npy",
+                wall_layer_debug["wall_density_clipped_or_normalized"],
+            )
+            np.save(
+                f"{path}/run_{count}_01c_wall_density_blurred.npy",
+                wall_layer_debug["wall_density_blurred"],
+            )
+            cv2.imwrite(
+                f"{path}/run_{count}_01d_gateway_wall_preclose_thr_0p25.png",
+                wall_layer_debug["gateway_wall_preclose"],
+            )
+            np.save(
+                f"{path}/run_{count}_01d_gateway_wall_preclose_thr_0p25.npy",
+                (wall_layer_debug["gateway_wall_preclose"] > 0).astype(np.uint8),
+            )
+            for threshold_name, threshold_layer in wall_layer_debug.get("gateway_wall_preclose_thresholds", {}).items():
+                cv2.imwrite(
+                    f"{path}/run_{count}_01e_gateway_wall_preclose_{threshold_name}.png",
+                    threshold_layer,
+                )
+            height_band_sweep = wall_layer_debug.get("height_band_sweep", {})
+            if height_band_sweep:
+                np.savez_compressed(
+                    f"{path}/run_{count}_01f_height_band_wall_debug_sweep.npz",
+                    **height_band_sweep,
+                )
+            with open(f"{path}/run_{count}_01g_dual_wall_layer_metadata.json", "w", encoding="utf-8") as f:
+                json.dump(self._json_safe(wall_layer_debug["metadata"]), f, indent=2)
         cv2.imwrite(f"{path}/run_{count}_02_walls_skeleton.png", walls_skeleton)
         cv2.imwrite(f"{path}/run_{count}_03_outside_boundary.png", outside_boundary)
         if full_map_before_doors is not None:

@@ -27,6 +27,8 @@ class BundleQuery:
     start_room: Optional[str] = None
     goal_room: Optional[str] = None
     semantic_target: Optional[str] = None
+    include_audit_overlays: Optional[bool] = None
+    audit_dir: Optional[Path] = None
 
     @classmethod
     def from_dict(cls, payload: Dict[str, Any]) -> "BundleQuery":
@@ -37,6 +39,8 @@ class BundleQuery:
             start_room=payload.get("start_room"),
             goal_room=payload.get("goal_room"),
             semantic_target=payload.get("semantic_target"),
+            include_audit_overlays=payload.get("include_audit_overlays"),
+            audit_dir=None if payload.get("audit_dir") is None else Path(str(payload.get("audit_dir"))),
         )
         if not query.slug:
             raise ValueError("Bundle query is missing slug.")
@@ -57,6 +61,7 @@ class BundleScene:
     summary: str
     recommended_semantic_whitelist: List[str]
     queries: List[BundleQuery]
+    audit_dir: Optional[Path] = None
 
     @classmethod
     def from_dict(cls, payload: Dict[str, Any]) -> "BundleScene":
@@ -77,6 +82,7 @@ class BundleScene:
             summary=summary,
             recommended_semantic_whitelist=whitelist,
             queries=queries,
+            audit_dir=None if payload.get("audit_dir") is None else Path(str(payload.get("audit_dir"))),
         )
 
 
@@ -99,6 +105,7 @@ def _render_scene_index(scene_payload: Dict[str, Any], *, bundle_title: str) -> 
             "</article>"
         )
     whitelist_html = "".join(f"<span class='pill'>{_escape(item)}</span>" for item in whitelist) or "<span class='pill'>none</span>"
+    bundle_index_href = scene_payload.get("bundle_index_href") or "../index.html"
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -233,13 +240,17 @@ def _render_scene_index(scene_payload: Dict[str, Any], *, bundle_title: str) -> 
       <div class="pill-row">{whitelist_html}</div>
     </section>
     <section class="panel">
+      <h2>Semantics Note</h2>
+      <p class="meta">Committed topology edges are the public downstream graph. Gateway and vertical-transition layers are optional overlays, and audit candidates remain non-authoritative diagnostics.</p>
+    </section>
+    <section class="panel">
       <h2>Query Pages</h2>
       <div class="cards">
         {''.join(query_cards)}
       </div>
     </section>
     <section class="panel">
-      <a href="../index.html">Back to bundle index</a>
+      <a href="{_escape(bundle_index_href)}">Back to bundle index</a>
     </section>
   </div>
 </body>
@@ -378,6 +389,10 @@ def _render_bundle_index(bundle_manifest: Dict[str, Any]) -> str:
       <div class="pill-row">{global_whitelist}</div>
     </section>
     <section class="panel">
+      <h2>Bundle Semantics</h2>
+      <p class="meta">Each query page stays on committed/public artifacts. Audit overlays are non-authoritative, same-pair visibility does not imply route selection, and routing behavior is unchanged.</p>
+    </section>
+    <section class="panel">
       <h2>Scene Pages</h2>
       <div class="cards">
         {''.join(scene_cards)}
@@ -392,8 +407,9 @@ def _render_bundle_index(bundle_manifest: Dict[str, Any]) -> str:
 """
 
 
-def _scene_output_dir(output_root: Path, scene: BundleScene) -> Path:
-    return output_root / _slugify(scene.display_name)
+def _scene_output_dir(output_root: Path, scene: BundleScene, *, scenes_subdir: bool = False) -> Path:
+    base = output_root / "scenes" if scenes_subdir else output_root
+    return base / _slugify(scene.display_name)
 
 
 def load_demo_bundle_spec(spec_path: Path) -> Dict[str, Any]:
@@ -404,6 +420,9 @@ def build_room_graph_vln_demo_bundle(*, spec: Dict[str, Any], output_root: Path)
     title = str(spec.get("title") or "BoxFusion Room-Graph VLN Demo Bundle")
     subtitle = str(spec.get("subtitle") or "")
     bundle_whitelist = [str(item) for item in spec.get("recommended_semantic_whitelist", []) if str(item).strip()]
+    enhanced_options = dict(spec.get("enhanced_options") or {})
+    scenes_subdir = str(spec.get("output_layout") or "").strip() == "step5_scenes_queries"
+    audit_root = None if spec.get("audit_root") is None else Path(str(spec.get("audit_root")))
     scenes = [BundleScene.from_dict(dict(item)) for item in spec.get("scenes", [])]
     if not scenes:
         raise ValueError("Bundle spec does not contain any scenes.")
@@ -419,28 +438,55 @@ def build_room_graph_vln_demo_bundle(*, spec: Dict[str, Any], output_root: Path)
 
     for scene in scenes:
         demo = RoomGraphVLNDemo.from_inputs(scene_root=scene.scene_root)
-        scene_dir = _scene_output_dir(output_root, scene)
+        scene_dir = _scene_output_dir(output_root, scene, scenes_subdir=scenes_subdir)
+        query_dir = scene_dir / "queries" if scenes_subdir else scene_dir
         scene_dir.mkdir(parents=True, exist_ok=True)
+        query_dir.mkdir(parents=True, exist_ok=True)
+        scene_audit_dir = scene.audit_dir
+        if scene_audit_dir is None and audit_root is not None:
+            scene_audit_dir = audit_root / scene.display_name
         scene_payload = {
             "scene_root": str(scene.scene_root),
             "display_name": scene.display_name,
             "role": scene.role,
             "summary": scene.summary,
-            "scene_dir_name": scene_dir.name,
+            "scene_dir_name": f"scenes/{scene_dir.name}" if scenes_subdir else scene_dir.name,
+            "bundle_index_href": "../../index.html" if scenes_subdir else "../index.html",
             "recommended_semantic_whitelist": list(scene.recommended_semantic_whitelist),
             "room_count": len(demo.public_room_ids),
             "edge_count": len(demo.topology_payload.get("edges", [])),
             "queries": [],
         }
         for idx, query in enumerate(scene.queries, start=1):
-            filename_base = f"{demo.sequence_id}_room_graph_vln_demo_{idx:02d}_{_slugify(query.slug)}"
+            filename_base = (
+                _slugify(query.slug)
+                if scenes_subdir
+                else f"{demo.sequence_id}_room_graph_vln_demo_{idx:02d}_{_slugify(query.slug)}"
+            )
             html_name = f"{filename_base}.html"
             json_name = f"{filename_base}.json"
+            html_rel = f"queries/{html_name}" if scenes_subdir else html_name
+            json_rel = f"queries/{json_name}" if scenes_subdir else json_name
+            query_audit_dir = query.audit_dir or scene_audit_dir
+            include_audit = (
+                bool(query.include_audit_overlays)
+                if query.include_audit_overlays is not None
+                else bool(enhanced_options.get("include_audit_overlays", False))
+            )
             demo_result = demo.build_demo(
                 start_room=query.start_room,
                 goal_room=query.goal_room,
                 semantic_target=query.semantic_target,
                 title=query.title,
+                include_snapshot_overlays=bool(enhanced_options.get("include_snapshot_overlays", False)),
+                include_gateway_overlays=bool(enhanced_options.get("include_gateway_overlays", False)),
+                include_vertical_transition_overlays=bool(
+                    enhanced_options.get("include_vertical_transition_overlays", False)
+                ),
+                include_route_edge_explanation=bool(enhanced_options.get("include_route_edge_explanation", False)),
+                include_semantic_room_summary=bool(enhanced_options.get("include_semantic_room_summary", False)),
+                include_audit_overlays=include_audit,
+                audit_dir=query_audit_dir,
             )
             if not demo_result.get("ok"):
                 raise RuntimeError(
@@ -456,8 +502,8 @@ def build_room_graph_vln_demo_bundle(*, spec: Dict[str, Any], output_root: Path)
             write_room_graph_vln_demo(
                 demo_result,
                 demo=demo,
-                html_out=scene_dir / html_name,
-                json_out=scene_dir / json_name,
+                html_out=query_dir / html_name,
+                json_out=query_dir / json_name,
             )
             scene_payload["queries"].append(
                 {
@@ -471,8 +517,8 @@ def build_room_graph_vln_demo_bundle(*, spec: Dict[str, Any], output_root: Path)
                     "resolved_goal_room": (demo_result.get("goal_resolution") or {}).get("resolved_room_id"),
                     "room_sequence": list((demo_result.get("route") or {}).get("room_sequence") or []),
                     "next_hop": (demo_result.get("next_hop") or {}).get("room_id"),
-                    "html_name": html_name,
-                    "json_name": json_name,
+                    "html_name": html_rel,
+                    "json_name": json_rel,
                 }
             )
         (scene_dir / "scene_bundle_summary.json").write_text(json.dumps(scene_payload, indent=2) + "\n", encoding="utf-8")

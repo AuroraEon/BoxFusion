@@ -1,0 +1,31 @@
+scene_id,input_type,path_or_resource,available,required,blocking_if_missing,notes
+00824-Dd4bFSTQ8gi,python_environment,/home/ws/miniconda3/envs/boxfusion/bin/python,true,true,true,"Contains torch 2.5.1+cu124, open_clip 2.32.0, cv2 4.11.0, numpy 1.26.4, PyYAML 6.0.2."
+00824-Dd4bFSTQ8gi,gpu,CUDA device 0,true,true,true,torch.cuda.is_available() returned true in the boxfusion conda environment.
+00824-Dd4bFSTQ8gi,model_checkpoint,models/cutr_rgbd.pth,true,true,true,379M checkpoint present.
+00824-Dd4bFSTQ8gi,config,config/hm3d.yaml,true,true,true,HM3D config present; seq substitution resolves /home/ws/data/<scene_id>.
+00824-Dd4bFSTQ8gi,dataset_sequence_root,/home/ws/data/00824-Dd4bFSTQ8gi,true,true,true,RGB/depth/pose counts were 2253/2253/2253.
+00824-Dd4bFSTQ8gi,runtime_asset,data/class_features_small.pt,true,true,true,Text features present.
+00824-Dd4bFSTQ8gi,runtime_asset,data/panoptic_categories_nomerge.txt,true,true,true,Class text present.
+00824-Dd4bFSTQ8gi,runtime_asset,data/pst_1024_0.tiff,true,true,true,PST texture present.
+00824-Dd4bFSTQ8gi,runtime_asset,models/ViT-B-32/open_clip_pytorch_model.bin,true,true,true,CLIP checkpoint present.
+00824-Dd4bFSTQ8gi,output_root_write_permission,runtime_stage1_frozen_evidence,true,true,true,Directory was writable.
+00862-LT9Jq6dN3Ea,python_environment,/home/ws/miniconda3/envs/boxfusion/bin/python,true,true,true,"Contains torch 2.5.1+cu124, open_clip 2.32.0, cv2 4.11.0, numpy 1.26.4, PyYAML 6.0.2."
+00862-LT9Jq6dN3Ea,gpu,CUDA device 0,true,true,true,torch.cuda.is_available() returned true in the boxfusion conda environment.
+00862-LT9Jq6dN3Ea,model_checkpoint,models/cutr_rgbd.pth,true,true,true,379M checkpoint present.
+00862-LT9Jq6dN3Ea,config,config/hm3d.yaml,true,true,true,HM3D config present; seq substitution resolves /home/ws/data/<scene_id>.
+00862-LT9Jq6dN3Ea,dataset_sequence_root,/home/ws/data/00862-LT9Jq6dN3Ea,true,true,true,RGB/depth/pose counts were 7498/7498/7498.
+00862-LT9Jq6dN3Ea,runtime_asset,data/class_features_small.pt,true,true,true,Text features present.
+00862-LT9Jq6dN3Ea,runtime_asset,data/panoptic_categories_nomerge.txt,true,true,true,Class text present.
+00862-LT9Jq6dN3Ea,runtime_asset,data/pst_1024_0.tiff,true,true,true,PST texture present.
+00862-LT9Jq6dN3Ea,runtime_asset,models/ViT-B-32/open_clip_pytorch_model.bin,true,true,true,CLIP checkpoint present.
+00862-LT9Jq6dN3Ea,output_root_write_permission,runtime_stage1_frozen_evidence,true,true,true,Directory was writable.
+00829-QaLdnwvtxbs,python_environment,/home/ws/miniconda3/envs/boxfusion/bin/python,true,true,true,"Contains torch 2.5.1+cu124, open_clip 2.32.0, cv2 4.11.0, numpy 1.26.4, PyYAML 6.0.2."
+00829-QaLdnwvtxbs,gpu,CUDA device 0,true,true,true,torch.cuda.is_available() returned true in the boxfusion conda environment.
+00829-QaLdnwvtxbs,model_checkpoint,models/cutr_rgbd.pth,true,true,true,379M checkpoint present.
+00829-QaLdnwvtxbs,config,config/hm3d.yaml,true,true,true,HM3D config present; seq substitution resolves /home/ws/data/<scene_id>.
+00829-QaLdnwvtxbs,dataset_sequence_root,/home/ws/data/00829-QaLdnwvtxbs,true,true,true,RGB/depth/pose counts were 1804/1804/1804.
+00829-QaLdnwvtxbs,runtime_asset,data/class_features_small.pt,true,true,true,Text features present.
+00829-QaLdnwvtxbs,runtime_asset,data/panoptic_categories_nomerge.txt,true,true,true,Class text present.
+00829-QaLdnwvtxbs,runtime_asset,data/pst_1024_0.tiff,true,true,true,PST texture present.
+00829-QaLdnwvtxbs,runtime_asset,models/ViT-B-32/open_clip_pytorch_model.bin,true,true,true,CLIP checkpoint present.
+00829-QaLdnwvtxbs,output_root_write_permission,runtime_stage1_frozen_evidence,true,true,true,Directory was writable.
