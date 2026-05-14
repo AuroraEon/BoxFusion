@@ -1,0 +1,158 @@
+{
+  "artifact_type": "stage_a_dual_wall_layer_debug",
+  "height_slice": {
+    "floor_z": -0.13155702032941452,
+    "ceiling_z": 2.4522436065611295,
+    "span_z": 2.583800626890544,
+    "slice_z_min": 1.3684429796705855,
+    "slice_z_max": 2.1522436065611297,
+    "full_z_max": 2.2522436065611293,
+    "mode": "default",
+    "adaptive_applied": false,
+    "height_convention": "slice_z_min/slice_z_max are absolute map/world z values; sweep bands are floor-relative offsets converted to absolute z.",
+    "wall_slice_point_count": 53955
+  },
+  "wall_density_raw_or_hist_current": {
+    "available": true,
+    "source": "np.histogram2d(pts_walls[:,0], pts_walls[:,1]) before clipping/normalization/blur",
+    "dtype": "float32",
+    "shape": [
+      1167,
+      1227
+    ],
+    "nonzero_count": 13558
+  },
+  "wall_density_clipped_or_normalized": {
+    "available": true,
+    "p98_clip_value": 16.0,
+    "normalization": "cv2.normalize(..., 0, 255, cv2.NORM_MINMAX)",
+    "dtype": "uint8",
+    "shape": [
+      1167,
+      1227
+    ]
+  },
+  "wall_density_blurred": {
+    "available": true,
+    "gaussian_blur_kernel": [
+      5,
+      5
+    ],
+    "gaussian_blur_sigma": 1,
+    "dtype": "uint8",
+    "shape": [
+      1167,
+      1227
+    ],
+    "max_value": 162.0
+  },
+  "gateway_wall_preclose": {
+    "recommended_layer": "gateway_wall_preclose_thr_0p25",
+    "generation": "wall_density_blurred >= 0.25 * max(wall_density_blurred)",
+    "threshold_factor": 0.25,
+    "automatic": true,
+    "calibrated_from_user_labels": false,
+    "morphological_close_applied": false,
+    "dilation_applied": false,
+    "erosion_applied": false,
+    "purpose": "gateway and doorway filtering; preserves real gaps better than segmentation_wall_processed"
+  },
+  "segmentation_wall_processed": {
+    "generation": "existing Stage-A wall skeleton path: blurred density threshold 0.15, 10 px padding, 3x3 cross morphological close",
+    "threshold_factor": 0.15,
+    "morphological_close_applied": true,
+    "morphology_kernel": "cv2.MORPH_CROSS 3x3",
+    "purpose": "room segmentation / watershed support"
+  },
+  "threshold_sweep_factors": [
+    0.18,
+    0.2,
+    0.25,
+    0.3
+  ],
+  "height_band_sweep": {
+    "feasible": true,
+    "bands": {
+      "band_default_current": {
+        "slice_z_min": 1.3684429796705855,
+        "slice_z_max": 2.1522436065611297,
+        "floor_relative": false,
+        "height_convention": "current Stage-A absolute/world z slice",
+        "wall_slice_point_count": 53955,
+        "p98_clip_value": 16.0,
+        "threshold_factor": 0.25,
+        "morphological_close_applied": false,
+        "dilation_applied": false,
+        "erosion_applied": false
+      },
+      "band_0p35_1p20": {
+        "slice_z_min": 0.21844297967058546,
+        "slice_z_max": 1.0684429796705854,
+        "floor_relative": true,
+        "wall_slice_point_count": 62799,
+        "p98_clip_value": 17.0,
+        "threshold_factor": 0.25,
+        "morphological_close_applied": false,
+        "dilation_applied": false,
+        "erosion_applied": false,
+        "height_convention": "floor-relative z offsets converted to absolute/world z"
+      },
+      "band_0p35_1p00": {
+        "slice_z_min": 0.21844297967058546,
+        "slice_z_max": 0.8684429796705855,
+        "floor_relative": true,
+        "wall_slice_point_count": 48394,
+        "p98_clip_value": 13.0,
+        "threshold_factor": 0.25,
+        "morphological_close_applied": false,
+        "dilation_applied": false,
+        "erosion_applied": false,
+        "height_convention": "floor-relative z offsets converted to absolute/world z"
+      },
+      "band_0p35_0p90": {
+        "slice_z_min": 0.21844297967058546,
+        "slice_z_max": 0.7684429796705855,
+        "floor_relative": true,
+        "wall_slice_point_count": 40697,
+        "p98_clip_value": 12.0,
+        "threshold_factor": 0.25,
+        "morphological_close_applied": false,
+        "dilation_applied": false,
+        "erosion_applied": false,
+        "height_convention": "floor-relative z offsets converted to absolute/world z"
+      },
+      "band_0p45_1p10": {
+        "slice_z_min": 0.3184429796705855,
+        "slice_z_max": 0.9684429796705856,
+        "floor_relative": true,
+        "wall_slice_point_count": 50530,
+        "p98_clip_value": 13.0,
+        "threshold_factor": 0.25,
+        "morphological_close_applied": false,
+        "dilation_applied": false,
+        "erosion_applied": false,
+        "height_convention": "floor-relative z offsets converted to absolute/world z"
+      },
+      "band_0p50_1p00": {
+        "slice_z_min": 0.3684429796705855,
+        "slice_z_max": 0.8684429796705855,
+        "floor_relative": true,
+        "wall_slice_point_count": 38868,
+        "p98_clip_value": 11.0,
+        "threshold_factor": 0.25,
+        "morphological_close_applied": false,
+        "dilation_applied": false,
+        "erosion_applied": false,
+        "height_convention": "floor-relative z offsets converted to absolute/world z"
+      }
+    }
+  },
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "step": "step30a",
+  "authoritative_recommended_gateway_wall_layer": "gateway_wall_preclose",
+  "gateway_wall_preclose_source": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+  "segmentation_wall_processed_source": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+  "gateway_wall_preclose_used_for_gateway_extraction": true,
+  "segmentation_wall_processed_used_as_hard_gateway_blocker": false,
+  "gateway_wall_preclose_generated_by_user_corridor_carving": false
+}

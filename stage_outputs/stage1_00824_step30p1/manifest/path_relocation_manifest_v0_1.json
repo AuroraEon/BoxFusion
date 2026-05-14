@@ -1,0 +1,220 @@
+{
+  "artifact_type": "stage1_step30p1_path_relocation_manifest_v0_1",
+  "created_utc": "2026-05-12T14:04:02Z",
+  "directory_move": {
+    "from": "baselines/stage1_00824_step30p1",
+    "to": "stage_outputs/stage1_00824_step30p1"
+  },
+  "rewrites": [
+    {
+      "absolute_replacements": 0,
+      "file": "docs/historical_runtime_evidence_summary.md",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 1
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "docs/stage1_step30p1_baseline_index.md",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 4
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "runtime_stage1_frozen_evidence/README.md",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 3
+    },
+    {
+      "absolute_replacements": 733,
+      "file": "stage_outputs/stage1_00824_step30p1/manifest/provenance_manifest_v0_2.json",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 2189
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/README.md",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 1
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/consolidate_stage1_step30p1_baseline.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 12
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30f/run_step30f_rviz_overlay.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 2
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30h7/build_step30h7_collision_ground_world.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 1
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30h7/cleanup_step30h7_stack.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 2
+    },
+    {
+      "absolute_replacements": 1,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30h7/collect_step30h7_snapshot.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 3
+    },
+    {
+      "absolute_replacements": 1,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30h7/execute_step30h7_segment0.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 1
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30h7/launch_step30h7_gazebo_collision_world.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 2
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30h7/launch_step30h7_nav2_stack.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 5
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30h7/launch_step30h7_turtlebot3_robot.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 2
+    },
+    {
+      "absolute_replacements": 1,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30h7/probe_step30h7_robot_dataplane.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 1
+    },
+    {
+      "absolute_replacements": 1,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30h7/publish_step30h7_initialpose.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 1
+    },
+    {
+      "absolute_replacements": 1,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30h7/wait_step30h7_map_base_ready.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 1
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/collect_step30p1_snapshot.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 2
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/create_step30p1_nav2_staticloc_launch.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 2
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/launch_step30p1_gazebo_large_floor_world.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 2
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/launch_step30p1_nav2_staticloc_stack.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 4
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/launch_step30p1_staticloc_tf.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 2
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/launch_step30p1_turtlebot3_robot.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 2
+    },
+    {
+      "absolute_replacements": 1,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/probe_step30p1_staticloc_dataplane.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 1
+    },
+    {
+      "absolute_replacements": 3,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/publish_step30p1_h8r2_route_markers.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 3
+    },
+    {
+      "absolute_replacements": 1,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/record_step30p1_trajectory.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 1
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/run_step30p1_end_to_end.sh",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 4
+    },
+    {
+      "absolute_replacements": 7,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/step30p1_plan_and_execute_h8r2_route.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 7
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/legacy_moved_scripts/step30p1/validate_step30p1_through_room_physical_visit.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 2
+    },
+    {
+      "absolute_replacements": 0,
+      "file": "tools/stage1_step30p1/verify_stage1_step30p1_baseline.py",
+      "new": "stage_outputs/stage1_00824_step30p1",
+      "old": "baselines/stage1_00824_step30p1",
+      "relative_replacements": 1
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "artifact_type": "step30s7_rviz_process_check",
+  "gui_requested": true,
+  "matching_lines": [
+    "10784  9923 Ssl  rviz2           rviz2 -d /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/00824_stage1_step30p1_bev_semantic_route_demo.rviz"
+  ],
+  "process_present": true,
+  "rviz_config": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/rviz/00824_stage1_step30p1_bev_semantic_route_demo.rviz",
+  "rviz_config_used_copy": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/00824_stage1_step30p1_bev_semantic_route_demo.rviz"
+}

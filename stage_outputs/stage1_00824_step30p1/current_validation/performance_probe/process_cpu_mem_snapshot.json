@@ -1,0 +1,176 @@
+{
+  "artifact_type": "stage1_gui_cpu_memory_snapshot",
+  "process_count": 17,
+  "processes": [
+    {
+      "pid": 12036,
+      "ppid": 16,
+      "stat": "Ssl",
+      "cpu_percent": 0.9,
+      "mem_percent": 0.3,
+      "rss_kb": 30512,
+      "comm": "ros2",
+      "args": "/usr/bin/python3 /opt/ros/foxy/bin/ros2 launch gazebo_ros gazebo.launch.py world:=/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/worlds/00824_step30p1_large_continuous_floor_world.sdf gui:=true"
+    },
+    {
+      "pid": 12054,
+      "ppid": 12036,
+      "stat": "S",
+      "cpu_percent": 0.0,
+      "mem_percent": 0.0,
+      "rss_kb": 1408,
+      "comm": "sh",
+      "args": "/bin/sh -c gzserver /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/worlds/00824_step30p1_large_continuous_floor_world.sdf                                                                      -s libgazebo_ros_init.so   -s libgazebo_ros_factory.so   -s libgazebo_ros_force_system.so       "
+    },
+    {
+      "pid": 12056,
+      "ppid": 12054,
+      "stat": "SLl",
+      "cpu_percent": 23.3,
+      "mem_percent": 6.1,
+      "rss_kb": 491812,
+      "comm": "gzserver",
+      "args": "gzserver /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/worlds/00824_step30p1_large_continuous_floor_world.sdf -s libgazebo_ros_init.so -s libgazebo_ros_factory.so -s libgazebo_ros_force_system.so"
+    },
+    {
+      "pid": 12057,
+      "ppid": 12036,
+      "stat": "S",
+      "cpu_percent": 0.0,
+      "mem_percent": 0.0,
+      "rss_kb": 1664,
+      "comm": "sh",
+      "args": "/bin/sh -c gzclient   "
+    },
+    {
+      "pid": 12059,
+      "ppid": 12057,
+      "stat": "SLl",
+      "cpu_percent": 30.6,
+      "mem_percent": 4.3,
+      "rss_kb": 344600,
+      "comm": "gzclient",
+      "args": "gzclient"
+    },
+    {
+      "pid": 12272,
+      "ppid": 16,
+      "stat": "Ssl",
+      "cpu_percent": 0.6,
+      "mem_percent": 0.4,
+      "rss_kb": 34236,
+      "comm": "ros2",
+      "args": "/usr/bin/python3 /opt/ros/foxy/bin/ros2 launch /opt/ros/foxy/share/turtlebot3_gazebo/launch/robot_state_publisher.launch.py use_sim_time:=true"
+    },
+    {
+      "pid": 12276,
+      "ppid": 12272,
+      "stat": "Sl",
+      "cpu_percent": 2.0,
+      "mem_percent": 0.3,
+      "rss_kb": 26492,
+      "comm": "robot_state_pub",
+      "args": "/opt/ros/foxy/lib/robot_state_publisher/robot_state_publisher /opt/ros/foxy/share/turtlebot3_description/urdf/turtlebot3_burger.urdf --ros-args -r __node:=robot_state_publisher --params-file /tmp/launch_params_41i0_cu8"
+    },
+    {
+      "pid": 12317,
+      "ppid": 16,
+      "stat": "Ssl",
+      "cpu_percent": 1.2,
+      "mem_percent": 0.4,
+      "rss_kb": 34348,
+      "comm": "ros2",
+      "args": "/usr/bin/python3 /opt/ros/foxy/bin/ros2 launch /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/launch/00824_nav2_turtlebot3_h8r2_staticloc_step30p1.launch.py map:=/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.yaml params_file:=/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/config/00824_nav2_turtlebot3_step30h7_narrow_gateway.yaml use_sim_time:=true autostart:=true"
+    },
+    {
+      "pid": 12347,
+      "ppid": 12317,
+      "stat": "Sl",
+      "cpu_percent": 1.0,
+      "mem_percent": 0.4,
+      "rss_kb": 35860,
+      "comm": "map_server",
+      "args": "/opt/ros/foxy/lib/nav2_map_server/map_server --ros-args -r __node:=map_server --params-file /tmp/tmpccutjo6r -r /tf:=tf -r /tf_static:=tf_static"
+    },
+    {
+      "pid": 12349,
+      "ppid": 12317,
+      "stat": "Sl",
+      "cpu_percent": 15.5,
+      "mem_percent": 0.5,
+      "rss_kb": 41916,
+      "comm": "controller_serv",
+      "args": "/opt/ros/foxy/lib/nav2_controller/controller_server --ros-args -r __node:=controller_server --params-file /tmp/tmprk8m70vl -r /tf:=tf -r /tf_static:=tf_static"
+    },
+    {
+      "pid": 12351,
+      "ppid": 12317,
+      "stat": "Sl",
+      "cpu_percent": 15.2,
+      "mem_percent": 0.6,
+      "rss_kb": 48632,
+      "comm": "planner_server",
+      "args": "/opt/ros/foxy/lib/nav2_planner/planner_server --ros-args -r __node:=planner_server --params-file /tmp/tmpzx2oouma -r /tf:=tf -r /tf_static:=tf_static"
+    },
+    {
+      "pid": 12353,
+      "ppid": 12317,
+      "stat": "Sl",
+      "cpu_percent": 1.8,
+      "mem_percent": 0.4,
+      "rss_kb": 35068,
+      "comm": "recoveries_serv",
+      "args": "/opt/ros/foxy/lib/nav2_recoveries/recoveries_server --ros-args -r __node:=recoveries_server --params-file /tmp/tmp_uxfp1lt -r /tf:=tf -r /tf_static:=tf_static"
+    },
+    {
+      "pid": 12355,
+      "ppid": 12317,
+      "stat": "Sl",
+      "cpu_percent": 2.0,
+      "mem_percent": 0.4,
+      "rss_kb": 37204,
+      "comm": "bt_navigator",
+      "args": "/opt/ros/foxy/lib/nav2_bt_navigator/bt_navigator --ros-args -r __node:=bt_navigator --params-file /tmp/tmpg69o7dap -r /tf:=tf -r /tf_static:=tf_static"
+    },
+    {
+      "pid": 12357,
+      "ppid": 12317,
+      "stat": "Sl",
+      "cpu_percent": 0.5,
+      "mem_percent": 0.3,
+      "rss_kb": 27812,
+      "comm": "waypoint_follow",
+      "args": "/opt/ros/foxy/lib/nav2_waypoint_follower/waypoint_follower --ros-args -r __node:=waypoint_follower --params-file /tmp/tmp6pkn4rpf -r /tf:=tf -r /tf_static:=tf_static"
+    },
+    {
+      "pid": 12359,
+      "ppid": 12317,
+      "stat": "Sl",
+      "cpu_percent": 0.9,
+      "mem_percent": 0.3,
+      "rss_kb": 27356,
+      "comm": "lifecycle_manag",
+      "args": "/opt/ros/foxy/lib/nav2_lifecycle_manager/lifecycle_manager --ros-args -r __node:=lifecycle_manager_navigation --params-file /tmp/launch_params_x3j9bchw --params-file /tmp/launch_params_1qu7t3z8 --params-file /tmp/launch_params_m_rgzch_"
+    },
+    {
+      "pid": 12497,
+      "ppid": 12490,
+      "stat": "Ssl",
+      "cpu_percent": 2.1,
+      "mem_percent": 0.7,
+      "rss_kb": 60876,
+      "comm": "python3",
+      "args": "/usr/bin/python3 tools/stage1_step30p1/publish_stage1_step30p1_rviz_overlay.py --stage-output-dir stage_outputs/stage1_00824_step30p1 --route-query-json stage_outputs/stage1_00824_step30p1/current_validation/room15_through/route_query_result_v0_1.json --waypoints-json stage_outputs/stage1_00824_step30p1/current_validation/room15_through/semantic_route_waypoints_v0_1.json --trajectory-json stage_outputs/stage1_00824_step30p1/current_validation/room15_through/trajectory_sample_result_v0_1.json --wall-validation-json stage_outputs/stage1_00824_step30p1/current_validation/room15_through/trajectory_wall_crossing_validation_v0_2.json --topic /stage1_nav/semantic_overlay_markers --run-id performance_probe"
+    },
+    {
+      "pid": 12498,
+      "ppid": 12490,
+      "stat": "Rsl",
+      "cpu_percent": 34.8,
+      "mem_percent": 2.9,
+      "rss_kb": 232532,
+      "comm": "rviz2",
+      "args": "rviz2 -d stage_outputs/stage1_00824_step30p1/rviz/00824_stage1_step30p1_bev_semantic_route_demo.rviz"
+    }
+  ]
+}

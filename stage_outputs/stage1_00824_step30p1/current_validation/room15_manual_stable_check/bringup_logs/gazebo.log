@@ -1,0 +1,16 @@
+[INFO] [launch]: All log files can be found below /home/ws/.ros/log/2026-05-14-19-57-46-535666-DESKTOP-24F4MES-14539
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [gzserver-1]: process started with pid [14554]
+[INFO] [gzclient   -2]: process started with pid [14557]
+[gzserver-1] [INFO] [1778759873.168940972] [turtlebot3_imu]: <initial_orientation_as_reference> is unset, using default value of false to comply with REP 145 (world as orientation reference)
+[gzserver-1] [INFO] [1778759873.385840708] [turtlebot3_diff_drive]: Wheel pair 1 separation set to [0.160000m]
+[gzserver-1] [INFO] [1778759873.386039988] [turtlebot3_diff_drive]: Wheel pair 1 diameter set to [0.066000m]
+[gzserver-1] [INFO] [1778759873.388692395] [turtlebot3_diff_drive]: Subscribed to [/cmd_vel]
+[gzserver-1] [INFO] [1778759873.390877631] [turtlebot3_diff_drive]: Advertise odometry on [/odom]
+[gzserver-1] [INFO] [1778759873.392179817] [turtlebot3_diff_drive]: Publishing odom transforms between [odom] and [base_footprint]
+[gzserver-1] [INFO] [1778759873.406425600] [turtlebot3_joint_state]: Going to publish joint [wheel_left_joint]
+[gzserver-1] [INFO] [1778759873.406508059] [turtlebot3_joint_state]: Going to publish joint [wheel_right_joint]
+[gzclient   -2] 
+[gzclient   -2] libcurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to fuel.gazebosim.org:443 
+[gzclient   -2] 
+[gzclient   -2] libcurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to fuel.ignitionrobotics.org:443 

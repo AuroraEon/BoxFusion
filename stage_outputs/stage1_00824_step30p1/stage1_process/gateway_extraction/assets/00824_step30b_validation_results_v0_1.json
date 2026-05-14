@@ -1,0 +1,169 @@
+{
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "step": "step30b",
+  "artifact_type": "validation_results",
+  "version": "v0_1",
+  "checks": {
+    "all_8_positive_pairs_have_hypothesis": {
+      "pass": true,
+      "details": {
+        "r1_r3": 1,
+        "r3_r7": 1,
+        "r7_r11": 1,
+        "r7_r14": 6,
+        "r14_r16": 6,
+        "r7_r15": 4,
+        "r8_r11": 1,
+        "r3_r8": 1
+      }
+    },
+    "preserved_primary_route_pairs": {
+      "pass": true,
+      "details": {
+        "r1_r3": [
+          "hyp_00824_r1_r3_01"
+        ],
+        "r3_r7": [
+          "hyp_00824_r3_r7_01"
+        ],
+        "r7_r11": [
+          "hyp_00824_r7_r11_01"
+        ],
+        "r8_r11": [
+          "hyp_00824_r8_r11_01"
+        ]
+      }
+    },
+    "r14_r16_promoted": {
+      "pass": true,
+      "details": [
+        {
+          "hypothesis_id": "hyp_00824_r14_r16_01",
+          "role": "high_confidence_needs_review"
+        },
+        {
+          "hypothesis_id": "hyp_00824_r14_r16_02",
+          "role": "needs_review"
+        },
+        {
+          "hypothesis_id": "hyp_00824_r14_r16_03",
+          "role": "geometry_detected_but_low_passability"
+        },
+        {
+          "hypothesis_id": "hyp_00824_r14_r16_04",
+          "role": "geometry_detected_but_low_passability"
+        },
+        {
+          "hypothesis_id": "hyp_00824_r14_r16_05",
+          "role": "needs_review"
+        },
+        {
+          "hypothesis_id": "hyp_00824_r14_r16_06",
+          "role": "rejected_duplicate"
+        }
+      ]
+    },
+    "r7_r15_geometry_not_passability_gated": {
+      "pass": true,
+      "details": [
+        {
+          "hypothesis_id": "hyp_00824_r7_r15_01",
+          "role": "geometry_detected_but_low_passability",
+          "passability_status": "low_or_uncertain"
+        },
+        {
+          "hypothesis_id": "hyp_00824_r7_r15_02",
+          "role": "geometry_detected_but_low_passability",
+          "passability_status": "low_or_uncertain"
+        },
+        {
+          "hypothesis_id": "hyp_00824_r7_r15_03",
+          "role": "geometry_detected_but_low_passability",
+          "passability_status": "low_or_uncertain"
+        },
+        {
+          "hypothesis_id": "hyp_00824_r7_r15_04",
+          "role": "rejected_duplicate",
+          "passability_status": "low_or_uncertain"
+        }
+      ]
+    },
+    "r3_r8_composite_or_failure_analysis": {
+      "pass": true,
+      "details": {
+        "composite_hypotheses": [
+          "hyp_00824_r3_r8_composite_01"
+        ],
+        "failure_analysis": null
+      }
+    },
+    "r3_r11_rejected_negative_sanity": {
+      "pass": true,
+      "details": {
+        "hypotheses": [
+          {
+            "hypothesis_id": "hyp_00824_r3_r11_01",
+            "role": "rejected_negative_sanity"
+          }
+        ],
+        "route_pairs": [
+          "r14_r16",
+          "r1_r3",
+          "r3_r7",
+          "r3_r8",
+          "r7_r11",
+          "r7_r14",
+          "r7_r15",
+          "r8_r11"
+        ]
+      }
+    },
+    "pair_local_visualizations_exist": {
+      "pass": true,
+      "details": {
+        "r1_r3": 9,
+        "r3_r7": 4,
+        "r7_r11": 7,
+        "r7_r14": 7,
+        "r14_r16": 7,
+        "r7_r15": 5,
+        "r8_r11": 7,
+        "r3_r8": 6,
+        "r3_r11": 5
+      }
+    },
+    "no_topology_generated": {
+      "pass": true,
+      "details": {
+        "forbidden_topology_files": []
+      }
+    },
+    "no_ros_nav2_gazebo_run": {
+      "pass": true,
+      "details": "Script uses no subprocess calls and reads only existing Step30A artifacts."
+    },
+    "non_truth_pairs_excluded_from_route_candidates": {
+      "pass": true,
+      "details": {
+        "route_pairs": [
+          "r14_r16",
+          "r1_r3",
+          "r3_r7",
+          "r3_r8",
+          "r7_r11",
+          "r7_r14",
+          "r7_r15",
+          "r8_r11"
+        ],
+        "non_truth_pairs": [
+          "r14_r15",
+          "r15_r16",
+          "r3_r15",
+          "r7_r16"
+        ]
+      }
+    }
+  },
+  "overall_pass": true,
+  "failed_checks": []
+}

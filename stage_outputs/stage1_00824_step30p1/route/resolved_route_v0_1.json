@@ -1,0 +1,258 @@
+{
+  "allow_review_gateways": false,
+  "artifact_type": "step30g_resolved_route",
+  "created_utc": "2026-05-06T14:00:14.532387+00:00",
+  "diagnostic_only": false,
+  "gateway_sequence": [
+    "gw_00824_r1_r3_01",
+    "gw_00824_r3_r8_01",
+    "gw_00824_r8_r11_01",
+    "gw_00824_r7_r11_02",
+    "gw_00824_r7_r14_01",
+    "gw_00824_r14_r16_01"
+  ],
+  "mode": "plan-only",
+  "pair_sequence": [
+    "r1_r3",
+    "r3_r8",
+    "r8_r11",
+    "r7_r11",
+    "r7_r14",
+    "r14_r16"
+  ],
+  "require_strong_only": false,
+  "resolution_warnings": [],
+  "review_required_segment_count": 4,
+  "room_sequence": [
+    "room_1",
+    "room_3",
+    "room_8",
+    "room_11",
+    "room_7",
+    "room_14",
+    "room_16"
+  ],
+  "route_id": "long_structure_route_default",
+  "route_policy": {
+    "does_not_publish_cmd_vel": true,
+    "forbidden_direct_edge": "r3_r11",
+    "forbidden_non_truth_pairs": [
+      "r14_r15",
+      "r15_r16",
+      "r3_r15",
+      "r7_r16"
+    ],
+    "nav2_action_modes_only": true,
+    "selected_gateways": {
+      "r14_r16": "gw_00824_r14_r16_01",
+      "r1_r3": "gw_00824_r1_r3_01",
+      "r3_r7": "gw_00824_r3_r7_01",
+      "r3_r8": "gw_00824_r3_r8_01",
+      "r7_r11": "gw_00824_r7_r11_02",
+      "r7_r14": "gw_00824_r7_r14_01",
+      "r7_r15": "gw_00824_r7_r15_01",
+      "r8_r11": "gw_00824_r8_r11_01"
+    }
+  },
+  "route_source": "step30f_marker_payload",
+  "route_source_detail": {
+    "payload": "step30f_marker_payload",
+    "route_id": "long_structure_route_default"
+  },
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "segment_count": 6,
+  "segments": [
+    {
+      "crossing_pose": {
+        "x": 5.0948,
+        "y": 1.8396,
+        "yaw": -2.221151
+      },
+      "from_room": "room_1",
+      "from_room_number": 1,
+      "gateway_id": "gw_00824_r1_r3_01",
+      "goal_pose": {
+        "x": 4.8829,
+        "y": 1.561,
+        "yaw": -2.221151
+      },
+      "nav2_default_usable": true,
+      "nav2_goal_policy": "goal-only ComputePathToPose; intended start is recorded but not sent",
+      "pair_key": "r1_r3",
+      "passability_status": "strong",
+      "review_required": false,
+      "segment_index": 0,
+      "start_pose": {
+        "x": 5.3067,
+        "y": 2.1181,
+        "yaw": -2.221151
+      },
+      "to_room": "room_3",
+      "to_room_number": 3,
+      "topology_valid": true,
+      "warnings": []
+    },
+    {
+      "crossing_pose": {
+        "x": 6.5879,
+        "y": -3.7741,
+        "yaw": -1.012365
+      },
+      "from_room": "room_3",
+      "from_room_number": 3,
+      "gateway_id": "gw_00824_r3_r8_01",
+      "goal_pose": {
+        "x": 6.7734,
+        "y": -4.071,
+        "yaw": -1.012365
+      },
+      "nav2_default_usable": false,
+      "nav2_goal_policy": "goal-only ComputePathToPose; intended start is recorded but not sent",
+      "pair_key": "r3_r8",
+      "passability_status": "low_or_uncertain",
+      "review_required": true,
+      "segment_index": 1,
+      "start_pose": {
+        "x": 6.4025,
+        "y": -3.4773,
+        "yaw": -1.012365
+      },
+      "to_room": "room_8",
+      "to_room_number": 8,
+      "topology_valid": true,
+      "warnings": [
+        "composite_support_available",
+        "passability_low_or_uncertain"
+      ]
+    },
+    {
+      "crossing_pose": {
+        "x": 5.0125,
+        "y": -4.2229,
+        "yaw": 3.091667
+      },
+      "from_room": "room_8",
+      "from_room_number": 8,
+      "gateway_id": "gw_00824_r8_r11_01",
+      "goal_pose": {
+        "x": 4.6629,
+        "y": -4.2054,
+        "yaw": 3.091667
+      },
+      "nav2_default_usable": false,
+      "nav2_goal_policy": "goal-only ComputePathToPose; intended start is recorded but not sent",
+      "pair_key": "r8_r11",
+      "passability_status": "reviewable",
+      "review_required": true,
+      "segment_index": 2,
+      "start_pose": {
+        "x": 5.3621,
+        "y": -4.2404,
+        "yaw": 3.091667
+      },
+      "to_room": "room_11",
+      "to_room_number": 11,
+      "topology_valid": true,
+      "warnings": [
+        "passability_reviewable"
+      ]
+    },
+    {
+      "crossing_pose": {
+        "x": 1.9533,
+        "y": -4.1917,
+        "yaw": 0.010764
+      },
+      "from_room": "room_11",
+      "from_room_number": 11,
+      "gateway_id": "gw_00824_r7_r11_02",
+      "goal_pose": {
+        "x": 1.6034,
+        "y": -4.1954,
+        "yaw": 0.010764
+      },
+      "nav2_default_usable": false,
+      "nav2_goal_policy": "goal-only ComputePathToPose; intended start is recorded but not sent",
+      "pair_key": "r7_r11",
+      "passability_status": "low_or_uncertain",
+      "review_required": true,
+      "segment_index": 3,
+      "start_pose": {
+        "x": 2.3033,
+        "y": -4.1879,
+        "yaw": 0.010764
+      },
+      "to_room": "room_7",
+      "to_room_number": 7,
+      "topology_valid": true,
+      "warnings": [
+        "passability_low_or_uncertain"
+      ]
+    },
+    {
+      "crossing_pose": {
+        "x": -1.975,
+        "y": -4.125,
+        "yaw": 3.113237
+      },
+      "from_room": "room_7",
+      "from_room_number": 7,
+      "gateway_id": "gw_00824_r7_r14_01",
+      "goal_pose": {
+        "x": -2.3249,
+        "y": -4.1151,
+        "yaw": 3.113237
+      },
+      "nav2_default_usable": false,
+      "nav2_goal_policy": "goal-only ComputePathToPose; intended start is recorded but not sent",
+      "pair_key": "r7_r14",
+      "passability_status": "low_or_uncertain",
+      "review_required": true,
+      "segment_index": 4,
+      "start_pose": {
+        "x": -1.6251,
+        "y": -4.1349,
+        "yaw": 3.113237
+      },
+      "to_room": "room_14",
+      "to_room_number": 14,
+      "topology_valid": true,
+      "warnings": [
+        "passability_low_or_uncertain"
+      ]
+    },
+    {
+      "crossing_pose": {
+        "x": -4.1396,
+        "y": -3.3007,
+        "yaw": 1.595138
+      },
+      "from_room": "room_14",
+      "from_room_number": 14,
+      "gateway_id": "gw_00824_r14_r16_01",
+      "goal_pose": {
+        "x": -4.1481,
+        "y": -2.9508,
+        "yaw": 1.595138
+      },
+      "nav2_default_usable": true,
+      "nav2_goal_policy": "goal-only ComputePathToPose; intended start is recorded but not sent",
+      "pair_key": "r14_r16",
+      "passability_status": "strong",
+      "review_required": false,
+      "segment_index": 5,
+      "start_pose": {
+        "x": -4.131,
+        "y": -3.6506,
+        "yaw": 1.595138
+      },
+      "to_room": "room_16",
+      "to_room_number": 16,
+      "topology_valid": true,
+      "warnings": []
+    }
+  ],
+  "step": "step30g",
+  "strong_segment_count": 2,
+  "version": "v0_1"
+}

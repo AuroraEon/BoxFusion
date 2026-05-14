@@ -1,0 +1,165 @@
+{
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "artifact_type": "step30b2_validation_results",
+  "step": "step30b2",
+  "version": "v0_1",
+  "validation_passed": true,
+  "checks": [
+    {
+      "check": "manual_truth_file_exists_and_separate_from_auto_selection",
+      "passed": true,
+      "detail": {
+        "truth_path": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+        "selection_path": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE"
+      }
+    },
+    {
+      "check": "truth_file_used_for_auto_selection_false",
+      "passed": true,
+      "detail": false
+    },
+    {
+      "check": "auto_selection_code_path_did_not_read_truth_before_selection",
+      "passed": true,
+      "detail": {
+        "step30a_candidates": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+        "step30a_hypotheses_with_roles": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+        "step30a_layered_bev_npz": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+        "step30b_hypotheses_with_roles": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+        "step30b_pair_local_visualization_manifest": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE"
+      }
+    },
+    {
+      "check": "no_stage_a_rerun",
+      "passed": true,
+      "detail": "Step30B2 script only reads existing Step30A artifacts; it does not call Stage-A."
+    },
+    {
+      "check": "no_topology_generated",
+      "passed": true,
+      "detail": "No topology-named artifact exists under Step30B2 output."
+    },
+    {
+      "check": "no_ros_nav2_gazebo_run",
+      "passed": true,
+      "detail": "Script has no ROS/Nav2/Gazebo/RViz invocations."
+    },
+    {
+      "check": "r3_r11_not_selected_primary",
+      "passed": true,
+      "detail": {
+        "pair_key": "r3_r11",
+        "selected_primary_candidate_id": null,
+        "selected_primary": null,
+        "automatic_role": "no_primary_route_gateway_selected",
+        "passability_status": null,
+        "warnings": [],
+        "supporting_candidate_ids": [],
+        "rejected_candidate_ids": [
+          "gw_00824_r3_r11_01",
+          "gw_00824_r3_r11_03",
+          "gw_00824_r3_r11_02",
+          "gw_00824_r3_r11_04"
+        ],
+        "ranked_candidate_ids": [
+          "gw_00824_r3_r11_01",
+          "gw_00824_r3_r11_03",
+          "gw_00824_r3_r11_02",
+          "gw_00824_r3_r11_04"
+        ],
+        "top_k_candidates": [
+          {
+            "rank": 1,
+            "candidate_id": "gw_00824_r3_r11_01",
+            "automatic_score": 0.371634,
+            "automatic_geometry_status": "rejected_no_two_sided_geometry",
+            "automatic_passability_status": "low_or_uncertain",
+            "automatic_role": "rejected_false_positive"
+          },
+          {
+            "rank": 2,
+            "candidate_id": "gw_00824_r3_r11_03",
+            "automatic_score": 0.306091,
+            "automatic_geometry_status": "rejected_no_two_sided_geometry",
+            "automatic_passability_status": "low_or_uncertain",
+            "automatic_role": "rejected_false_positive"
+          },
+          {
+            "rank": 3,
+            "candidate_id": "gw_00824_r3_r11_02",
+            "automatic_score": -0.407071,
+            "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+            "automatic_passability_status": "low_or_uncertain",
+            "automatic_role": "rejected_false_positive"
+          },
+          {
+            "rank": 4,
+            "candidate_id": "gw_00824_r3_r11_04",
+            "automatic_score": -0.487071,
+            "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+            "automatic_passability_status": "low_or_uncertain",
+            "automatic_role": "rejected_false_positive"
+          }
+        ],
+        "score_breakdown": null,
+        "selection_reason": "no candidate passed truth-blind primary criteria",
+        "composite_support_hypotheses": []
+      }
+    },
+    {
+      "check": "non_truth_pairs_not_selected_primary",
+      "passed": true,
+      "detail": {}
+    },
+    {
+      "check": "auto_vs_truth_evaluation_file_exists",
+      "passed": true,
+      "detail": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE"
+    },
+    {
+      "check": "top1_accuracy_and_top3_recall_reported",
+      "passed": true,
+      "detail": {
+        "positive_pairs_total": 8,
+        "pair_level_accuracy": 1.0,
+        "candidate_level_top1_accuracy": 1.0,
+        "candidate_level_top3_recall": 1.0,
+        "positive_pair_top1_correct": 8,
+        "positive_pair_top3_recall_count": 8,
+        "mismatch_count": 0,
+        "hard_negative_false_positive_count": 0,
+        "non_truth_primary_false_positive_count": 0
+      }
+    },
+    {
+      "check": "every_selected_primary_has_score_breakdown",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "check": "every_mismatch_has_failure_mode",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "check": "every_candidate_score_has_score_breakdown",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "check": "route_candidates_are_truth_blind_auto_selection",
+      "passed": true,
+      "detail": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE"
+    },
+    {
+      "check": "failure_analysis_file_exists",
+      "passed": true,
+      "detail": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE"
+    },
+    {
+      "check": "summary_file_exists",
+      "passed": true,
+      "detail": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE"
+    }
+  ]
+}

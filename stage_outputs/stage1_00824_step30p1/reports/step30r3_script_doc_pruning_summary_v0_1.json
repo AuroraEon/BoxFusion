@@ -1,0 +1,888 @@
+{
+  "created_utc": "2026-05-12T14:09:42Z",
+  "deleted_other_top_level_scripts": [
+    "map_builder.py",
+    "gen_features.py",
+    "visualize_check.py"
+  ],
+  "deleted_records": [
+    {
+      "file_count": 1,
+      "path": "stage_a_end_to_end_vln_demo.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 35854
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_minimal_vln_closed_loop.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 35928
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_minimal_vln_demo.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 5490
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_multifloor_query_acceptance.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 21545
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_online_topology_blocker_diag.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 2419
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_online_topology_timeline_eval.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 1955
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_online_topology_working_snapshot.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 2866
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_publication_candidate_survivability.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 3304
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_publication_policy_simulation.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 2682
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_room_commit_diagnosis.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 2683
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_room_graph_vln_demo.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 6988
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_room_graph_vln_demo_bundle.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 1140
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_ros2_sim_ingress_validation.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 144
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_ros_publication_diagnostics_validation.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 3045
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_ros_query_server_validation.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 5575
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_runtime_export_coordinator_validation.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 5282
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_template_grounding.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 1140
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_template_grounding_acceptance.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 8430
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_topology_acceptance.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 17903
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_topology_export.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 1691
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_topology_query.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 2583
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_topology_route.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 2265
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_vln_tool_use_demo.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 36086
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_working_vs_committed_topology_timeline_eval.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 3082
+    },
+    {
+      "file_count": 1,
+      "path": "stage_a_world_model_backend_eval.py",
+      "reason": "Deleted obsolete top-level Stage-A wrapper; current entry point is stage_a_demo.py.",
+      "size_bytes": 102
+    },
+    {
+      "file_count": 1,
+      "path": "map_builder.py",
+      "reason": "Deleted non-pipeline top-level helper/debug script; external backup exists.",
+      "size_bytes": 7271
+    },
+    {
+      "file_count": 1,
+      "path": "gen_features.py",
+      "reason": "Deleted non-pipeline top-level helper/debug script; external backup exists.",
+      "size_bytes": 1648
+    },
+    {
+      "file_count": 1,
+      "path": "visualize_check.py",
+      "reason": "Deleted non-pipeline top-level helper/debug script; external backup exists.",
+      "size_bytes": 2786
+    },
+    {
+      "file_count": 23,
+      "path": "scripts",
+      "reason": "Deleted old Step29 raster/gateway one-off scripts; not part of the current pipeline.",
+      "size_bytes": 535931
+    },
+    {
+      "file_count": 40,
+      "path": "stage_a_eval",
+      "reason": "Deleted stale paper/evaluation helper scripts; not part of current Stage-A / Stage1 pipeline entry point.",
+      "size_bytes": 858993
+    },
+    {
+      "file_count": 6,
+      "path": "demo",
+      "reason": "Deleted stale demo helper bundle that depended on removed top-level wrappers.",
+      "size_bytes": 48346
+    },
+    {
+      "file_count": 1,
+      "path": "tools/__pycache__",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 51649
+    },
+    {
+      "file_count": 1,
+      "path": "tools/analyze_same_frame_object_deltas.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 24865
+    },
+    {
+      "file_count": 1,
+      "path": "tools/audit_committed_topology.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 63074
+    },
+    {
+      "file_count": 1,
+      "path": "tools/build_step16_navigation_projection_audit.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 26869
+    },
+    {
+      "file_count": 1,
+      "path": "tools/build_step17_gazebo_nav2_asset_layer.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 40794
+    },
+    {
+      "file_count": 1,
+      "path": "tools/build_step6_manual_topology_triage.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 52935
+    },
+    {
+      "file_count": 1,
+      "path": "tools/generate_step12_ros_rviz_smoke_evidence.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 25796
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step29a3r_export_gateway_wall_evidence.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 64342
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step29b1r_audit_structural_wall_generation.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 60647
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step29b2r2_build_local_gateway_inspection_pack.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 60433
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step29b3_build_gateway_hypotheses.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 67566
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step29b3r_audit_gateway_hypotheses.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 70974
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step30a_full_stage_a_dual_wall_gateway_rerun.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 48305
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step30b2_00824_gateway_truth_and_auto_selection.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 47543
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step30b_00824_gateway_benchmark_expansion.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 48571
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step30c_00824_gateway_augmented_topology_candidate.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 31591
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step30d_00824_topology_route_projection_overlay_review.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 68887
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step30e_00824_nav_projection_map_and_planner_audit.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 64098
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step30f_00824_prepare_gui_overlay_payload.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 63854
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step30g_00824_route_command_interface.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 47415
+    },
+    {
+      "file_count": 1,
+      "path": "tools/step30h_00824_live_gui_nav2_cleanup_planning_smoke.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 42526
+    },
+    {
+      "file_count": 1,
+      "path": "tools/trace_route_visible_topology_edges.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 18708
+    },
+    {
+      "file_count": 1,
+      "path": "tools/validate_ros_bridge_artifact_contract.py",
+      "reason": "Deleted obsolete one-off tool; current reusable support is tools/utils.py and tools/stage1_step30p1/.",
+      "size_bytes": 10804
+    },
+    {
+      "file_count": 1,
+      "path": "tools/stage1_step30p1/consolidate_stage1_step30p1_baseline.py",
+      "reason": "Deleted Step30R2 migration or legacy runner script after finalized Step30R3 outputs.",
+      "size_bytes": 42260
+    },
+    {
+      "file_count": 40,
+      "path": "tools/stage1_step30p1/legacy_moved_scripts",
+      "reason": "Deleted Step30R2 migration or legacy runner script after finalized Step30R3 outputs.",
+      "size_bytes": 455065
+    },
+    {
+      "file_count": 1,
+      "path": "docs/00862_parity_triage_capture_stride_followup.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1344
+    },
+    {
+      "file_count": 1,
+      "path": "docs/00862_parity_triage_capture_stride_followup.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 7457
+    },
+    {
+      "file_count": 1,
+      "path": "docs/ablation_study_design_report.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 11515
+    },
+    {
+      "file_count": 1,
+      "path": "docs/backend_eval_v0_1.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 9156
+    },
+    {
+      "file_count": 1,
+      "path": "docs/comparison_experiment_design_report.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 10410
+    },
+    {
+      "file_count": 1,
+      "path": "docs/current_implementation_level_technical_report_20260417.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 36229
+    },
+    {
+      "file_count": 1,
+      "path": "docs/demo_ready_ros_and_vln_bundle_report_20260417.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 13793
+    },
+    {
+      "file_count": 1,
+      "path": "docs/feature_liveness_and_dormant_mechanism_audit.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 7762
+    },
+    {
+      "file_count": 1,
+      "path": "docs/feature_liveness_and_dormant_mechanism_audit.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 15058
+    },
+    {
+      "file_count": 1,
+      "path": "docs/floor_aware_world_graph_v0_1.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 6188
+    },
+    {
+      "file_count": 1,
+      "path": "docs/full_pipeline_performance_opportunity_audit.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 4956
+    },
+    {
+      "file_count": 1,
+      "path": "docs/full_pipeline_performance_opportunity_audit.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 22840
+    },
+    {
+      "file_count": 1,
+      "path": "docs/historical_runtime_evidence_summary.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1694
+    },
+    {
+      "file_count": 1,
+      "path": "docs/hm3d_00843_fullseq_rerun_room_commit_report_20260417.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 7207
+    },
+    {
+      "file_count": 1,
+      "path": "docs/hm3d_room_graph_vln_demo_report_20260417.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 12403
+    },
+    {
+      "file_count": 1,
+      "path": "docs/hm3d_scene_readiness_matrix.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 2445
+    },
+    {
+      "file_count": 1,
+      "path": "docs/hm3d_scene_readiness_matrix.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 3020
+    },
+    {
+      "file_count": 1,
+      "path": "docs/large_refactor_feasibility_for_major_speedup.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 3685
+    },
+    {
+      "file_count": 1,
+      "path": "docs/large_refactor_feasibility_for_major_speedup.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 24598
+    },
+    {
+      "file_count": 1,
+      "path": "docs/metric_definition_and_collection_plan.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 13520
+    },
+    {
+      "file_count": 1,
+      "path": "docs/model_usage_audit_report.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 18875
+    },
+    {
+      "file_count": 1,
+      "path": "docs/model_usage_audit_summary.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 5573
+    },
+    {
+      "file_count": 1,
+      "path": "docs/online_topology_backend_v0_2_closeout.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 12168
+    },
+    {
+      "file_count": 1,
+      "path": "docs/online_topology_first_step_design_note.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 18118
+    },
+    {
+      "file_count": 1,
+      "path": "docs/online_topology_publication_state_machine_note.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 5717
+    },
+    {
+      "file_count": 1,
+      "path": "docs/online_topology_v0_1_closeout.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 11804
+    },
+    {
+      "file_count": 1,
+      "path": "docs/paper_demo_success_matrix_20260417.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 527
+    },
+    {
+      "file_count": 1,
+      "path": "docs/paper_downstream_utility_summary_20260417.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 5124
+    },
+    {
+      "file_count": 1,
+      "path": "docs/paper_eval_freeze_v1.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 8860
+    },
+    {
+      "file_count": 1,
+      "path": "docs/paper_eval_reproduction_commands.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 6205
+    },
+    {
+      "file_count": 1,
+      "path": "docs/paper_evaluation_results_bundle_20260417.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 7671
+    },
+    {
+      "file_count": 1,
+      "path": "docs/paper_experiment_enablement_update.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 4397
+    },
+    {
+      "file_count": 1,
+      "path": "docs/paper_experiment_enablement_update.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 9107
+    },
+    {
+      "file_count": 1,
+      "path": "docs/paper_experiment_readiness_report.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 16374
+    },
+    {
+      "file_count": 1,
+      "path": "docs/paper_experiment_readiness_summary.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1373
+    },
+    {
+      "file_count": 1,
+      "path": "docs/paper_public_authoritative_contract_20260417.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 2115
+    },
+    {
+      "file_count": 1,
+      "path": "docs/paper_sequence_comparison_20260417.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1459
+    },
+    {
+      "file_count": 1,
+      "path": "docs/performance_freeze_closure_00862_full_and_final_note.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1658
+    },
+    {
+      "file_count": 1,
+      "path": "docs/performance_freeze_closure_00862_full_and_final_note.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 9921
+    },
+    {
+      "file_count": 1,
+      "path": "docs/pre_step18_prompt_recovery_and_state_audit.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 19582
+    },
+    {
+      "file_count": 1,
+      "path": "docs/pre_step18_prompt_recovery_and_state_audit.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 3692
+    },
+    {
+      "file_count": 1,
+      "path": "docs/public_surface_audit_20260417.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 4930
+    },
+    {
+      "file_count": 1,
+      "path": "docs/room_commit_observability_and_minimum_replay_standard_v0_1.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 6020
+    },
+    {
+      "file_count": 1,
+      "path": "docs/room_identity_lifecycle_and_rebirth_audit.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 9868
+    },
+    {
+      "file_count": 1,
+      "path": "docs/room_identity_lifecycle_and_rebirth_audit.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 15486
+    },
+    {
+      "file_count": 1,
+      "path": "docs/room_scoped_rslg_slam_runtime_contract_v0_1.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 4989
+    },
+    {
+      "file_count": 1,
+      "path": "docs/room_topology_v0_1.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 12118
+    },
+    {
+      "file_count": 1,
+      "path": "docs/ros2_publication_diagnostics_layer_note.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 4070
+    },
+    {
+      "file_count": 1,
+      "path": "docs/ros2_query_layer_package_update.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 4451
+    },
+    {
+      "file_count": 1,
+      "path": "docs/ros2_runtime_export_coordinator_note.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 4296
+    },
+    {
+      "file_count": 1,
+      "path": "docs/ros2_simulation_ingress_adapter_note.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 25059
+    },
+    {
+      "file_count": 1,
+      "path": "docs/ros_gazebo_landing_contract_v0_1.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 13254
+    },
+    {
+      "file_count": 1,
+      "path": "docs/ros_query_server_first_step_design_note.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 4120
+    },
+    {
+      "file_count": 1,
+      "path": "docs/runtime_sidecar_minimal_public_topology_shadow_note.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 3636
+    },
+    {
+      "file_count": 1,
+      "path": "docs/runtime_sidecar_phase1_contract_split_note.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 5493
+    },
+    {
+      "file_count": 1,
+      "path": "docs/runtime_sidecar_real_bundle_acceptance_report.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 4920
+    },
+    {
+      "file_count": 1,
+      "path": "docs/runtime_sidecar_topology_variety_acceptance_report.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 7703
+    },
+    {
+      "file_count": 1,
+      "path": "docs/server_slow_followup_candidate_indices_and_advisor_bundle.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 2581
+    },
+    {
+      "file_count": 1,
+      "path": "docs/server_slow_followup_candidate_indices_and_advisor_bundle.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 8430
+    },
+    {
+      "file_count": 1,
+      "path": "docs/server_slow_multiscene_validation_and_benchmark_path_update.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 3197
+    },
+    {
+      "file_count": 1,
+      "path": "docs/server_slow_multiscene_validation_and_benchmark_path_update.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 12070
+    },
+    {
+      "file_count": 1,
+      "path": "docs/server_slow_next_step_update.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1190
+    },
+    {
+      "file_count": 1,
+      "path": "docs/server_slow_next_step_update.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 5710
+    },
+    {
+      "file_count": 1,
+      "path": "docs/stage1_step30p1_baseline_index.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 588
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step17_gazebo_nav2_asset_layer.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 397
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step17_gazebo_nav2_asset_layer.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 7356
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step17b_nav2_lifecycle_dependency_repair.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1299
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step17b_nav2_lifecycle_dependency_repair.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 3715
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_four_scene_topology_audit_coverage.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 2139
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_four_scene_topology_audit_coverage.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 2547
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_input_availability_check.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 3664
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_input_availability_check.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1150
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_missing_scene_bundle_inventory.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1327
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_missing_scene_bundle_inventory.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1373
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_regenerated_artifact_validation.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 6391
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_regenerated_artifact_validation.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1342
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_regeneration_command_plan.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 4421
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_regeneration_command_plan.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1730
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_room_graph_vln_bundle_regeneration.csv",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 798
+    },
+    {
+      "file_count": 1,
+      "path": "docs/step4_room_graph_vln_bundle_regeneration.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 1194
+    },
+    {
+      "file_count": 1,
+      "path": "docs/unified_artifact_timeline_contract_v0_1.md",
+      "reason": "Deleted stale/redundant doc after consolidation into docs/current_project_state.md.",
+      "size_bytes": 3288
+    },
+    {
+      "file_count": 1,
+      "path": "runtime_reproduction_guide.md",
+      "reason": "Deleted stale runtime reproduction guide after merging useful state into docs/current_project_state.md.",
+      "size_bytes": 10353
+    },
+    {
+      "file_count": 1,
+      "path": "runtime_reproduction_quickstart.md",
+      "reason": "Deleted stale runtime reproduction guide after merging useful state into docs/current_project_state.md.",
+      "size_bytes": 2572
+    },
+    {
+      "file_count": 1,
+      "path": "stage_outputs/stage1_00824_step30p1/reports/current_baseline_report_v0_1.md",
+      "reason": "Replaced baseline-worded report with current_stage1_step30p1_report.md.",
+      "size_bytes": 1916
+    },
+    {
+      "file_count": 1,
+      "path": "stage_outputs/stage1_00824_step30p1/reports/historical_step_summary_v0_1.md",
+      "reason": "Historical summary merged into docs/current_project_state.md.",
+      "size_bytes": 1694
+    }
+  ],
+  "deleted_top_level_stage_a_scripts": [
+    "stage_a_end_to_end_vln_demo.py",
+    "stage_a_minimal_vln_closed_loop.py",
+    "stage_a_minimal_vln_demo.py",
+    "stage_a_multifloor_query_acceptance.py",
+    "stage_a_online_topology_blocker_diag.py",
+    "stage_a_online_topology_timeline_eval.py",
+    "stage_a_online_topology_working_snapshot.py",
+    "stage_a_publication_candidate_survivability.py",
+    "stage_a_publication_policy_simulation.py",
+    "stage_a_room_commit_diagnosis.py",
+    "stage_a_room_graph_vln_demo.py",
+    "stage_a_room_graph_vln_demo_bundle.py",
+    "stage_a_ros2_sim_ingress_validation.py",
+    "stage_a_ros_publication_diagnostics_validation.py",
+    "stage_a_ros_query_server_validation.py",
+    "stage_a_runtime_export_coordinator_validation.py",
+    "stage_a_template_grounding.py",
+    "stage_a_template_grounding_acceptance.py",
+    "stage_a_topology_acceptance.py",
+    "stage_a_topology_export.py",
+    "stage_a_topology_query.py",
+    "stage_a_topology_route.py",
+    "stage_a_vln_tool_use_demo.py",
+    "stage_a_working_vs_committed_topology_timeline_eval.py",
+    "stage_a_world_model_backend_eval.py"
+  ],
+  "remaining_top_level_python": [
+    "demo.py",
+    "setup.py",
+    "stage_a_demo.py"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "artifact_type": "stage1_step30p1_overlay_manifest",
+  "created_utc": "2026-05-12T13:34:04+00:00",
+  "gazebo_overlay_assets": "overlay/gazebo_overlay_assets",
+  "note": "RViz carries the complete semantic overlay; Gazebo overlay assets are preserved as passive assets.",
+  "rviz_payload": "overlay/rviz_overlay_payload_v0_1.json"
+}

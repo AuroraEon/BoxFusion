@@ -1,0 +1,31 @@
+{
+  "artifact_type": "stage1_step30p1_rviz_manifest",
+  "compat_marker_topic": "/step30s4_rviz_overlay_markers",
+  "description": "Step30S5 BEV/floorplan RViz config separating Nav2 map free-space from semantic room masks, route, gateway, planned path, robot TF/model, scan, executed trajectory, and validation overlays.",
+  "expected_topics": [
+    "/map",
+    "/tf",
+    "/tf_static",
+    "/scan",
+    "/robot_description",
+    "/plan",
+    "/local_plan",
+    "/step30s5_rviz_overlay_markers"
+  ],
+  "primary_config": "00824_stage1_step30p1_bev_semantic_route_demo.rviz",
+  "primary_marker_topic": "/step30s5_rviz_overlay_markers",
+  "rviz_configs": [
+    "00824_stage1_step30p1_bev_semantic_route_demo.rviz"
+  ],
+  "separate_layers": [
+    "Nav2 occupancy/free-space map",
+    "semantic room segmentation mask",
+    "room15 semantic region fill and outline",
+    "selected room15 interior target",
+    "r7-r15 gateway",
+    "planned route",
+    "executed trajectory",
+    "invalid or suspicious wall-crossing segments"
+  ],
+  "version": "v0_2"
+}

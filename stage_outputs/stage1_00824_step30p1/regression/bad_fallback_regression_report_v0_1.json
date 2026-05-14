@@ -1,0 +1,59 @@
+{
+  "artifact_type": "step30p1_bad_run_regression_report",
+  "commanded_backward_fallback_goals": [
+    {
+      "distance_before_m": 10.246315,
+      "navigate_status": "succeeded",
+      "selected_list_index": 0,
+      "waypoint_index": 2
+    },
+    {
+      "distance_before_m": 5.925704,
+      "navigate_status": "succeeded",
+      "selected_list_index": 1,
+      "waypoint_index": 47
+    },
+    {
+      "distance_before_m": 1.990738,
+      "navigate_status": "succeeded",
+      "selected_list_index": 2,
+      "waypoint_index": 55
+    },
+    {
+      "distance_before_m": 5.037003,
+      "navigate_status": "succeeded",
+      "selected_list_index": 3,
+      "waypoint_index": 64
+    },
+    {
+      "distance_before_m": 4.112196,
+      "navigate_status": "succeeded",
+      "selected_list_index": 4,
+      "waypoint_index": 76
+    }
+  ],
+  "conclusion": "Step30P1 would start fallback at waypoint 83 for projected progress 82 and would mark the preserved Step30P restart-at-2 behavior suspicious.",
+  "created_utc": "2026-05-12T12:13:26.062931+00:00",
+  "executed_trajectory_distance_m": 61.342247,
+  "old_behavior_would_be_flagged_as_backtracking": true,
+  "old_fallback_started_at_waypoint_index": 2,
+  "old_resume_start_selected_list_index": 0,
+  "planned_waypoint_path_distance_m": 25.92516,
+  "projected_next_path_start_slice_index": 82,
+  "selected_waypoint_indices": [
+    2,
+    47,
+    55,
+    64,
+    76,
+    83
+  ],
+  "source_bad_run_execution": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/validation/historical_step30p_bad_run/step30p_execute_room_chain_result_v0_1.json",
+  "source_bad_run_trajectory": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/validation/historical_step30p_bad_run/step30p_executed_trajectory.json",
+  "step": "Step30P1",
+  "step30p1_required_fallback_started_at_waypoint_index": 83,
+  "step30p1_required_resume_start_selected_list_index": 5,
+  "trajectory_quality_suspicious": true,
+  "trajectory_to_planned_distance_ratio": 2.366128,
+  "version": "v0_1"
+}

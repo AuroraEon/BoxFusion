@@ -1,0 +1,1346 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version="1.6">
+  <world name="boxfusion_step30p1_00824_large_continuous_floor">
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <model name="step30p1_large_continuous_floor">
+      <static>true</static>
+      <pose>-15.0000 -15.0000 -0.0200 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>70.0000 70.0000 0.0400</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.760 0.800 0.780 1.000</ambient>
+            <diffuse>0.760 0.800 0.780 1.000</diffuse>
+          </material>
+        </visual>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>70.0000 70.0000 0.0400</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1000000.0</kp>
+                <kd>100.0</kd>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r1_r3_01_segment_0">
+      <static>true</static>
+      <pose>5.2008 1.9788 0.0300 0 0 -2.2212</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3499 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r1_r3_01_segment_1">
+      <static>true</static>
+      <pose>4.9889 1.7003 0.0300 0 0 -2.2210</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r3_r7_01_segment_0">
+      <static>true</static>
+      <pose>0.9765 -3.4474 0.0300 0 0 -2.2108</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r3_r7_01_segment_1">
+      <static>true</static>
+      <pose>0.7674 -3.7282 0.0300 0 0 -2.2110</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r3_r8_01_segment_0">
+      <static>true</static>
+      <pose>6.4952 -3.6257 0.0300 0 0 -1.0124</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3499 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r3_r8_01_segment_1">
+      <static>true</static>
+      <pose>6.6806 -3.9225 0.0300 0 0 -1.0123</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3501 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r7_r11_02_segment_0">
+      <static>true</static>
+      <pose>1.7784 -4.1936 0.0300 0 0 0.0106</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3499 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r7_r11_02_segment_1">
+      <static>true</static>
+      <pose>2.1283 -4.1898 0.0300 0 0 0.0109</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r7_r14_01_segment_0">
+      <static>true</static>
+      <pose>-1.8001 -4.1300 0.0300 0 0 3.1133</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r7_r14_01_segment_1">
+      <static>true</static>
+      <pose>-2.1500 -4.1200 0.0300 0 0 3.1133</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r7_r15_01_segment_0">
+      <static>true</static>
+      <pose>-1.3666 -3.7637 0.0300 0 0 1.9584</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3501 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r7_r15_01_segment_1">
+      <static>true</static>
+      <pose>-1.4989 -3.4397 0.0300 0 0 1.9582</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3499 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r8_r11_01_segment_0">
+      <static>true</static>
+      <pose>5.1873 -4.2317 0.0300 0 0 3.0916</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r8_r11_01_segment_1">
+      <static>true</static>
+      <pose>4.8377 -4.2142 0.0300 0 0 3.0916</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r14_r16_01_segment_0">
+      <static>true</static>
+      <pose>-4.1353 -3.4756 0.0300 0 0 1.5954</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="carve_capsule_line_gw_00824_r14_r16_01_segment_1">
+      <static>true</static>
+      <pose>-4.1439 -3.1258 0.0300 0 0 1.5951</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.3600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.000 0.651 0.651 0.250</ambient>
+            <diffuse>0.000 0.651 0.651 0.250</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="gateway_center_gw_00824_r14_r16_01">
+      <static>true</static>
+      <pose>-4.1396 -3.3007 0.1600 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.1100</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.141 0.569 0.325 1.000</ambient>
+            <diffuse>0.141 0.569 0.325 1.000</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="gateway_center_gw_00824_r1_r3_01">
+      <static>true</static>
+      <pose>5.0948 1.8396 0.1600 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.1100</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.141 0.569 0.325 1.000</ambient>
+            <diffuse>0.141 0.569 0.325 1.000</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="gateway_center_gw_00824_r3_r7_01">
+      <static>true</static>
+      <pose>0.8720 -3.5878 0.1600 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.1100</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.902 0.494 0.133 1.000</ambient>
+            <diffuse>0.902 0.494 0.133 1.000</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="gateway_center_gw_00824_r3_r8_01">
+      <static>true</static>
+      <pose>6.5879 -3.7741 0.1600 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.1100</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.902 0.494 0.133 1.000</ambient>
+            <diffuse>0.902 0.494 0.133 1.000</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="gateway_center_gw_00824_r7_r11_02">
+      <static>true</static>
+      <pose>1.9533 -4.1917 0.1600 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.1100</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.902 0.494 0.133 1.000</ambient>
+            <diffuse>0.902 0.494 0.133 1.000</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="gateway_center_gw_00824_r7_r14_01">
+      <static>true</static>
+      <pose>-1.9750 -4.1250 0.1600 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.1100</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.902 0.494 0.133 1.000</ambient>
+            <diffuse>0.902 0.494 0.133 1.000</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="gateway_center_gw_00824_r7_r15_01">
+      <static>true</static>
+      <pose>-1.4328 -3.6017 0.1600 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.1100</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.902 0.494 0.133 1.000</ambient>
+            <diffuse>0.902 0.494 0.133 1.000</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="gateway_center_gw_00824_r8_r11_01">
+      <static>true</static>
+      <pose>5.0125 -4.2229 0.1600 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.1100</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.902 0.494 0.133 1.000</ambient>
+            <diffuse>0.902 0.494 0.133 1.000</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="room_anchor_room_1">
+      <static>true</static>
+      <pose>7.5455 4.2997 0.0500 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.1200</radius>
+              <length>0.1000</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.149 0.435 0.710 0.880</ambient>
+            <diffuse>0.149 0.435 0.710 0.880</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="room_anchor_room_3">
+      <static>true</static>
+      <pose>3.8632 -0.5406 0.0500 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.1200</radius>
+              <length>0.1000</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.149 0.435 0.710 0.880</ambient>
+            <diffuse>0.149 0.435 0.710 0.880</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="room_anchor_room_7">
+      <static>true</static>
+      <pose>0.0142 -5.7105 0.0500 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.1200</radius>
+              <length>0.1000</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.149 0.435 0.710 0.880</ambient>
+            <diffuse>0.149 0.435 0.710 0.880</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="room_anchor_room_8">
+      <static>true</static>
+      <pose>7.1842 -5.8564 0.0500 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.1200</radius>
+              <length>0.1000</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.149 0.435 0.710 0.880</ambient>
+            <diffuse>0.149 0.435 0.710 0.880</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="room_anchor_room_11">
+      <static>true</static>
+      <pose>3.5119 -5.6729 0.0500 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.1200</radius>
+              <length>0.1000</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.149 0.435 0.710 0.880</ambient>
+            <diffuse>0.149 0.435 0.710 0.880</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="room_anchor_room_14">
+      <static>true</static>
+      <pose>-3.6327 -5.6071 0.0500 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.1200</radius>
+              <length>0.1000</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.149 0.435 0.710 0.880</ambient>
+            <diffuse>0.149 0.435 0.710 0.880</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="room_anchor_room_15">
+      <static>true</static>
+      <pose>-1.2492 -2.6157 0.0500 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.1200</radius>
+              <length>0.1000</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.149 0.435 0.710 0.880</ambient>
+            <diffuse>0.149 0.435 0.710 0.880</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="room_anchor_room_16">
+      <static>true</static>
+      <pose>-3.7075 -2.5364 0.0500 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.1200</radius>
+              <length>0.1000</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.149 0.435 0.710 0.880</ambient>
+            <diffuse>0.149 0.435 0.710 0.880</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_public_path_042_segment_0">
+      <static>true</static>
+      <pose>5.2008 1.9788 0.2000 0 0 -2.2212</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3499 0.0750 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.039 0.361 0.706 0.950</ambient>
+            <diffuse>0.039 0.361 0.706 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_public_path_042_segment_1">
+      <static>true</static>
+      <pose>4.9889 1.7003 0.2000 0 0 -2.2210</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0750 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.039 0.361 0.706 0.950</ambient>
+            <diffuse>0.039 0.361 0.706 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_public_path_042_segment_2">
+      <static>true</static>
+      <pose>2.9820 -0.8731 0.2000 0 0 -2.2338</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>6.1768 0.0750 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.039 0.361 0.706 0.950</ambient>
+            <diffuse>0.039 0.361 0.706 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_public_path_042_segment_3">
+      <static>true</static>
+      <pose>0.9765 -3.4474 0.2000 0 0 -2.2108</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0750 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.039 0.361 0.706 0.950</ambient>
+            <diffuse>0.039 0.361 0.706 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_public_path_042_segment_4">
+      <static>true</static>
+      <pose>0.7674 -3.7282 0.2000 0 0 -2.2110</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0750 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.039 0.361 0.706 0.950</ambient>
+            <diffuse>0.039 0.361 0.706 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_public_path_042_segment_5">
+      <static>true</static>
+      <pose>1.1332 -4.0320 0.2000 0 0 -0.3345</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.9957 0.0750 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.039 0.361 0.706 0.950</ambient>
+            <diffuse>0.039 0.361 0.706 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_public_path_042_segment_6">
+      <static>true</static>
+      <pose>1.7784 -4.1936 0.2000 0 0 0.0106</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3499 0.0750 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.039 0.361 0.706 0.950</ambient>
+            <diffuse>0.039 0.361 0.706 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_public_path_042_segment_7">
+      <static>true</static>
+      <pose>2.1283 -4.1898 0.2000 0 0 0.0109</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0750 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.039 0.361 0.706 0.950</ambient>
+            <diffuse>0.039 0.361 0.706 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_public_path_042_segment_8">
+      <static>true</static>
+      <pose>3.4831 -4.1966 0.2000 0 0 -0.0074</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.3597 0.0750 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.039 0.361 0.706 0.950</ambient>
+            <diffuse>0.039 0.361 0.706 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_public_path_042_segment_9">
+      <static>true</static>
+      <pose>4.8377 -4.2142 0.2000 0 0 -0.0500</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0750 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.039 0.361 0.706 0.950</ambient>
+            <diffuse>0.039 0.361 0.706 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_public_path_042_segment_10">
+      <static>true</static>
+      <pose>5.1873 -4.2317 0.2000 0 0 -0.0500</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0750 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.039 0.361 0.706 0.950</ambient>
+            <diffuse>0.039 0.361 0.706 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_0">
+      <static>true</static>
+      <pose>5.2008 1.9788 0.2600 0 0 -2.2212</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3499 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_1">
+      <static>true</static>
+      <pose>4.9889 1.7003 0.2600 0 0 -2.2210</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_2">
+      <static>true</static>
+      <pose>5.6427 -0.9582 0.2600 0 0 -1.2779</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>5.2625 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_3">
+      <static>true</static>
+      <pose>6.4952 -3.6257 0.2600 0 0 -1.0124</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3499 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_4">
+      <static>true</static>
+      <pose>6.6806 -3.9225 0.2600 0 0 -1.0123</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3501 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_5">
+      <static>true</static>
+      <pose>6.0678 -4.1557 0.2600 0 0 -3.0221</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1.4214 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_6">
+      <static>true</static>
+      <pose>5.1873 -4.2317 0.2600 0 0 3.0916</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_7">
+      <static>true</static>
+      <pose>4.8377 -4.2142 0.2600 0 0 3.0916</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_8">
+      <static>true</static>
+      <pose>3.4831 -4.1966 0.2600 0 0 3.1342</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.3597 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_9">
+      <static>true</static>
+      <pose>2.1283 -4.1898 0.2600 0 0 -3.1307</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_10">
+      <static>true</static>
+      <pose>1.7784 -4.1936 0.2600 0 0 -3.1310</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3499 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_11">
+      <static>true</static>
+      <pose>-0.0109 -4.1652 0.2600 0 0 3.1229</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>3.2291 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_12">
+      <static>true</static>
+      <pose>-1.8001 -4.1300 0.2600 0 0 3.1133</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_13">
+      <static>true</static>
+      <pose>-2.1500 -4.1200 0.2600 0 0 3.1133</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_14">
+      <static>true</static>
+      <pose>-3.2279 -3.8828 0.2600 0 0 2.8899</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1.8649 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_15">
+      <static>true</static>
+      <pose>-4.1353 -3.4756 0.2600 0 0 1.5954</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="route_polyline_long_structure_route_default_segment_16">
+      <static>true</static>
+      <pose>-4.1439 -3.1258 0.2600 0 0 1.5951</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3500 0.0600 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.537 0.235 0.698 0.950</ambient>
+            <diffuse>0.537 0.235 0.698 0.950</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r14_r16_segment_0">
+      <static>true</static>
+      <pose>-3.8861 -4.4539 0.0900 0 0 1.7871</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.3614 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r14_r16_segment_1">
+      <static>true</static>
+      <pose>-3.9235 -2.9185 0.0900 0 0 1.0562</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.8780 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r1_r3_segment_0">
+      <static>true</static>
+      <pose>6.3201 3.0696 0.0900 0 0 -2.3543</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>3.4725 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r1_r3_segment_1">
+      <static>true</static>
+      <pose>4.4790 0.6495 0.0900 0 0 -2.0483</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.6800 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r3_r7_segment_0">
+      <static>true</static>
+      <pose>2.3676 -2.0642 0.0900 0 0 -2.3469</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>4.2700 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r3_r7_segment_1">
+      <static>true</static>
+      <pose>0.4431 -4.6491 0.0900 0 0 -1.9548</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.2895 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r3_r8_segment_0">
+      <static>true</static>
+      <pose>5.2256 -2.1574 0.0900 0 0 -0.8706</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>4.2284 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r3_r8_segment_1">
+      <static>true</static>
+      <pose>6.8861 -4.8152 0.0900 0 0 -1.2919</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.1660 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r7_r11_segment_0">
+      <static>true</static>
+      <pose>0.9838 -4.9511 0.0900 0 0 0.6644</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.4631 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r7_r11_segment_1">
+      <static>true</static>
+      <pose>2.7326 -4.9323 0.0900 0 0 -0.7599</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.1502 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r7_r14_segment_0">
+      <static>true</static>
+      <pose>-0.9804 -4.9177 0.0900 0 0 2.4687</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.5438 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r7_r14_segment_1">
+      <static>true</static>
+      <pose>-2.8038 -4.8660 0.0900 0 0 -2.4121</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.2236 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r7_r15_segment_0">
+      <static>true</static>
+      <pose>-0.7093 -4.6561 0.0900 0 0 2.1722</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.5575 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r7_r15_segment_1">
+      <static>true</static>
+      <pose>-1.3410 -3.1087 0.0900 0 0 1.3867</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1.0029 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r8_r11_segment_0">
+      <static>true</static>
+      <pose>6.0983 -5.0396 0.0900 0 0 2.4967</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.7175 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name="topology_edge_r8_r11_segment_1">
+      <static>true</static>
+      <pose>4.2622 -4.9479 0.0900 0 0 -2.3733</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>2.0867 0.0450 0.0350</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.322 0.345 0.400 0.580</ambient>
+            <diffuse>0.322 0.345 0.400 0.580</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>

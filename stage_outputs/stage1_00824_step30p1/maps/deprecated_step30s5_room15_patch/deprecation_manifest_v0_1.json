@@ -1,0 +1,18 @@
+{
+  "artifact_type": "step30s7_deprecated_step30s5_room15_patch_manifest",
+  "active_use_allowed": false,
+  "current_active_map_profiles": [
+    "h8r2",
+    "step30s7_request_aware",
+    "auto"
+  ],
+  "deprecated_reason": "Step30S7 replaces the Step30S5 room15-only map repair with a general request-aware H8R2 projection successor.",
+  "must_not_be_used_for": [
+    "runtime map profile selection",
+    "RViz display",
+    "wall-crossing validation",
+    "request-aware projection comparison",
+    "diagnostic map profile"
+  ],
+  "status": "historical evidence only"
+}

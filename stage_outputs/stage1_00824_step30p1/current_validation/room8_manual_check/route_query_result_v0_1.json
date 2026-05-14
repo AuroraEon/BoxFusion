@@ -1,0 +1,463 @@
+{
+  "artifact_type": "step30s7_route_query_result",
+  "bridge_planner_avoids_structural_walls_except_selected_gateway_carves": true,
+  "created_utc": "2026-05-14T07:12:22.932257+00:00",
+  "forbidden_shortcuts_not_used": [
+    "r14_r15",
+    "r15_r16",
+    "r3_r11",
+    "r3_r15",
+    "r7_r16"
+  ],
+  "gateway_sequence": [
+    "gw_00824_r1_r3_01",
+    "gw_00824_r3_r8_01",
+    "gw_00824_r8_r11_01",
+    "gw_00824_r7_r11_02",
+    "gw_00824_r7_r14_01",
+    "gw_00824_r14_r16_01"
+  ],
+  "gateway_waypoint_clearance_adjustments": [
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": 5.85,
+        "y": 2.1
+      },
+      "from_room": "room_1",
+      "gateway_id": "gw_00824_r1_r3_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.544599,
+      "nav_map_clearance_m": 0.649225,
+      "original_xy": {
+        "x": 5.3059,
+        "y": 2.1233
+      },
+      "room_constraint": 1,
+      "structural_wall_clearance_m": 0.649225,
+      "to_room": "room_3",
+      "waypoint_source": "segment_start"
+    },
+    {
+      "adjusted": false,
+      "adjusted_xy": {
+        "x": 5.1,
+        "y": 1.85
+      },
+      "from_room": "room_1",
+      "gateway_id": "gw_00824_r1_r3_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.008081,
+      "nav_map_clearance_m": 0.36969,
+      "original_xy": {
+        "x": 5.0939,
+        "y": 1.8447
+      },
+      "room_constraint": null,
+      "structural_wall_clearance_m": 0.35,
+      "to_room": "room_3",
+      "waypoint_source": "segment_crossing"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": 4.35,
+        "y": 1.7
+      },
+      "from_room": "room_1",
+      "gateway_id": "gw_00824_r1_r3_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.548592,
+      "nav_map_clearance_m": 0.709688,
+      "original_xy": {
+        "x": 4.882,
+        "y": 1.5661
+      },
+      "room_constraint": 3,
+      "structural_wall_clearance_m": 0.599225,
+      "to_room": "room_3",
+      "waypoint_source": "segment_goal"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": 6.5,
+        "y": -2.95
+      },
+      "from_room": "room_3",
+      "gateway_id": "gw_00824_r3_r8_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.536238,
+      "nav_map_clearance_m": 0.70907,
+      "original_xy": {
+        "x": 6.4025,
+        "y": -3.4773
+      },
+      "room_constraint": 3,
+      "structural_wall_clearance_m": 0.65,
+      "to_room": "room_8",
+      "waypoint_source": "segment_start"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": 6.55,
+        "y": -4.1
+      },
+      "from_room": "room_3",
+      "gateway_id": "gw_00824_r3_r8_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.328096,
+      "nav_map_clearance_m": 0.459843,
+      "original_xy": {
+        "x": 6.5879,
+        "y": -3.7741
+      },
+      "room_constraint": null,
+      "structural_wall_clearance_m": 0.3,
+      "to_room": "room_8",
+      "waypoint_source": "segment_crossing"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": 6.55,
+        "y": -4.55
+      },
+      "from_room": "room_3",
+      "gateway_id": "gw_00824_r3_r8_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.528534,
+      "nav_map_clearance_m": 0.818915,
+      "original_xy": {
+        "x": 6.7734,
+        "y": -4.071
+      },
+      "room_constraint": 8,
+      "structural_wall_clearance_m": 0.75,
+      "to_room": "room_8",
+      "waypoint_source": "segment_goal"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": 5.75,
+        "y": -4.5
+      },
+      "from_room": "room_8",
+      "gateway_id": "gw_00824_r8_r11_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.53798,
+      "nav_map_clearance_m": 0.579535,
+      "original_xy": {
+        "x": 5.3456,
+        "y": -4.1452
+      },
+      "room_constraint": 8,
+      "structural_wall_clearance_m": 0.53938,
+      "to_room": "room_11",
+      "waypoint_source": "segment_start"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": 4.7,
+        "y": -4.25
+      },
+      "from_room": "room_8",
+      "gateway_id": "gw_00824_r8_r11_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.320271,
+      "nav_map_clearance_m": 0.389844,
+      "original_xy": {
+        "x": 4.996,
+        "y": -4.1277
+      },
+      "room_constraint": null,
+      "structural_wall_clearance_m": 0.309845,
+      "to_room": "room_11",
+      "waypoint_source": "segment_crossing"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": 4.25,
+        "y": -4.45
+      },
+      "from_room": "room_8",
+      "gateway_id": "gw_00824_r8_r11_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.522108,
+      "nav_map_clearance_m": 0.7,
+      "original_xy": {
+        "x": 4.6464,
+        "y": -4.1102
+      },
+      "room_constraint": 11,
+      "structural_wall_clearance_m": 0.7,
+      "to_room": "room_11",
+      "waypoint_source": "segment_goal"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": 2.6,
+        "y": -4.45
+      },
+      "from_room": "room_11",
+      "gateway_id": "gw_00824_r7_r11_02",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.509861,
+      "nav_map_clearance_m": 0.51969,
+      "original_xy": {
+        "x": 2.1812,
+        "y": -4.1592
+      },
+      "room_constraint": 11,
+      "structural_wall_clearance_m": 0.51969,
+      "to_room": "room_7",
+      "waypoint_source": "segment_start"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": 1.5,
+        "y": -4.15
+      },
+      "from_room": "room_11",
+      "gateway_id": "gw_00824_r7_r11_02",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.331455,
+      "nav_map_clearance_m": 0.4,
+      "original_xy": {
+        "x": 1.8312,
+        "y": -4.163
+      },
+      "room_constraint": null,
+      "structural_wall_clearance_m": 0.4,
+      "to_room": "room_7",
+      "waypoint_source": "segment_crossing"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": 1.5,
+        "y": -4.15
+      },
+      "from_room": "room_11",
+      "gateway_id": "gw_00824_r7_r11_02",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.025213,
+      "nav_map_clearance_m": 0.4,
+      "original_xy": {
+        "x": 1.4812,
+        "y": -4.1668
+      },
+      "room_constraint": 7,
+      "structural_wall_clearance_m": 0.4,
+      "to_room": "room_7",
+      "waypoint_source": "segment_goal"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": -1.5,
+        "y": -4.05
+      },
+      "from_room": "room_7",
+      "gateway_id": "gw_00824_r7_r14_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.151189,
+      "nav_map_clearance_m": 0.4,
+      "original_xy": {
+        "x": -1.6251,
+        "y": -4.1349
+      },
+      "room_constraint": 7,
+      "structural_wall_clearance_m": 0.399535,
+      "to_room": "room_14",
+      "waypoint_source": "segment_start"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": -2.3,
+        "y": -4.15
+      },
+      "from_room": "room_7",
+      "gateway_id": "gw_00824_r7_r14_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.32596,
+      "nav_map_clearance_m": 0.389844,
+      "original_xy": {
+        "x": -1.975,
+        "y": -4.125
+      },
+      "room_constraint": null,
+      "structural_wall_clearance_m": 0.25,
+      "to_room": "room_14",
+      "waypoint_source": "segment_crossing"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": -2.75,
+        "y": -4.45
+      },
+      "from_room": "room_7",
+      "gateway_id": "gw_00824_r7_r14_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.541173,
+      "nav_map_clearance_m": 0.659845,
+      "original_xy": {
+        "x": -2.3249,
+        "y": -4.1151
+      },
+      "room_constraint": 14,
+      "structural_wall_clearance_m": 0.659845,
+      "to_room": "room_14",
+      "waypoint_source": "segment_goal"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": -4.1,
+        "y": -4.15
+      },
+      "from_room": "room_14",
+      "gateway_id": "gw_00824_r14_r16_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.500361,
+      "nav_map_clearance_m": 0.489998,
+      "original_xy": {
+        "x": -4.131,
+        "y": -3.6506
+      },
+      "room_constraint": 14,
+      "structural_wall_clearance_m": 0.489998,
+      "to_room": "room_16",
+      "waypoint_source": "segment_start"
+    },
+    {
+      "adjusted": false,
+      "adjusted_xy": {
+        "x": -4.15,
+        "y": -3.3
+      },
+      "from_room": "room_14",
+      "gateway_id": "gw_00824_r14_r16_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.010424,
+      "nav_map_clearance_m": 0.309845,
+      "original_xy": {
+        "x": -4.1396,
+        "y": -3.3007
+      },
+      "room_constraint": null,
+      "structural_wall_clearance_m": 0.35,
+      "to_room": "room_16",
+      "waypoint_source": "segment_crossing"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": -3.95,
+        "y": -2.45
+      },
+      "from_room": "room_14",
+      "gateway_id": "gw_00824_r14_r16_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.538558,
+      "nav_map_clearance_m": 0.529843,
+      "original_xy": {
+        "x": -4.1481,
+        "y": -2.9508
+      },
+      "room_constraint": 16,
+      "structural_wall_clearance_m": 0.529843,
+      "to_room": "room_16",
+      "waypoint_source": "segment_goal"
+    }
+  ],
+  "goal_room": "room_16",
+  "included_room_reasons": {
+    "room_1": [
+      "resolved_route",
+      "start"
+    ],
+    "room_11": [
+      "intermediate_route"
+    ],
+    "room_14": [
+      "intermediate_route"
+    ],
+    "room_16": [
+      "goal",
+      "resolved_route",
+      "terminal"
+    ],
+    "room_3": [
+      "intermediate_route"
+    ],
+    "room_7": [
+      "intermediate_route"
+    ],
+    "room_8": [
+      "resolved_route",
+      "through"
+    ]
+  },
+  "interior_targets": {
+    "room_16": {
+      "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+      "distance_to_nearest_gateway_m": 0.807775,
+      "distance_to_occupied_or_unknown_m": 0.36969,
+      "meets_preferred_gateway_distance": true,
+      "meets_wall_distance_threshold": true,
+      "room_id": "room_16",
+      "x": -3.2,
+      "y": -2.75,
+      "yaw": 0.0
+    },
+    "room_8": {
+      "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+      "distance_to_nearest_gateway_m": 1.432655,
+      "distance_to_occupied_or_unknown_m": 1.33938,
+      "meets_preferred_gateway_distance": true,
+      "meets_wall_distance_threshold": true,
+      "room_id": "room_8",
+      "x": 7.25,
+      "y": -5.8,
+      "yaw": 0.0
+    }
+  },
+  "map_profile": "step30s7_request_aware",
+  "map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.yaml",
+  "not_room15_specific": true,
+  "revisited_rooms": [
+    "room_3",
+    "room_7",
+    "room_8",
+    "room_11",
+    "room_14"
+  ],
+  "room_sequence": [
+    "room_1",
+    "room_3",
+    "room_8",
+    "room_11",
+    "room_7",
+    "room_14",
+    "room_16"
+  ],
+  "route_id": "room_chain_r1_r3_r8_r11_r7_r14_r16",
+  "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+  "start_room": "room_1",
+  "terminal_room": "room_16",
+  "through_rooms": [
+    "room_8"
+  ],
+  "version": "v0_1",
+  "waypoint_count": 119,
+  "waypoints_path": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_check/semantic_route_waypoints_v0_1.json"
+}

@@ -1,0 +1,30 @@
+{
+  "artifact_type": "step30s7_target_selection",
+  "created_utc": "2026-05-14T08:33:26.178228+00:00",
+  "interior_targets": {
+    "room_15": {
+      "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+      "distance_to_nearest_gateway_m": 0.8,
+      "distance_to_occupied_or_unknown_m": 0.389844,
+      "meets_preferred_gateway_distance": true,
+      "meets_wall_distance_threshold": true,
+      "room_id": "room_15",
+      "x": -1.2,
+      "y": -2.1,
+      "yaw": 0.0
+    },
+    "room_16": {
+      "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+      "distance_to_nearest_gateway_m": 0.807775,
+      "distance_to_occupied_or_unknown_m": 0.36969,
+      "meets_preferred_gateway_distance": true,
+      "meets_wall_distance_threshold": true,
+      "room_id": "room_16",
+      "x": -3.2,
+      "y": -2.75,
+      "yaw": 0.0
+    }
+  },
+  "map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/stage1_full_scene_occupancy_map.yaml",
+  "version": "v0_1"
+}

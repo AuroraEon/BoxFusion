@@ -1,0 +1,3181 @@
+{
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "step": "step30b",
+  "artifact_type": "gateway_hypotheses",
+  "version": "v0_1",
+  "input_step30a_output_directory": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+  "gateway_filter_wall_layer": "gateway_wall_preclose",
+  "segmentation_wall_processed_used_as_hard_gateway_blocker": false,
+  "topology_generated": false,
+  "stage_a_rerun_completed": false,
+  "stage_a_rerun_attempted": false,
+  "ros_nav2_gazebo_run": false,
+  "truth_pairs": [
+    "r1_r3",
+    "r3_r7",
+    "r7_r11",
+    "r7_r14",
+    "r14_r16",
+    "r7_r15",
+    "r8_r11",
+    "r3_r8"
+  ],
+  "negative_sanity_pairs": [
+    "r3_r11"
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "hyp_00824_r1_r3_01",
+      "pair_key": "r1_r3",
+      "room_a": 1,
+      "room_b": 3,
+      "source_candidate_ids": [
+        "gw_00824_r1_r3_01"
+      ],
+      "representative_center_xy": [
+        5.0939,
+        1.8447
+      ],
+      "representative_center_rc": [
+        1037,
+        1102
+      ],
+      "representative_crossing_pose": {
+        "x": 5.0939,
+        "y": 1.8447,
+        "yaw": -2.221151
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.3059,
+        "y": 2.1233,
+        "yaw": -2.221151
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.882,
+        "y": 1.5661,
+        "yaw": -2.221151
+      },
+      "merged_bbox_cells": [
+        1030,
+        1099,
+        1043,
+        1105
+      ],
+      "merged_bbox_map_xy": [
+        [
+          4.95,
+          1.5
+        ],
+        [
+          5.25,
+          2.15
+        ]
+      ],
+      "step29b3_auto_status": "auto_accept_strict",
+      "step29b3_selected_for_step29c_candidate": true,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.0253,
+        "raw_wall_core_overlap_count_b3r": 2,
+        "corridor_cell_count_b3r": 79,
+        "bbox_wall_overlap_ratio_b3r": 0.051,
+        "endpoint_wall_touch_ratio_b3r": 0.0556,
+        "wall_filter_status_b3r": "endpoint_wall_touch_only",
+        "b3_original_wall_core_overlap_ratio": 0.0253,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.35,
+        "raw_wall_gap_width_m": 0.0,
+        "wall_endpoint_support_score": 0.0,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.0
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.8857,
+        "room_a_support_score": 0.9388,
+        "room_b_support_score": 0.7755,
+        "free_space_crossing_score": 1.0,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.35,
+        "merged_span_width_m": 0.6323,
+        "raw_wall_gap_width_m": 0.0,
+        "effective_opening_width_m": 0.6323,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.2692,
+        "label10_fraction_repaired": 0.2692,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 0
+      },
+      "route_role": "primary_route_gateway",
+      "use_for_default_route": true,
+      "eligible_as_navigation_fallback": true,
+      "nav_priority": 1,
+      "step29c_role": "primary",
+      "role_source": "positive_control",
+      "role_reason": "Preserved Step30A primary route gateway.",
+      "calibration_label": "positive_control",
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r1_r3_01"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.0052,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.0682,
+        "wall_core_overlap_count": 9,
+        "corridor_cell_count": 132,
+        "wall_filter_status": "clear",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.35,
+        "raw_wall_gap_width_m": 0.0,
+        "wall_endpoint_support_score": 0.0,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.0,
+        "two_sided_support_score": 0.5636,
+        "room_a_support_score": 0.4711,
+        "room_b_support_score": 0.438,
+        "free_space_crossing_score": 1.0,
+        "effective_opening_width_m": 0.6
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_statuses": {
+        "gw_00824_r1_r3_01": "valid"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r1_r3_01": "valid_two_sided_free_boundary_component"
+      },
+      "source_candidate_validation": {
+        "gw_00824_r1_r3_01": {
+          "status": "valid",
+          "confidence": 0.825124,
+          "width_m": 0.35,
+          "free_fraction": 0.985075,
+          "label10_fraction": 0.223301,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "valid_two_sided_free_boundary_component"
+        }
+      },
+      "combined_bbox_xy": [
+        4.95,
+        1.5,
+        5.25,
+        2.15
+      ],
+      "combined_centroid_xy": [
+        5.1,
+        1.825
+      ],
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          4.95,
+          5.3,
+          1.5,
+          2.2
+        ],
+        "crop_shape_rc": [
+          14,
+          7
+        ],
+        "cell_count": 98,
+        "free_fraction": 0.94898,
+        "gateway_wall_preclose_fraction": 0.030612,
+        "gateway_wall_open_fraction": 0.969388,
+        "segmentation_wall_processed_fraction": 0.05102,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "1": 43,
+          "3": 37
+        }
+      },
+      "geometry_evidence_score": 0.93569,
+      "passability_status": "strong",
+      "role": "primary_route_gateway",
+      "reason": "Preserved Step30A primary route gateway.",
+      "confidence": 0.825124,
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r3_r7_01",
+      "pair_key": "r3_r7",
+      "room_a": 3,
+      "room_b": 7,
+      "source_candidate_ids": [
+        "gw_00824_r3_r7_01"
+      ],
+      "representative_center_xy": [
+        1.0118,
+        -3.3317
+      ],
+      "representative_center_rc": [
+        933,
+        1020
+      ],
+      "representative_crossing_pose": {
+        "x": 1.0118,
+        "y": -3.3317,
+        "yaw": -2.210772
+      },
+      "representative_approach_from_room_a": {
+        "x": 1.2208,
+        "y": -3.0509,
+        "yaw": -2.210772
+      },
+      "representative_approach_from_room_b": {
+        "x": 0.8028,
+        "y": -3.6124,
+        "yaw": -2.210772
+      },
+      "merged_bbox_cells": [
+        927,
+        1002,
+        939,
+        1044
+      ],
+      "merged_bbox_map_xy": [
+        [
+          0.6,
+          -3.65
+        ],
+        [
+          1.15,
+          -3.5
+        ]
+      ],
+      "step29b3_auto_status": "needs_review",
+      "step29b3_selected_for_step29c_candidate": false,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.1349,
+        "raw_wall_core_overlap_count_b3r": 17,
+        "corridor_cell_count_b3r": 126,
+        "bbox_wall_overlap_ratio_b3r": 0.2683,
+        "endpoint_wall_touch_ratio_b3r": 0.3333,
+        "wall_filter_status_b3r": "wall_core_uncertain",
+        "b3_original_wall_core_overlap_ratio": 0.1349,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.35,
+        "raw_wall_gap_width_m": 0.0,
+        "wall_endpoint_support_score": 0.0,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.0
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.7551,
+        "room_a_support_score": 1.0,
+        "room_b_support_score": 0.3878,
+        "free_space_crossing_score": 1.0,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.55,
+        "merged_span_width_m": 2.0427,
+        "raw_wall_gap_width_m": 0.0,
+        "effective_opening_width_m": 1.0,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.3337,
+        "label10_fraction_repaired": 0.3337,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 0
+      },
+      "route_role": "primary_route_gateway",
+      "use_for_default_route": true,
+      "eligible_as_navigation_fallback": true,
+      "nav_priority": null,
+      "step29c_role": "review_only",
+      "role_source": "user_confirmed_step30a",
+      "role_reason": "Preserved user-confirmed Step30A r3-r7 gateway.",
+      "calibration_label": null,
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r3_r7_01"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.2918,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.0221,
+        "wall_core_overlap_count": 3,
+        "corridor_cell_count": 136,
+        "wall_filter_status": "clear",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.35,
+        "raw_wall_gap_width_m": 0.0,
+        "wall_endpoint_support_score": 0.0,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.0,
+        "two_sided_support_score": 0.5207,
+        "room_a_support_score": 0.8017,
+        "room_b_support_score": 0.0,
+        "free_space_crossing_score": 1.0,
+        "effective_opening_width_m": 0.6
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_statuses": {
+        "gw_00824_r3_r7_01": "ambiguous"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r3_r7_01": "depends_on_or_touches_unmapped_label10_region"
+      },
+      "source_candidate_validation": {
+        "gw_00824_r3_r7_01": {
+          "status": "ambiguous",
+          "confidence": 0.5,
+          "width_m": 0.2,
+          "free_fraction": 0.243902,
+          "label10_fraction": 0.521127,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "depends_on_or_touches_unmapped_label10_region"
+        }
+      },
+      "combined_bbox_xy": [
+        0.6,
+        -3.65,
+        1.15,
+        -3.5
+      ],
+      "combined_centroid_xy": [
+        0.875,
+        -3.575
+      ],
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          0.6,
+          1.2,
+          -3.65,
+          -3.45
+        ],
+        "crop_shape_rc": [
+          4,
+          12
+        ],
+        "cell_count": 48,
+        "free_fraction": 0.354167,
+        "gateway_wall_preclose_fraction": 0.0,
+        "gateway_wall_open_fraction": 1.0,
+        "segmentation_wall_processed_fraction": 0.583333,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "3": 12,
+          "7": 5
+        }
+      },
+      "geometry_evidence_score": 0.675357,
+      "passability_status": "reviewable",
+      "role": "primary_route_gateway",
+      "reason": "Preserved user-confirmed Step30A r3-r7 gateway.",
+      "confidence": 0.5,
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r11_01",
+      "pair_key": "r7_r11",
+      "room_a": 7,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r7_r11_02"
+      ],
+      "representative_center_xy": [
+        1.8312,
+        -4.163
+      ],
+      "representative_center_rc": [
+        917,
+        1037
+      ],
+      "representative_crossing_pose": {
+        "x": 1.8312,
+        "y": -4.163,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_a": {
+        "x": 1.4812,
+        "y": -4.1668,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_b": {
+        "x": 2.1812,
+        "y": -4.1592,
+        "yaw": 0.010764
+      },
+      "merged_bbox_cells": [
+        910,
+        1033,
+        927,
+        1043
+      ],
+      "merged_bbox_map_xy": [
+        [
+          1.9,
+          -4.45
+        ],
+        [
+          2.0,
+          -3.95
+        ]
+      ],
+      "step29b3_auto_status": "auto_accept_label10_boundary_repair",
+      "step29b3_selected_for_step29c_candidate": true,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.25,
+        "raw_wall_core_overlap_count_b3r": 18,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.4545,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.25,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.7424,
+        "raw_wall_gap_width_m": 0.55,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 0.5714,
+        "gap_consistency_score": 0.462
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.92,
+        "room_a_support_score": 1.0,
+        "room_b_support_score": 1.0,
+        "free_space_crossing_score": 0.6,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.25,
+        "merged_span_width_m": 0.8553,
+        "raw_wall_gap_width_m": 0.55,
+        "effective_opening_width_m": 0.8553,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.6197,
+        "label10_fraction_repaired": 0.6197,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": true,
+        "source_label10_warning_count": 2
+      },
+      "route_role": "primary_route_gateway",
+      "use_for_default_route": true,
+      "eligible_as_navigation_fallback": true,
+      "nav_priority": 1,
+      "step29c_role": "primary",
+      "role_source": "user_calibrated",
+      "role_reason": "Preserved Step30A primary route gateway; current candidate is narrow but matches the confirmed main passage location.",
+      "calibration_label": "true_main_passage",
+      "calibration_metric_conflict": true,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [
+        "user_primary_but_wall_blocked_high_gap_support"
+      ],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r7_r11_02"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.1254,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.0833,
+        "wall_core_overlap_count": 12,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "uncertain",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.9676,
+        "raw_wall_gap_width_m": 0.65,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.8378,
+        "two_sided_support_score": 0.3977,
+        "room_a_support_score": 0.5372,
+        "room_b_support_score": 0.157,
+        "free_space_crossing_score": 0.6,
+        "effective_opening_width_m": 0.65
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_statuses": {
+        "gw_00824_r7_r11_02": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r11_02": "too_narrow_for_turtlebot3_passage"
+      },
+      "source_candidate_validation": {
+        "gw_00824_r7_r11_02": {
+          "status": "rejected",
+          "confidence": 0.12,
+          "width_m": 0.15,
+          "free_fraction": 0.0,
+          "label10_fraction": 0.678571,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "too_narrow_for_turtlebot3_passage"
+        }
+      },
+      "combined_bbox_xy": [
+        1.9,
+        -4.45,
+        2.0,
+        -3.95
+      ],
+      "combined_centroid_xy": [
+        1.95,
+        -4.2
+      ],
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          1.9,
+          2.05,
+          -4.5,
+          -3.9
+        ],
+        "crop_shape_rc": [
+          12,
+          3
+        ],
+        "cell_count": 36,
+        "free_fraction": 0.0,
+        "gateway_wall_preclose_fraction": 0.111111,
+        "gateway_wall_open_fraction": 0.888889,
+        "segmentation_wall_processed_fraction": 1.0,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {}
+      },
+      "geometry_evidence_score": 0.466832,
+      "passability_status": "low_or_uncertain",
+      "role": "primary_route_gateway",
+      "reason": "Preserved Step30A primary route gateway; current candidate is narrow but matches the confirmed main passage location.",
+      "confidence": 0.12,
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_01",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "hypothesis_type": "narrow_two_sided_geometry",
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_01"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r7_r14_01": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r14_01": "too_narrow_for_turtlebot3_passage"
+      },
+      "representative_center_xy": [
+        -1.975,
+        -4.125
+      ],
+      "representative_center_rc": [
+        918,
+        960
+      ],
+      "representative_crossing_pose": {
+        "x": -1.975,
+        "y": -4.125,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.6251,
+        "y": -4.1349,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.3249,
+        "y": -4.1151,
+        "yaw": 3.113237
+      },
+      "merged_bbox_map_xy": [
+        [
+          -2.0,
+          -4.35
+        ],
+        [
+          -1.95,
+          -3.9
+        ]
+      ],
+      "combined_bbox_xy": [
+        -2.0,
+        -4.35,
+        -1.95,
+        -3.9
+      ],
+      "combined_centroid_xy": [
+        -1.975,
+        -4.125
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r7_r14_01": {
+          "status": "rejected",
+          "confidence": 0.12,
+          "width_m": 0.1,
+          "free_fraction": 0.0,
+          "label10_fraction": 1.0,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "too_narrow_for_turtlebot3_passage"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -2.0,
+          -1.9,
+          -4.4,
+          -3.85
+        ],
+        "crop_shape_rc": [
+          11,
+          2
+        ],
+        "cell_count": 22,
+        "free_fraction": 0.0,
+        "gateway_wall_preclose_fraction": 0.0,
+        "gateway_wall_open_fraction": 1.0,
+        "segmentation_wall_processed_fraction": 1.0,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {}
+      },
+      "geometry_evidence_score": 0.452229,
+      "passability_status": "low_or_uncertain",
+      "role": "needs_review",
+      "route_role": "needs_review",
+      "reason": "Additional r7-r14 two-sided observation retained for local visual review.",
+      "role_reason": "Additional r7-r14 two-sided observation retained for local visual review.",
+      "confidence": 0.452229,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_02",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_02"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r7_r14_02": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r14_02": "no_two_sided_connectivity"
+      },
+      "representative_center_xy": [
+        -1.925,
+        -7.625
+      ],
+      "representative_center_rc": [
+        848,
+        962
+      ],
+      "representative_crossing_pose": {
+        "x": -1.925,
+        "y": -7.625,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.5751,
+        "y": -7.6349,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.2749,
+        "y": -7.6151,
+        "yaw": 3.113237
+      },
+      "merged_bbox_map_xy": [
+        [
+          -1.95,
+          -7.65
+        ],
+        [
+          -1.9,
+          -7.6
+        ]
+      ],
+      "combined_bbox_xy": [
+        -1.95,
+        -7.65,
+        -1.9,
+        -7.6
+      ],
+      "combined_centroid_xy": [
+        -1.925,
+        -7.625
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r7_r14_02": {
+          "status": "rejected",
+          "confidence": 0.02,
+          "width_m": 0.1,
+          "free_fraction": 0.0,
+          "label10_fraction": 0.833333,
+          "connects_room_a": false,
+          "connects_room_b": false,
+          "two_sided_connectivity": false,
+          "reason": "no_two_sided_connectivity"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -2.0,
+          -1.85,
+          -7.65,
+          -7.55
+        ],
+        "crop_shape_rc": [
+          2,
+          3
+        ],
+        "cell_count": 6,
+        "free_fraction": 0.0,
+        "gateway_wall_preclose_fraction": 0.166667,
+        "gateway_wall_open_fraction": 0.833333,
+        "segmentation_wall_processed_fraction": 0.666667,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {}
+      },
+      "geometry_evidence_score": 0.141562,
+      "passability_status": "low_or_uncertain",
+      "role": "rejected_duplicate",
+      "route_role": "rejected_duplicate",
+      "reason": "Non-selected r7-r14 fragment retained as duplicate/local context, not a route gateway.",
+      "role_reason": "Non-selected r7-r14 fragment retained as duplicate/local context, not a route gateway.",
+      "confidence": 0.141562,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_03",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "hypothesis_type": "narrow_two_sided_geometry",
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_03"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r7_r14_03": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r14_03": "too_narrow_for_turtlebot3_passage"
+      },
+      "representative_center_xy": [
+        -1.9767,
+        -5.1867
+      ],
+      "representative_center_rc": [
+        896,
+        960
+      ],
+      "representative_crossing_pose": {
+        "x": -1.9767,
+        "y": -5.1867,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.6268,
+        "y": -5.1966,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.3265,
+        "y": -5.1767,
+        "yaw": 3.113237
+      },
+      "merged_bbox_map_xy": [
+        [
+          -2.0,
+          -5.35
+        ],
+        [
+          -1.95,
+          -5.0
+        ]
+      ],
+      "combined_bbox_xy": [
+        -2.0,
+        -5.35,
+        -1.95,
+        -5.0
+      ],
+      "combined_centroid_xy": [
+        -1.975,
+        -5.175
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r7_r14_03": {
+          "status": "rejected",
+          "confidence": 0.12,
+          "width_m": 0.1,
+          "free_fraction": 0.333333,
+          "label10_fraction": 0.705882,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "too_narrow_for_turtlebot3_passage"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -2.0,
+          -1.9,
+          -5.4,
+          -4.95
+        ],
+        "crop_shape_rc": [
+          9,
+          2
+        ],
+        "cell_count": 18,
+        "free_fraction": 0.277778,
+        "gateway_wall_preclose_fraction": 0.055556,
+        "gateway_wall_open_fraction": 0.944444,
+        "segmentation_wall_processed_fraction": 0.444444,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "14": 5
+        }
+      },
+      "geometry_evidence_score": 0.486673,
+      "passability_status": "low_or_uncertain",
+      "role": "needs_review",
+      "route_role": "needs_review",
+      "reason": "Additional r7-r14 two-sided observation retained for local visual review.",
+      "role_reason": "Additional r7-r14 two-sided observation retained for local visual review.",
+      "confidence": 0.486673,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_04",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_04"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r7_r14_04": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r14_04": "no_two_sided_connectivity"
+      },
+      "representative_center_xy": [
+        -1.95,
+        -4.8
+      ],
+      "representative_center_rc": [
+        904,
+        961
+      ],
+      "representative_crossing_pose": {
+        "x": -1.95,
+        "y": -4.8,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.6001,
+        "y": -4.8099,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.2999,
+        "y": -4.7901,
+        "yaw": 3.113237
+      },
+      "merged_bbox_map_xy": [
+        [
+          -1.95,
+          -4.85
+        ],
+        [
+          -1.95,
+          -4.75
+        ]
+      ],
+      "combined_bbox_xy": [
+        -1.95,
+        -4.85,
+        -1.95,
+        -4.75
+      ],
+      "combined_centroid_xy": [
+        -1.95,
+        -4.8
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r7_r14_04": {
+          "status": "rejected",
+          "confidence": 0.02,
+          "width_m": 0.05,
+          "free_fraction": 0.0,
+          "label10_fraction": 0.818182,
+          "connects_room_a": false,
+          "connects_room_b": false,
+          "two_sided_connectivity": false,
+          "reason": "no_two_sided_connectivity"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -2.0,
+          -1.9,
+          -4.9,
+          -4.7
+        ],
+        "crop_shape_rc": [
+          4,
+          2
+        ],
+        "cell_count": 8,
+        "free_fraction": 0.25,
+        "gateway_wall_preclose_fraction": 0.5,
+        "gateway_wall_open_fraction": 0.5,
+        "segmentation_wall_processed_fraction": 1.0,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {}
+      },
+      "geometry_evidence_score": 0.112514,
+      "passability_status": "low_or_uncertain",
+      "role": "rejected_duplicate",
+      "route_role": "rejected_duplicate",
+      "reason": "Non-selected r7-r14 fragment retained as duplicate/local context, not a route gateway.",
+      "role_reason": "Non-selected r7-r14 fragment retained as duplicate/local context, not a route gateway.",
+      "confidence": 0.112514,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_05",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_05"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r7_r14_05": "ambiguous"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r14_05": "narrow_gateway_evidence"
+      },
+      "representative_center_xy": [
+        -1.7187,
+        -5.9253
+      ],
+      "representative_center_rc": [
+        881,
+        966
+      ],
+      "representative_crossing_pose": {
+        "x": -1.7187,
+        "y": -5.9253,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.3688,
+        "y": -5.9352,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.0685,
+        "y": -5.9154,
+        "yaw": 3.113237
+      },
+      "merged_bbox_map_xy": [
+        [
+          -1.75,
+          -7.55
+        ],
+        [
+          -1.6,
+          -4.85
+        ]
+      ],
+      "combined_bbox_xy": [
+        -1.75,
+        -7.55,
+        -1.6,
+        -4.85
+      ],
+      "combined_centroid_xy": [
+        -1.675,
+        -6.2
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r7_r14_05": {
+          "status": "ambiguous",
+          "confidence": 0.58,
+          "width_m": 0.2,
+          "free_fraction": 0.978022,
+          "label10_fraction": 0.294118,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "narrow_gateway_evidence"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -1.75,
+          -1.55,
+          -7.55,
+          -4.8
+        ],
+        "crop_shape_rc": [
+          55,
+          4
+        ],
+        "cell_count": 220,
+        "free_fraction": 0.990909,
+        "gateway_wall_preclose_fraction": 0.0,
+        "gateway_wall_open_fraction": 1.0,
+        "segmentation_wall_processed_fraction": 0.009091,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "7": 218
+        }
+      },
+      "geometry_evidence_score": 0.778966,
+      "passability_status": "reviewable",
+      "role": "high_confidence_needs_review",
+      "route_role": "high_confidence_needs_review",
+      "reason": "Best r7-r14 Step30A candidate by width/free-space/local evidence; selected for review, not auto-primary.",
+      "role_reason": "Best r7-r14 Step30A candidate by width/free-space/local evidence; selected for review, not auto-primary.",
+      "confidence": 0.778966,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": true,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_06",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_06"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r7_r14_06": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r14_06": "no_two_sided_connectivity"
+      },
+      "representative_center_xy": [
+        -2.0,
+        -3.5944
+      ],
+      "representative_center_rc": [
+        928,
+        960
+      ],
+      "representative_crossing_pose": {
+        "x": -2.0,
+        "y": -3.5944,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.6501,
+        "y": -3.6044,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.3499,
+        "y": -3.5845,
+        "yaw": 3.113237
+      },
+      "merged_bbox_map_xy": [
+        [
+          -2.15,
+          -3.65
+        ],
+        [
+          -1.9,
+          -3.5
+        ]
+      ],
+      "combined_bbox_xy": [
+        -2.15,
+        -3.65,
+        -1.9,
+        -3.5
+      ],
+      "combined_centroid_xy": [
+        -2.025,
+        -3.575
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r7_r14_06": {
+          "status": "rejected",
+          "confidence": 0.02,
+          "width_m": 0.2,
+          "free_fraction": 0.0,
+          "label10_fraction": 0.769231,
+          "connects_room_a": false,
+          "connects_room_b": false,
+          "two_sided_connectivity": false,
+          "reason": "no_two_sided_connectivity"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -2.15,
+          -1.85,
+          -3.65,
+          -3.45
+        ],
+        "crop_shape_rc": [
+          4,
+          6
+        ],
+        "cell_count": 24,
+        "free_fraction": 0.416667,
+        "gateway_wall_preclose_fraction": 0.208333,
+        "gateway_wall_open_fraction": 0.791667,
+        "segmentation_wall_processed_fraction": 0.375,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "15": 10
+        }
+      },
+      "geometry_evidence_score": 0.238824,
+      "passability_status": "reviewable",
+      "role": "rejected_duplicate",
+      "route_role": "rejected_duplicate",
+      "reason": "Non-selected r7-r14 fragment retained as duplicate/local context, not a route gateway.",
+      "role_reason": "Non-selected r7-r14 fragment retained as duplicate/local context, not a route gateway.",
+      "confidence": 0.238824,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r14_r16_01",
+      "pair_key": "r14_r16",
+      "room_a": 14,
+      "room_b": 16,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r14_r16_01"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r14_r16_01": "valid"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r14_r16_01": "valid_two_sided_free_boundary_component"
+      },
+      "representative_center_xy": [
+        -4.1396,
+        -3.3007
+      ],
+      "representative_center_rc": [
+        934,
+        917
+      ],
+      "representative_crossing_pose": {
+        "x": -4.1396,
+        "y": -3.3007,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_a": {
+        "x": -4.131,
+        "y": -3.6506,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_b": {
+        "x": -4.1481,
+        "y": -2.9508,
+        "yaw": 1.595138
+      },
+      "merged_bbox_map_xy": [
+        [
+          -4.45,
+          -3.45
+        ],
+        [
+          -3.8,
+          -3.15
+        ]
+      ],
+      "combined_bbox_xy": [
+        -4.45,
+        -3.45,
+        -3.8,
+        -3.15
+      ],
+      "combined_centroid_xy": [
+        -4.125,
+        -3.3
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r14_r16_01": {
+          "status": "valid",
+          "confidence": 0.817357,
+          "width_m": 0.35,
+          "free_fraction": 0.985075,
+          "label10_fraction": 0.194175,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "valid_two_sided_free_boundary_component"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -4.5,
+          -3.75,
+          -3.5,
+          -3.1
+        ],
+        "crop_shape_rc": [
+          8,
+          15
+        ],
+        "cell_count": 120,
+        "free_fraction": 0.95,
+        "gateway_wall_preclose_fraction": 0.083333,
+        "gateway_wall_open_fraction": 0.916667,
+        "segmentation_wall_processed_fraction": 0.108333,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "14": 55,
+          "16": 45
+        }
+      },
+      "geometry_evidence_score": 0.927777,
+      "passability_status": "strong",
+      "role": "high_confidence_needs_review",
+      "route_role": "high_confidence_needs_review",
+      "reason": "Promoted strong valid two-sided Step30A r14-r16 candidate into the Step30B hypothesis layer.",
+      "role_reason": "Promoted strong valid two-sided Step30A r14-r16 candidate into the Step30B hypothesis layer.",
+      "confidence": 0.927777,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": true,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r14_r16_02",
+      "pair_key": "r14_r16",
+      "room_a": 14,
+      "room_b": 16,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r14_r16_02"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r14_r16_02": "ambiguous"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r14_r16_02": "narrow_gateway_evidence"
+      },
+      "representative_center_xy": [
+        -4.75,
+        -3.25
+      ],
+      "representative_center_rc": [
+        935,
+        905
+      ],
+      "representative_crossing_pose": {
+        "x": -4.75,
+        "y": -3.25,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_a": {
+        "x": -4.7415,
+        "y": -3.5999,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_b": {
+        "x": -4.7585,
+        "y": -2.9001,
+        "yaw": 1.595138
+      },
+      "merged_bbox_map_xy": [
+        [
+          -4.85,
+          -3.35
+        ],
+        [
+          -4.65,
+          -3.15
+        ]
+      ],
+      "combined_bbox_xy": [
+        -4.85,
+        -3.35,
+        -4.65,
+        -3.15
+      ],
+      "combined_centroid_xy": [
+        -4.75,
+        -3.25
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r14_r16_02": {
+          "status": "ambiguous",
+          "confidence": 0.58,
+          "width_m": 0.25,
+          "free_fraction": 1.0,
+          "label10_fraction": 0.244444,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "narrow_gateway_evidence"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -4.9,
+          -4.6,
+          -3.4,
+          -3.1
+        ],
+        "crop_shape_rc": [
+          6,
+          6
+        ],
+        "cell_count": 36,
+        "free_fraction": 0.833333,
+        "gateway_wall_preclose_fraction": 0.0,
+        "gateway_wall_open_fraction": 1.0,
+        "segmentation_wall_processed_fraction": 0.0,
+        "unknown_fraction": 0.166667,
+        "room_id_cell_counts": {
+          "14": 15,
+          "16": 10
+        }
+      },
+      "geometry_evidence_score": 0.805771,
+      "passability_status": "reviewable",
+      "role": "needs_review",
+      "route_role": "needs_review",
+      "reason": "Additional two-sided r14-r16 candidate retained for local review.",
+      "role_reason": "Additional two-sided r14-r16 candidate retained for local review.",
+      "confidence": 0.805771,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r14_r16_03",
+      "pair_key": "r14_r16",
+      "room_a": 14,
+      "room_b": 16,
+      "hypothesis_type": "narrow_two_sided_geometry",
+      "source_candidate_ids": [
+        "gw_00824_r14_r16_03"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r14_r16_03": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r14_r16_03": "too_narrow_for_turtlebot3_passage"
+      },
+      "representative_center_xy": [
+        -3.3403,
+        -3.8177
+      ],
+      "representative_center_rc": [
+        924,
+        933
+      ],
+      "representative_crossing_pose": {
+        "x": -3.3403,
+        "y": -3.8177,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_a": {
+        "x": -3.3318,
+        "y": -4.1676,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_b": {
+        "x": -3.3488,
+        "y": -3.4678,
+        "yaw": 1.595138
+      },
+      "merged_bbox_map_xy": [
+        [
+          -3.8,
+          -3.85
+        ],
+        [
+          -2.9,
+          -3.75
+        ]
+      ],
+      "combined_bbox_xy": [
+        -3.8,
+        -3.85,
+        -2.9,
+        -3.75
+      ],
+      "combined_centroid_xy": [
+        -3.35,
+        -3.8
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r14_r16_03": {
+          "status": "rejected",
+          "confidence": 0.12,
+          "width_m": 0.15,
+          "free_fraction": 1.0,
+          "label10_fraction": 0.267606,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "too_narrow_for_turtlebot3_passage"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -3.8,
+          -2.85,
+          -3.9,
+          -3.7
+        ],
+        "crop_shape_rc": [
+          4,
+          19
+        ],
+        "cell_count": 76,
+        "free_fraction": 0.763158,
+        "gateway_wall_preclose_fraction": 0.236842,
+        "gateway_wall_open_fraction": 0.763158,
+        "segmentation_wall_processed_fraction": 0.236842,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "14": 58
+        }
+      },
+      "geometry_evidence_score": 0.574259,
+      "passability_status": "low_or_uncertain",
+      "role": "geometry_detected_but_low_passability",
+      "route_role": "geometry_detected_but_low_passability",
+      "reason": "Narrow two-sided r14-r16 geometry retained separately from TurtleBot3 passability.",
+      "role_reason": "Narrow two-sided r14-r16 geometry retained separately from TurtleBot3 passability.",
+      "confidence": 0.574259,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": true,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r14_r16_04",
+      "pair_key": "r14_r16",
+      "room_a": 14,
+      "room_b": 16,
+      "hypothesis_type": "narrow_two_sided_geometry",
+      "source_candidate_ids": [
+        "gw_00824_r14_r16_04"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r14_r16_04": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r14_r16_04": "too_narrow_for_turtlebot3_passage"
+      },
+      "representative_center_xy": [
+        -2.7,
+        -3.8
+      ],
+      "representative_center_rc": [
+        924,
+        946
+      ],
+      "representative_crossing_pose": {
+        "x": -2.7,
+        "y": -3.8,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_a": {
+        "x": -2.6915,
+        "y": -4.1499,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.7085,
+        "y": -3.4501,
+        "yaw": 1.595138
+      },
+      "merged_bbox_map_xy": [
+        [
+          -2.8,
+          -3.8
+        ],
+        [
+          -2.6,
+          -3.8
+        ]
+      ],
+      "combined_bbox_xy": [
+        -2.8,
+        -3.8,
+        -2.6,
+        -3.8
+      ],
+      "combined_centroid_xy": [
+        -2.7,
+        -3.8
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r14_r16_04": {
+          "status": "rejected",
+          "confidence": 0.12,
+          "width_m": 0.05,
+          "free_fraction": 1.0,
+          "label10_fraction": 0.294118,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "too_narrow_for_turtlebot3_passage"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -2.8,
+          -2.55,
+          -3.8,
+          -3.75
+        ],
+        "crop_shape_rc": [
+          1,
+          5
+        ],
+        "cell_count": 5,
+        "free_fraction": 1.0,
+        "gateway_wall_preclose_fraction": 0.0,
+        "gateway_wall_open_fraction": 1.0,
+        "segmentation_wall_processed_fraction": 0.0,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "14": 5
+        }
+      },
+      "geometry_evidence_score": 0.546514,
+      "passability_status": "low_or_uncertain",
+      "role": "geometry_detected_but_low_passability",
+      "route_role": "geometry_detected_but_low_passability",
+      "reason": "Narrow two-sided r14-r16 geometry retained separately from TurtleBot3 passability.",
+      "role_reason": "Narrow two-sided r14-r16 geometry retained separately from TurtleBot3 passability.",
+      "confidence": 0.546514,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": true,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r14_r16_05",
+      "pair_key": "r14_r16",
+      "room_a": 14,
+      "room_b": 16,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r14_r16_05"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r14_r16_05": "ambiguous"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r14_r16_05": "depends_on_or_touches_unmapped_label10_region"
+      },
+      "representative_center_xy": [
+        -3.1386,
+        -3.4748
+      ],
+      "representative_center_rc": [
+        931,
+        937
+      ],
+      "representative_crossing_pose": {
+        "x": -3.1386,
+        "y": -3.4748,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_a": {
+        "x": -3.1301,
+        "y": -3.8247,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_b": {
+        "x": -3.1471,
+        "y": -3.1249,
+        "yaw": 1.595138
+      },
+      "merged_bbox_map_xy": [
+        [
+          -3.65,
+          -3.6
+        ],
+        [
+          -2.5,
+          -3.15
+        ]
+      ],
+      "combined_bbox_xy": [
+        -3.65,
+        -3.6,
+        -2.5,
+        -3.15
+      ],
+      "combined_centroid_xy": [
+        -3.075,
+        -3.375
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r14_r16_05": {
+          "status": "ambiguous",
+          "confidence": 0.5,
+          "width_m": 0.5,
+          "free_fraction": 0.80315,
+          "label10_fraction": 0.34555,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "depends_on_or_touches_unmapped_label10_region"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -3.65,
+          -2.45,
+          -3.65,
+          -3.1
+        ],
+        "crop_shape_rc": [
+          11,
+          24
+        ],
+        "cell_count": 264,
+        "free_fraction": 0.734848,
+        "gateway_wall_preclose_fraction": 0.159091,
+        "gateway_wall_open_fraction": 0.840909,
+        "segmentation_wall_processed_fraction": 0.212121,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "16": 194
+        }
+      },
+      "geometry_evidence_score": 0.790469,
+      "passability_status": "strong",
+      "role": "needs_review",
+      "route_role": "needs_review",
+      "reason": "Additional two-sided r14-r16 candidate retained for local review.",
+      "role_reason": "Additional two-sided r14-r16 candidate retained for local review.",
+      "confidence": 0.790469,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r14_r16_06",
+      "pair_key": "r14_r16",
+      "room_a": 14,
+      "room_b": 16,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r14_r16_06"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r14_r16_06": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r14_r16_06": "no_two_sided_connectivity"
+      },
+      "representative_center_xy": [
+        -2.27,
+        -3.44
+      ],
+      "representative_center_rc": [
+        931,
+        955
+      ],
+      "representative_crossing_pose": {
+        "x": -2.27,
+        "y": -3.44,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_a": {
+        "x": -2.2615,
+        "y": -3.7899,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.2785,
+        "y": -3.0901,
+        "yaw": 1.595138
+      },
+      "merged_bbox_map_xy": [
+        [
+          -2.3,
+          -3.5
+        ],
+        [
+          -2.25,
+          -3.4
+        ]
+      ],
+      "combined_bbox_xy": [
+        -2.3,
+        -3.5,
+        -2.25,
+        -3.4
+      ],
+      "combined_centroid_xy": [
+        -2.275,
+        -3.45
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r14_r16_06": {
+          "status": "rejected",
+          "confidence": 0.02,
+          "width_m": 0.1,
+          "free_fraction": 0.0,
+          "label10_fraction": 0.785714,
+          "connects_room_a": false,
+          "connects_room_b": false,
+          "two_sided_connectivity": false,
+          "reason": "no_two_sided_connectivity"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -2.3,
+          -2.2,
+          -3.5,
+          -3.35
+        ],
+        "crop_shape_rc": [
+          3,
+          2
+        ],
+        "cell_count": 6,
+        "free_fraction": 0.0,
+        "gateway_wall_preclose_fraction": 0.166667,
+        "gateway_wall_open_fraction": 0.833333,
+        "segmentation_wall_processed_fraction": 0.333333,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {}
+      },
+      "geometry_evidence_score": 0.141562,
+      "passability_status": "low_or_uncertain",
+      "role": "rejected_duplicate",
+      "route_role": "rejected_duplicate",
+      "reason": "Rejected r14-r16 fragment retained as duplicate/local context.",
+      "role_reason": "Rejected r14-r16 fragment retained as duplicate/local context.",
+      "confidence": 0.141562,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r15_01",
+      "pair_key": "r7_r15",
+      "room_a": 7,
+      "room_b": 15,
+      "hypothesis_type": "narrow_two_sided_geometry",
+      "source_candidate_ids": [
+        "gw_00824_r7_r15_01"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r7_r15_01": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r15_01": "too_narrow_for_turtlebot3_passage"
+      },
+      "representative_center_xy": [
+        -1.4328,
+        -3.6017
+      ],
+      "representative_center_rc": [
+        928,
+        971
+      ],
+      "representative_crossing_pose": {
+        "x": -1.4328,
+        "y": -3.6017,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.3005,
+        "y": -3.9258,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_b": {
+        "x": -1.565,
+        "y": -3.2777,
+        "yaw": 1.958385
+      },
+      "merged_bbox_map_xy": [
+        [
+          -1.65,
+          -3.65
+        ],
+        [
+          -1.2,
+          -3.55
+        ]
+      ],
+      "combined_bbox_xy": [
+        -1.65,
+        -3.65,
+        -1.2,
+        -3.55
+      ],
+      "combined_centroid_xy": [
+        -1.425,
+        -3.6
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r7_r15_01": {
+          "status": "rejected",
+          "confidence": 0.12,
+          "width_m": 0.15,
+          "free_fraction": 0.0,
+          "label10_fraction": 0.666667,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "too_narrow_for_turtlebot3_passage"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -1.65,
+          -1.15,
+          -3.65,
+          -3.5
+        ],
+        "crop_shape_rc": [
+          3,
+          10
+        ],
+        "cell_count": 30,
+        "free_fraction": 0.0,
+        "gateway_wall_preclose_fraction": 0.0,
+        "gateway_wall_open_fraction": 1.0,
+        "segmentation_wall_processed_fraction": 0.866667,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {}
+      },
+      "geometry_evidence_score": 0.477943,
+      "passability_status": "low_or_uncertain",
+      "role": "geometry_detected_but_low_passability",
+      "route_role": "geometry_detected_but_low_passability",
+      "reason": "Two-sided r7-r15 gateway geometry exists; TurtleBot3 passability remains low/uncertain due to narrow/tiny evidence.",
+      "role_reason": "Two-sided r7-r15 gateway geometry exists; TurtleBot3 passability remains low/uncertain due to narrow/tiny evidence.",
+      "confidence": 0.477943,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": true,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r15_02",
+      "pair_key": "r7_r15",
+      "room_a": 7,
+      "room_b": 15,
+      "hypothesis_type": "narrow_two_sided_geometry",
+      "source_candidate_ids": [
+        "gw_00824_r7_r15_02"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r7_r15_02": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r15_02": "tiny_component"
+      },
+      "representative_center_xy": [
+        -1.95,
+        -3.6125
+      ],
+      "representative_center_rc": [
+        928,
+        961
+      ],
+      "representative_crossing_pose": {
+        "x": -1.95,
+        "y": -3.6125,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.8177,
+        "y": -3.9365,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.0823,
+        "y": -3.2885,
+        "yaw": 1.958385
+      },
+      "merged_bbox_map_xy": [
+        [
+          -2.0,
+          -3.65
+        ],
+        [
+          -1.9,
+          -3.55
+        ]
+      ],
+      "combined_bbox_xy": [
+        -2.0,
+        -3.65,
+        -1.9,
+        -3.55
+      ],
+      "combined_centroid_xy": [
+        -1.95,
+        -3.6
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r7_r15_02": {
+          "status": "rejected",
+          "confidence": 0.1,
+          "width_m": 0.15,
+          "free_fraction": 0.0,
+          "label10_fraction": 0.923077,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "tiny_component"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -2.0,
+          -1.85,
+          -3.65,
+          -3.5
+        ],
+        "crop_shape_rc": [
+          3,
+          3
+        ],
+        "cell_count": 9,
+        "free_fraction": 0.222222,
+        "gateway_wall_preclose_fraction": 0.222222,
+        "gateway_wall_open_fraction": 0.777778,
+        "segmentation_wall_processed_fraction": 0.666667,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "15": 2
+        }
+      },
+      "geometry_evidence_score": 0.475587,
+      "passability_status": "low_or_uncertain",
+      "role": "geometry_detected_but_low_passability",
+      "route_role": "geometry_detected_but_low_passability",
+      "reason": "Two-sided r7-r15 gateway geometry exists; TurtleBot3 passability remains low/uncertain due to narrow/tiny evidence.",
+      "role_reason": "Two-sided r7-r15 gateway geometry exists; TurtleBot3 passability remains low/uncertain due to narrow/tiny evidence.",
+      "confidence": 0.475587,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": true,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r15_03",
+      "pair_key": "r7_r15",
+      "room_a": 7,
+      "room_b": 15,
+      "hypothesis_type": "narrow_two_sided_geometry",
+      "source_candidate_ids": [
+        "gw_00824_r7_r15_03"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r7_r15_03": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r15_03": "too_narrow_for_turtlebot3_passage"
+      },
+      "representative_center_xy": [
+        -0.637,
+        -3.5741
+      ],
+      "representative_center_rc": [
+        929,
+        987
+      ],
+      "representative_crossing_pose": {
+        "x": -0.637,
+        "y": -3.5741,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_a": {
+        "x": -0.5048,
+        "y": -3.8981,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_b": {
+        "x": -0.7693,
+        "y": -3.25,
+        "yaw": 1.958385
+      },
+      "merged_bbox_map_xy": [
+        [
+          -0.95,
+          -3.6
+        ],
+        [
+          -0.3,
+          -3.55
+        ]
+      ],
+      "combined_bbox_xy": [
+        -0.95,
+        -3.6,
+        -0.3,
+        -3.55
+      ],
+      "combined_centroid_xy": [
+        -0.625,
+        -3.575
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r7_r15_03": {
+          "status": "rejected",
+          "confidence": 0.12,
+          "width_m": 0.1,
+          "free_fraction": 0.0,
+          "label10_fraction": 0.775862,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "too_narrow_for_turtlebot3_passage"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -1.0,
+          -0.25,
+          -3.65,
+          -3.5
+        ],
+        "crop_shape_rc": [
+          3,
+          15
+        ],
+        "cell_count": 45,
+        "free_fraction": 0.0,
+        "gateway_wall_preclose_fraction": 0.377778,
+        "gateway_wall_open_fraction": 0.622222,
+        "segmentation_wall_processed_fraction": 1.0,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {}
+      },
+      "geometry_evidence_score": 0.414451,
+      "passability_status": "low_or_uncertain",
+      "role": "geometry_detected_but_low_passability",
+      "route_role": "geometry_detected_but_low_passability",
+      "reason": "Two-sided r7-r15 gateway geometry exists; TurtleBot3 passability remains low/uncertain due to narrow/tiny evidence.",
+      "role_reason": "Two-sided r7-r15 gateway geometry exists; TurtleBot3 passability remains low/uncertain due to narrow/tiny evidence.",
+      "confidence": 0.414451,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": true,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r15_04",
+      "pair_key": "r7_r15",
+      "room_a": 7,
+      "room_b": 15,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r7_r15_04"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r7_r15_04": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r15_04": "no_two_sided_connectivity"
+      },
+      "representative_center_xy": [
+        0.0667,
+        -3.4333
+      ],
+      "representative_center_rc": [
+        931,
+        1001
+      ],
+      "representative_crossing_pose": {
+        "x": 0.0667,
+        "y": -3.4333,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_a": {
+        "x": 0.199,
+        "y": -3.7574,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_b": {
+        "x": -0.0656,
+        "y": -3.1093,
+        "yaw": 1.958385
+      },
+      "merged_bbox_map_xy": [
+        [
+          0.05,
+          -3.45
+        ],
+        [
+          0.1,
+          -3.4
+        ]
+      ],
+      "combined_bbox_xy": [
+        0.05,
+        -3.45,
+        0.1,
+        -3.4
+      ],
+      "combined_centroid_xy": [
+        0.075,
+        -3.425
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r7_r15_04": {
+          "status": "rejected",
+          "confidence": 0.02,
+          "width_m": 0.1,
+          "free_fraction": 0.0,
+          "label10_fraction": 0.8,
+          "connects_room_a": false,
+          "connects_room_b": false,
+          "two_sided_connectivity": false,
+          "reason": "no_two_sided_connectivity"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          0.0,
+          0.15,
+          -3.5,
+          -3.35
+        ],
+        "crop_shape_rc": [
+          3,
+          3
+        ],
+        "cell_count": 9,
+        "free_fraction": 0.111111,
+        "gateway_wall_preclose_fraction": 0.555556,
+        "gateway_wall_open_fraction": 0.444444,
+        "segmentation_wall_processed_fraction": 0.888889,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "3": 1
+        }
+      },
+      "geometry_evidence_score": 0.116006,
+      "passability_status": "low_or_uncertain",
+      "role": "rejected_duplicate",
+      "route_role": "rejected_duplicate",
+      "reason": "Non-two-sided r7-r15 fragment retained as local context only.",
+      "role_reason": "Non-two-sided r7-r15 fragment retained as local context only.",
+      "confidence": 0.116006,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r8_r11_01",
+      "pair_key": "r8_r11",
+      "room_a": 8,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r8_r11_01"
+      ],
+      "representative_center_xy": [
+        4.996,
+        -4.1277
+      ],
+      "representative_center_rc": [
+        917,
+        1100
+      ],
+      "representative_crossing_pose": {
+        "x": 4.996,
+        "y": -4.1277,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.3456,
+        "y": -4.1452,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.6464,
+        "y": -4.1102,
+        "yaw": 3.091667
+      },
+      "merged_bbox_cells": [
+        913,
+        1097,
+        925,
+        1103
+      ],
+      "merged_bbox_map_xy": [
+        [
+          4.85,
+          -4.6
+        ],
+        [
+          5.1,
+          -3.8
+        ]
+      ],
+      "step29b3_auto_status": "needs_review",
+      "step29b3_selected_for_step29c_candidate": false,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.2222,
+        "raw_wall_core_overlap_count_b3r": 16,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.3956,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.2222,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.6956,
+        "raw_wall_gap_width_m": 0.35,
+        "wall_endpoint_support_score": 0.7143,
+        "gap_center_clear_score": 0.7143,
+        "gap_consistency_score": 0.6316
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.8957,
+        "room_a_support_score": 0.9592,
+        "room_b_support_score": 1.0,
+        "free_space_crossing_score": 0.56,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.3,
+        "merged_span_width_m": 0.6142,
+        "raw_wall_gap_width_m": 0.35,
+        "effective_opening_width_m": 0.6142,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.4767,
+        "label10_fraction_repaired": 0.4767,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 1
+      },
+      "route_role": "primary_route_gateway",
+      "use_for_default_route": true,
+      "eligible_as_navigation_fallback": true,
+      "nav_priority": 1,
+      "step29c_role": "primary",
+      "role_source": "user_calibrated",
+      "role_reason": "Preserved Step30A primary route gateway.",
+      "calibration_label": "true_main_passage",
+      "calibration_metric_conflict": true,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [
+        "user_primary_but_wall_blocked_high_gap_support"
+      ],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r8_r11_01"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.0966,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.1389,
+        "wall_core_overlap_count": 20,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "uncertain",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.8646,
+        "raw_wall_gap_width_m": 0.65,
+        "wall_endpoint_support_score": 0.5714,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.966,
+        "two_sided_support_score": 0.4161,
+        "room_a_support_score": 0.3306,
+        "room_b_support_score": 0.4298,
+        "free_space_crossing_score": 0.56,
+        "effective_opening_width_m": 0.65
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_statuses": {
+        "gw_00824_r8_r11_01": "ambiguous"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r8_r11_01": "depends_on_or_touches_unmapped_label10_region"
+      },
+      "source_candidate_validation": {
+        "gw_00824_r8_r11_01": {
+          "status": "ambiguous",
+          "confidence": 0.5,
+          "width_m": 0.3,
+          "free_fraction": 0.395833,
+          "label10_fraction": 0.551724,
+          "connects_room_a": true,
+          "connects_room_b": true,
+          "two_sided_connectivity": true,
+          "reason": "depends_on_or_touches_unmapped_label10_region"
+        }
+      },
+      "combined_bbox_xy": [
+        4.85,
+        -4.6,
+        5.1,
+        -3.8
+      ],
+      "combined_centroid_xy": [
+        4.975,
+        -4.2
+      ],
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          4.85,
+          5.15,
+          -4.65,
+          -3.75
+        ],
+        "crop_shape_rc": [
+          18,
+          6
+        ],
+        "cell_count": 108,
+        "free_fraction": 0.564815,
+        "gateway_wall_preclose_fraction": 0.185185,
+        "gateway_wall_open_fraction": 0.814815,
+        "segmentation_wall_processed_fraction": 0.435185,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "8": 14,
+          "11": 47
+        }
+      },
+      "geometry_evidence_score": 0.733545,
+      "passability_status": "strong",
+      "role": "primary_route_gateway",
+      "reason": "Preserved Step30A primary route gateway.",
+      "confidence": 0.5,
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r3_r8_composite_01",
+      "pair_key": "r3_r8",
+      "room_a": 3,
+      "room_b": 8,
+      "hypothesis_type": "composite_paired_fragments",
+      "source_candidate_ids": [
+        "gw_00824_r3_r8_03",
+        "gw_00824_r3_r8_04",
+        "gw_00824_r3_r8_05"
+      ],
+      "composite_hypothesis_source_candidate_ids": [
+        "gw_00824_r3_r8_03",
+        "gw_00824_r3_r8_04",
+        "gw_00824_r3_r8_05"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r3_r8_03": "rejected",
+        "gw_00824_r3_r8_04": "rejected",
+        "gw_00824_r3_r8_05": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r3_r8_03": "one_sided_connectivity_only",
+        "gw_00824_r3_r8_04": "one_sided_connectivity_only",
+        "gw_00824_r3_r8_05": "one_sided_connectivity_only"
+      },
+      "source_candidate_validation": {
+        "gw_00824_r3_r8_03": {
+          "status": "rejected",
+          "confidence": 0.05,
+          "width_m": 0.2,
+          "free_fraction": 0.625,
+          "label10_fraction": 0.46875,
+          "connects_room_a": false,
+          "connects_room_b": true,
+          "two_sided_connectivity": false,
+          "reason": "one_sided_connectivity_only"
+        },
+        "gw_00824_r3_r8_04": {
+          "status": "rejected",
+          "confidence": 0.05,
+          "width_m": 0.4,
+          "free_fraction": 0.756757,
+          "label10_fraction": 0.353191,
+          "connects_room_a": true,
+          "connects_room_b": false,
+          "two_sided_connectivity": false,
+          "reason": "one_sided_connectivity_only"
+        },
+        "gw_00824_r3_r8_05": {
+          "status": "rejected",
+          "confidence": 0.05,
+          "width_m": 0.2,
+          "free_fraction": 0.952381,
+          "label10_fraction": 0.3,
+          "connects_room_a": true,
+          "connects_room_b": false,
+          "two_sided_connectivity": false,
+          "reason": "one_sided_connectivity_only"
+        }
+      },
+      "combined_bbox_xy": [
+        4.6,
+        -3.85,
+        7.65,
+        -3.3
+      ],
+      "combined_centroid_xy": [
+        6.125,
+        -3.575
+      ],
+      "representative_center_xy": [
+        6.125,
+        -3.575
+      ],
+      "representative_center_rc": [
+        928,
+        1122
+      ],
+      "merged_bbox_map_xy": [
+        [
+          4.6,
+          -3.85
+        ],
+        [
+          7.65,
+          -3.3
+        ]
+      ],
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          4.6,
+          7.7,
+          -3.9,
+          -3.25
+        ],
+        "crop_shape_rc": [
+          13,
+          62
+        ],
+        "cell_count": 806,
+        "free_fraction": 0.509926,
+        "gateway_wall_preclose_fraction": 0.316377,
+        "gateway_wall_open_fraction": 0.683623,
+        "segmentation_wall_processed_fraction": 0.486352,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "3": 269,
+          "8": 107,
+          "11": 20
+        }
+      },
+      "geometry_evidence_score": 0.679739,
+      "passability_status": "reviewable_composite_geometry",
+      "role": "high_confidence_needs_review",
+      "route_role": "high_confidence_needs_review",
+      "reason": "Composite paired-fragment doorway: Step30A split the user-confirmed r3-r8 opening into room-side fragments.",
+      "role_reason": "Composite paired-fragment doorway: Step30A split the user-confirmed r3-r8 opening into room-side fragments.",
+      "confidence": 0.679739,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": true,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r3_r11_01",
+      "pair_key": "r3_r11",
+      "room_a": 3,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r3_r11_02",
+        "gw_00824_r3_r11_04"
+      ],
+      "representative_center_xy": [
+        4.0385,
+        -3.6156
+      ],
+      "representative_center_rc": [
+        928,
+        1081
+      ],
+      "representative_crossing_pose": {
+        "x": 4.0385,
+        "y": -3.6156,
+        "yaw": -1.639124
+      },
+      "representative_approach_from_room_a": {
+        "x": 4.0624,
+        "y": -3.2664,
+        "yaw": -1.639124
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.0146,
+        "y": -3.9648,
+        "yaw": -1.639124
+      },
+      "merged_bbox_cells": [
+        923,
+        1058,
+        932,
+        1097
+      ],
+      "merged_bbox_map_xy": [
+        [
+          2.9,
+          -3.85
+        ],
+        [
+          4.9,
+          -3.4
+        ]
+      ],
+      "step29b3_auto_status": "auto_reject_negative_sanity",
+      "step29b3_selected_for_step29c_candidate": false,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.4167,
+        "raw_wall_core_overlap_count_b3r": 30,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.6475,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.4167,
+        "wall_core_overlap_delta_vs_b3": -0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.4908,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 0.1429,
+        "gap_consistency_score": 0.4042
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.8,
+        "room_a_support_score": 1.0,
+        "room_b_support_score": 1.0,
+        "free_space_crossing_score": 0.0,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.1,
+        "merged_span_width_m": 1.9762,
+        "raw_wall_gap_width_m": 0.2,
+        "effective_opening_width_m": 1.0,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.4389,
+        "label10_fraction_repaired": 0.4389,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 1
+      },
+      "route_role": "rejected_negative_sanity",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "nav_priority": null,
+      "step29c_role": "exclude",
+      "role_source": "negative_sanity",
+      "role_reason": "Rejected negative sanity: no direct r3-r11 gateway; corridor belongs to r7 and must route r3->r7->r11.",
+      "calibration_label": null,
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r3_r11_02",
+        "gw_00824_r3_r11_04"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.197,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.4514,
+        "wall_core_overlap_count": 65,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.4718,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 0.1429,
+        "gap_consistency_score": 0.3091,
+        "two_sided_support_score": 0.1785,
+        "room_a_support_score": 0.2645,
+        "room_b_support_score": 0.1818,
+        "free_space_crossing_score": 0.0,
+        "effective_opening_width_m": 0.6
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false,
+      "hypothesis_type": "rejected_negative_sanity",
+      "source_candidate_statuses": {
+        "gw_00824_r3_r11_02": "rejected",
+        "gw_00824_r3_r11_04": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r3_r11_02": "one_sided_connectivity_only",
+        "gw_00824_r3_r11_04": "one_sided_connectivity_only"
+      },
+      "source_candidate_validation": {
+        "gw_00824_r3_r11_02": {
+          "status": "rejected",
+          "confidence": 0.05,
+          "width_m": 0.1,
+          "free_fraction": 0.983871,
+          "label10_fraction": 0.30137,
+          "connects_room_a": false,
+          "connects_room_b": true,
+          "two_sided_connectivity": false,
+          "reason": "one_sided_connectivity_only"
+        },
+        "gw_00824_r3_r11_04": {
+          "status": "rejected",
+          "confidence": 0.05,
+          "width_m": 0.1,
+          "free_fraction": 0.953125,
+          "label10_fraction": 0.304054,
+          "connects_room_a": true,
+          "connects_room_b": false,
+          "two_sided_connectivity": false,
+          "reason": "one_sided_connectivity_only"
+        }
+      },
+      "combined_bbox_xy": [
+        2.9,
+        -3.85,
+        4.9,
+        -3.4
+      ],
+      "combined_centroid_xy": [
+        3.9,
+        -3.625
+      ],
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          2.9,
+          4.95,
+          -3.9,
+          -3.35
+        ],
+        "crop_shape_rc": [
+          11,
+          41
+        ],
+        "cell_count": 451,
+        "free_fraction": 0.407982,
+        "gateway_wall_preclose_fraction": 0.545455,
+        "gateway_wall_open_fraction": 0.454545,
+        "segmentation_wall_processed_fraction": 0.592018,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "3": 62,
+          "11": 122
+        }
+      },
+      "geometry_evidence_score": 0.231948,
+      "passability_status": "low_or_uncertain",
+      "role": "rejected_negative_sanity",
+      "reason": "Rejected negative sanity: no direct r3-r11 gateway; corridor belongs to r7 and must route r3->r7->r11.",
+      "confidence": 0.05,
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r14_r15_non_truth_01",
+      "pair_key": "r14_r15",
+      "room_a": 14,
+      "room_b": 15,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r14_r15_03"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r14_r15_03": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r14_r15_03": "one_sided_connectivity_only"
+      },
+      "representative_center_xy": [
+        -2.263,
+        -3.9595
+      ],
+      "representative_center_rc": [
+        921,
+        955
+      ],
+      "representative_crossing_pose": {
+        "x": -2.263,
+        "y": -3.9595,
+        "yaw": 0.898011
+      },
+      "representative_approach_from_room_a": {
+        "x": -2.4811,
+        "y": -4.2332,
+        "yaw": 0.898011
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.0449,
+        "y": -3.6858,
+        "yaw": 0.898011
+      },
+      "merged_bbox_map_xy": [
+        [
+          -2.7,
+          -4.15
+        ],
+        [
+          -1.9,
+          -3.8
+        ]
+      ],
+      "combined_bbox_xy": [
+        -2.7,
+        -4.15,
+        -1.9,
+        -3.8
+      ],
+      "combined_centroid_xy": [
+        -2.3,
+        -3.975
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r14_r15_03": {
+          "status": "rejected",
+          "confidence": 0.05,
+          "width_m": 0.4,
+          "free_fraction": 0.77,
+          "label10_fraction": 0.312057,
+          "connects_room_a": true,
+          "connects_room_b": false,
+          "two_sided_connectivity": false,
+          "reason": "one_sided_connectivity_only"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -2.75,
+          -1.85,
+          -4.15,
+          -3.75
+        ],
+        "crop_shape_rc": [
+          8,
+          18
+        ],
+        "cell_count": 144,
+        "free_fraction": 0.770833,
+        "gateway_wall_preclose_fraction": 0.0625,
+        "gateway_wall_open_fraction": 0.9375,
+        "segmentation_wall_processed_fraction": 0.215278,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "14": 111
+        }
+      },
+      "geometry_evidence_score": 0.38325,
+      "passability_status": "strong",
+      "role": "rejected_non_truth_pair",
+      "route_role": "rejected_non_truth_pair",
+      "reason": "Rejected non-truth pair for Step30B benchmark expansion; not eligible for later topology candidates.",
+      "role_reason": "Rejected non-truth pair for Step30B benchmark expansion; not eligible for later topology candidates.",
+      "confidence": 0.0,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r15_r16_non_truth_01",
+      "pair_key": "r15_r16",
+      "room_a": 15,
+      "room_b": 16,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r15_r16_01"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r15_r16_01": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r15_r16_01": "one_sided_connectivity_only"
+      },
+      "representative_center_xy": [
+        -2.5625,
+        -3.4469
+      ],
+      "representative_center_rc": [
+        931,
+        949
+      ],
+      "representative_crossing_pose": {
+        "x": -2.5625,
+        "y": -3.4469,
+        "yaw": 3.109336
+      },
+      "representative_approach_from_room_a": {
+        "x": -2.2127,
+        "y": -3.4582,
+        "yaw": 3.109336
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.9123,
+        "y": -3.4356,
+        "yaw": 3.109336
+      },
+      "merged_bbox_map_xy": [
+        [
+          -2.6,
+          -3.6
+        ],
+        [
+          -2.5,
+          -3.25
+        ]
+      ],
+      "combined_bbox_xy": [
+        -2.6,
+        -3.6,
+        -2.5,
+        -3.25
+      ],
+      "combined_centroid_xy": [
+        -2.55,
+        -3.425
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r15_r16_01": {
+          "status": "rejected",
+          "confidence": 0.05,
+          "width_m": 0.15,
+          "free_fraction": 0.4375,
+          "label10_fraction": 0.558824,
+          "connects_room_a": false,
+          "connects_room_b": true,
+          "two_sided_connectivity": false,
+          "reason": "one_sided_connectivity_only"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -2.65,
+          -2.45,
+          -3.65,
+          -3.2
+        ],
+        "crop_shape_rc": [
+          9,
+          4
+        ],
+        "cell_count": 36,
+        "free_fraction": 0.388889,
+        "gateway_wall_preclose_fraction": 0.277778,
+        "gateway_wall_open_fraction": 0.722222,
+        "segmentation_wall_processed_fraction": 0.388889,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "16": 14
+        }
+      },
+      "geometry_evidence_score": 0.218865,
+      "passability_status": "low_or_uncertain",
+      "role": "rejected_non_truth_pair",
+      "route_role": "rejected_non_truth_pair",
+      "reason": "Rejected non-truth pair for Step30B benchmark expansion; not eligible for later topology candidates.",
+      "role_reason": "Rejected non-truth pair for Step30B benchmark expansion; not eligible for later topology candidates.",
+      "confidence": 0.0,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r3_r15_non_truth_01",
+      "pair_key": "r3_r15",
+      "room_a": 3,
+      "room_b": 15,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r3_r15_02"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r3_r15_02": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r3_r15_02": "one_sided_connectivity_only"
+      },
+      "representative_center_xy": [
+        0.0875,
+        -3.35
+      ],
+      "representative_center_rc": [
+        933,
+        1002
+      ],
+      "representative_crossing_pose": {
+        "x": 0.0875,
+        "y": -3.35,
+        "yaw": -2.756012
+      },
+      "representative_approach_from_room_a": {
+        "x": 0.4118,
+        "y": -3.2184,
+        "yaw": -2.756012
+      },
+      "representative_approach_from_room_b": {
+        "x": -0.2368,
+        "y": -3.4816,
+        "yaw": -2.756012
+      },
+      "merged_bbox_map_xy": [
+        [
+          0.05,
+          -3.45
+        ],
+        [
+          0.1,
+          -3.2
+        ]
+      ],
+      "combined_bbox_xy": [
+        0.05,
+        -3.45,
+        0.1,
+        -3.2
+      ],
+      "combined_centroid_xy": [
+        0.075,
+        -3.325
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r3_r15_02": {
+          "status": "rejected",
+          "confidence": 0.05,
+          "width_m": 0.1,
+          "free_fraction": 0.625,
+          "label10_fraction": 0.478261,
+          "connects_room_a": true,
+          "connects_room_b": false,
+          "two_sided_connectivity": false,
+          "reason": "one_sided_connectivity_only"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          0.0,
+          0.15,
+          -3.5,
+          -3.15
+        ],
+        "crop_shape_rc": [
+          7,
+          3
+        ],
+        "cell_count": 21,
+        "free_fraction": 0.238095,
+        "gateway_wall_preclose_fraction": 0.619048,
+        "gateway_wall_open_fraction": 0.380952,
+        "segmentation_wall_processed_fraction": 0.761905,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {
+          "3": 5
+        }
+      },
+      "geometry_evidence_score": 0.181524,
+      "passability_status": "low_or_uncertain",
+      "role": "rejected_non_truth_pair",
+      "route_role": "rejected_non_truth_pair",
+      "reason": "Rejected non-truth pair for Step30B benchmark expansion; not eligible for later topology candidates.",
+      "role_reason": "Rejected non-truth pair for Step30B benchmark expansion; not eligible for later topology candidates.",
+      "confidence": 0.0,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r16_non_truth_01",
+      "pair_key": "r7_r16",
+      "room_a": 7,
+      "room_b": 16,
+      "hypothesis_type": "direct_two_sided_candidate",
+      "source_candidate_ids": [
+        "gw_00824_r7_r16_01"
+      ],
+      "source_candidate_statuses": {
+        "gw_00824_r7_r16_01": "rejected"
+      },
+      "source_candidate_reasons": {
+        "gw_00824_r7_r16_01": "no_two_sided_connectivity"
+      },
+      "representative_center_xy": [
+        -2.125,
+        -3.6
+      ],
+      "representative_center_rc": [
+        928,
+        958
+      ],
+      "representative_crossing_pose": {
+        "x": -2.125,
+        "y": -3.6,
+        "yaw": 2.435434
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.8587,
+        "y": -3.8271,
+        "yaw": 2.435434
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.3913,
+        "y": -3.3729,
+        "yaw": 2.435434
+      },
+      "merged_bbox_map_xy": [
+        [
+          -2.2,
+          -3.6
+        ],
+        [
+          -2.05,
+          -3.6
+        ]
+      ],
+      "combined_bbox_xy": [
+        -2.2,
+        -3.6,
+        -2.05,
+        -3.6
+      ],
+      "combined_centroid_xy": [
+        -2.125,
+        -3.6
+      ],
+      "source_candidate_validation": {
+        "gw_00824_r7_r16_01": {
+          "status": "rejected",
+          "confidence": 0.02,
+          "width_m": 0.05,
+          "free_fraction": 0.0,
+          "label10_fraction": 0.714286,
+          "connects_room_a": false,
+          "connects_room_b": false,
+          "two_sided_connectivity": false,
+          "reason": "no_two_sided_connectivity"
+        }
+      },
+      "geometry_evidence": {
+        "crop_extent_xy": [
+          -2.25,
+          -2.0,
+          -3.65,
+          -3.55
+        ],
+        "crop_shape_rc": [
+          2,
+          5
+        ],
+        "cell_count": 10,
+        "free_fraction": 0.0,
+        "gateway_wall_preclose_fraction": 0.6,
+        "gateway_wall_open_fraction": 0.4,
+        "segmentation_wall_processed_fraction": 0.7,
+        "unknown_fraction": 0.0,
+        "room_id_cell_counts": {}
+      },
+      "geometry_evidence_score": 0.072514,
+      "passability_status": "low_or_uncertain",
+      "role": "rejected_non_truth_pair",
+      "route_role": "rejected_non_truth_pair",
+      "reason": "Rejected non-truth pair for Step30B benchmark expansion; not eligible for later topology candidates.",
+      "role_reason": "Rejected non-truth pair for Step30B benchmark expansion; not eligible for later topology candidates.",
+      "confidence": 0.0,
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_gateway_blocker": false
+    }
+  ]
+}

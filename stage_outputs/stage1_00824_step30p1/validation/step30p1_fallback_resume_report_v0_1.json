@@ -1,0 +1,30 @@
+{
+  "artifact_type": "step30p1_fallback_resume_report",
+  "created_utc": "2026-05-12T12:13:20.188903+00:00",
+  "current_pose_projected_path_distance_m": 0.030936,
+  "current_pose_projected_path_start_slice_index": 82,
+  "fallback_backtracking_detected": false,
+  "fallback_resume_guard_passed": true,
+  "fallback_resume_policy": "progress_aware_projected_path_index_forward_only",
+  "fallback_skipped_completed_semantic_waypoints": [
+    2,
+    47,
+    55,
+    64,
+    76
+  ],
+  "fallback_started_at_selected_list_index": 5,
+  "fallback_started_at_waypoint_index": 83,
+  "follow_path_attempt_count": 2,
+  "projected_next_path_start_slice_index": 82,
+  "selected_waypoint_indices": [
+    2,
+    47,
+    55,
+    64,
+    76,
+    83
+  ],
+  "step": "Step30P1",
+  "version": "v0_1"
+}

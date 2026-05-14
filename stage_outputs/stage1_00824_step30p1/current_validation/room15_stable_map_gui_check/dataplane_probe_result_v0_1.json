@@ -1,0 +1,174 @@
+{
+  "action_servers": {
+    "/compute_path_to_pose": true,
+    "/follow_path": true,
+    "/navigate_to_pose": true
+  },
+  "amcl_used": false,
+  "artifact_type": "step30s2_bringup_dataplane_report",
+  "created_utc": "2026-05-14T08:34:10.759833+00:00",
+  "localization_mode": "static_map_to_odom",
+  "missing_conditions": [],
+  "node_names": [
+    "_ros2cli_daemon_84",
+    "boxfusion_stage1_nav_overlay_publisher",
+    "boxfusion_stage1_step30p1_dataplane_probe",
+    "bt_navigator",
+    "bt_navigator_rclcpp_node",
+    "controller_server",
+    "controller_server_rclcpp_node",
+    "gazebo",
+    "global_costmap",
+    "global_costmap_client",
+    "global_costmap_rclcpp_node",
+    "lifecycle_manager_navigation",
+    "lifecycle_manager_navigation_service_client",
+    "local_costmap",
+    "local_costmap_client",
+    "local_costmap_rclcpp_node",
+    "map_server",
+    "planner_server",
+    "planner_server_rclcpp_node",
+    "recoveries_server",
+    "recoveries_server_rclcpp_node",
+    "robot_state_publisher",
+    "rviz",
+    "static_transform_publisher_abN8yjE5V7RhUeAl",
+    "transform_listener_impl_55ae3f1ff8f0",
+    "transform_listener_impl_5ca396f15070",
+    "transform_listener_impl_61c16210f1c0",
+    "transform_listener_impl_65096c5c4a50",
+    "turtlebot3_diff_drive",
+    "turtlebot3_imu",
+    "turtlebot3_joint_state",
+    "turtlebot3_laserscan",
+    "waypoint_follower",
+    "waypoint_follower_rclcpp_node"
+  ],
+  "readiness": {
+    "clock_publishing": true,
+    "cmd_vel_exists_with_subscribers": true,
+    "compute_path_to_pose_action_server_ready": true,
+    "follow_path_action_server_ready": true,
+    "map_received": true,
+    "navigate_to_pose_action_server_ready": true,
+    "odom_nonzero_rate": true,
+    "scan_nonzero_rate": true,
+    "staticloc_dataplane_ready": true,
+    "tf_base_footprint_to_base_link_exists_or_recoverable": true,
+    "tf_base_link_to_base_scan_exists": true,
+    "tf_has_frames": true,
+    "tf_map_to_odom_exists": true,
+    "tf_odom_to_robot_exists": true,
+    "tf_static_has_frames": true
+  },
+  "samples": {
+    "map": {
+      "frame_id": "map",
+      "height": 1167,
+      "origin": {
+        "x": -50.0,
+        "y": -50.0
+      },
+      "resolution": 0.05000000074505806,
+      "width": 1227
+    },
+    "odom": {
+      "child_frame_id": "base_footprint",
+      "frame_id": "odom",
+      "x": 5.849963,
+      "y": 2.099998,
+      "yaw": -3.141586
+    },
+    "scan": {
+      "finite_count": 0,
+      "finite_max": null,
+      "finite_min": null,
+      "frame_id": "base_scan",
+      "range_count": 360
+    }
+  },
+  "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+  "tf_edges_observed": {
+    "/tf": [
+      "base_link->wheel_left_link",
+      "base_link->wheel_right_link",
+      "odom->base_footprint"
+    ],
+    "/tf_static": [
+      "base_footprint->base_link",
+      "base_link->base_scan",
+      "base_link->caster_back_link",
+      "base_link->imu_link",
+      "map->odom"
+    ]
+  },
+  "tf_frames": {
+    "base_footprint_to_base_link": true,
+    "base_link_to_base_scan": true,
+    "map_to_base_footprint": true,
+    "map_to_base_link": true,
+    "map_to_odom": true,
+    "odom_to_base_footprint": true,
+    "odom_to_base_link": true
+  },
+  "topics": {
+    "/clock": {
+      "message_count_observed": 249,
+      "message_received": true,
+      "observed_rate_hz": 9.947,
+      "probe_window_sec": 25.0,
+      "publisher_count": 1,
+      "subscription_count": 21
+    },
+    "/cmd_vel": {
+      "message_count_observed": 0,
+      "message_received": false,
+      "observed_rate_hz": 0.0,
+      "probe_window_sec": 25.0,
+      "publisher_count": 4,
+      "subscription_count": 2
+    },
+    "/map": {
+      "message_count_observed": 1,
+      "message_received": true,
+      "observed_rate_hz": 0.0,
+      "probe_window_sec": 25.0,
+      "publisher_count": 1,
+      "subscription_count": 3
+    },
+    "/odom": {
+      "message_count_observed": 736,
+      "message_received": true,
+      "observed_rate_hz": 29.399,
+      "probe_window_sec": 25.0,
+      "publisher_count": 1,
+      "subscription_count": 2
+    },
+    "/scan": {
+      "message_count_observed": 124,
+      "message_received": true,
+      "observed_rate_hz": 4.993,
+      "probe_window_sec": 25.0,
+      "publisher_count": 1,
+      "subscription_count": 4
+    },
+    "/tf": {
+      "message_count_observed": 1221,
+      "message_received": true,
+      "observed_rate_hz": 48.874,
+      "probe_window_sec": 25.0,
+      "publisher_count": 2,
+      "subscription_count": 7
+    },
+    "/tf_static": {
+      "message_count_observed": 500,
+      "message_received": true,
+      "observed_rate_hz": 20.04,
+      "probe_window_sec": 25.0,
+      "publisher_count": 2,
+      "subscription_count": 7
+    }
+  },
+  "version": "v0_1"
+}

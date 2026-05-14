@@ -1,0 +1,1594 @@
+{
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "artifact_type": "step30b2_truth_blind_gateway_selection",
+  "step": "step30b2",
+  "version": "v0_1",
+  "truth_blind": true,
+  "truth_used_for_selection": false,
+  "manual_truth_fields_used": [],
+  "input_artifacts": {
+    "step30a_candidates": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+    "step30a_hypotheses_with_roles": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+    "step30a_layered_bev_npz": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+    "step30b_hypotheses_with_roles": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+    "step30b_pair_local_visualization_manifest": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE"
+  },
+  "selection_policy": {
+    "two_sided_primary_threshold": 0.58,
+    "one_sided_primary_requires_composite_support": true,
+    "one_sided_composite_support_threshold": 0.34,
+    "overextended_and_corridor_fragments_can_not_be_primary": true,
+    "passability_separate_from_geometry": true
+  },
+  "per_pair": {
+    "r14_r15": {
+      "pair_key": "r14_r15",
+      "selected_primary_candidate_id": null,
+      "selected_primary": null,
+      "automatic_role": "no_primary_route_gateway_selected",
+      "passability_status": null,
+      "warnings": [],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r14_r15_01",
+        "gw_00824_r14_r15_03",
+        "gw_00824_r14_r15_04",
+        "gw_00824_r14_r15_02"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r14_r15_01",
+        "gw_00824_r14_r15_03",
+        "gw_00824_r14_r15_04",
+        "gw_00824_r14_r15_02"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r14_r15_01",
+          "automatic_score": 0.514199,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r14_r15_03",
+          "automatic_score": 0.325648,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "strong",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r14_r15_04",
+          "automatic_score": 0.067801,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "strong",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "gw_00824_r14_r15_02",
+          "automatic_score": 0.063429,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": null,
+      "selection_reason": "no candidate passed truth-blind primary criteria",
+      "composite_support_hypotheses": []
+    },
+    "r14_r16": {
+      "pair_key": "r14_r16",
+      "selected_primary_candidate_id": "gw_00824_r14_r16_01",
+      "selected_primary": {
+        "candidate_id": "gw_00824_r14_r16_01",
+        "center_xy": [
+          -4.1396,
+          -3.3007
+        ],
+        "crossing_pose": {
+          "x": -4.1396,
+          "y": -3.3007,
+          "yaw": 1.595138
+        },
+        "approach_from_room_a": {
+          "x": -4.131,
+          "y": -3.6506,
+          "yaw": 1.595138
+        },
+        "approach_from_room_b": {
+          "x": -4.1481,
+          "y": -2.9508,
+          "yaw": 1.595138
+        },
+        "bbox_map_xy": [
+          -4.45,
+          -3.45,
+          -3.8,
+          -3.15
+        ],
+        "automatic_score": 0.909722,
+        "score_breakdown": {
+          "two_sided_connectivity_score": 1.0,
+          "doorway_gap_score": 0.35,
+          "free_space_crossing_score": 1.0,
+          "free_space_crossing_raw": 1.0,
+          "compactness_score": 1.0,
+          "boundary_transition_score": 1.0,
+          "label10_warning_penalty": 0.0,
+          "overextended_bbox_penalty": 0.0,
+          "corridor_fragment_penalty": 0.0,
+          "annex_or_closet_likelihood_penalty": 0.0,
+          "duplicate_overlap_penalty": 0.0,
+          "support_fragment_penalty": 0.0,
+          "passability_warning_score": 1.0,
+          "wall_block_conflict_penalty": 0.0,
+          "hypothesis_geometry_score": 0.927777,
+          "bbox_width_m": 0.65,
+          "bbox_height_m": 0.3,
+          "bbox_long_dim_m": 0.65,
+          "bbox_area_m2": 0.195,
+          "component_area_m2": 0.1675,
+          "bbox_aspect_ratio": 2.166667,
+          "room_id_cell_counts_margin_0p25m": {
+            "14": 135,
+            "16": 179
+          },
+          "target_room_pair_cell_fraction": 0.697778,
+          "target_room_balance_score": 0.429936,
+          "target_room_dominance": 0.570064,
+          "both_target_rooms_present": true
+        }
+      },
+      "automatic_role": "primary_route_gateway",
+      "passability_status": "strong",
+      "warnings": [],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r14_r16_02",
+        "gw_00824_r14_r16_03",
+        "gw_00824_r14_r16_04",
+        "gw_00824_r14_r16_05",
+        "gw_00824_r14_r16_06"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r14_r16_01",
+        "gw_00824_r14_r16_02",
+        "gw_00824_r14_r16_03",
+        "gw_00824_r14_r16_04",
+        "gw_00824_r14_r16_05",
+        "gw_00824_r14_r16_06"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r14_r16_01",
+          "automatic_score": 0.909722,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "strong",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r14_r16_02",
+          "automatic_score": 0.842458,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "reviewable",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r14_r16_03",
+          "automatic_score": 0.71101,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "gw_00824_r14_r16_04",
+          "automatic_score": 0.664072,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "gw_00824_r14_r16_05",
+          "automatic_score": 0.474193,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "reviewable",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": {
+        "two_sided_connectivity_score": 1.0,
+        "doorway_gap_score": 0.35,
+        "free_space_crossing_score": 1.0,
+        "free_space_crossing_raw": 1.0,
+        "compactness_score": 1.0,
+        "boundary_transition_score": 1.0,
+        "label10_warning_penalty": 0.0,
+        "overextended_bbox_penalty": 0.0,
+        "corridor_fragment_penalty": 0.0,
+        "annex_or_closet_likelihood_penalty": 0.0,
+        "duplicate_overlap_penalty": 0.0,
+        "support_fragment_penalty": 0.0,
+        "passability_warning_score": 1.0,
+        "wall_block_conflict_penalty": 0.0,
+        "hypothesis_geometry_score": 0.927777,
+        "bbox_width_m": 0.65,
+        "bbox_height_m": 0.3,
+        "bbox_long_dim_m": 0.65,
+        "bbox_area_m2": 0.195,
+        "component_area_m2": 0.1675,
+        "bbox_aspect_ratio": 2.166667,
+        "room_id_cell_counts_margin_0p25m": {
+          "14": 135,
+          "16": 179
+        },
+        "target_room_pair_cell_fraction": 0.697778,
+        "target_room_balance_score": 0.429936,
+        "target_room_dominance": 0.570064,
+        "both_target_rooms_present": true
+      },
+      "selection_reason": "highest truth-blind primary-eligible candidate by geometry score",
+      "composite_support_hypotheses": []
+    },
+    "r15_r16": {
+      "pair_key": "r15_r16",
+      "selected_primary_candidate_id": null,
+      "selected_primary": null,
+      "automatic_role": "no_primary_route_gateway_selected",
+      "passability_status": null,
+      "warnings": [],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r15_r16_01",
+        "gw_00824_r15_r16_02",
+        "gw_00824_r15_r16_03",
+        "gw_00824_r15_r16_05",
+        "gw_00824_r15_r16_04"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r15_r16_01",
+        "gw_00824_r15_r16_02",
+        "gw_00824_r15_r16_03",
+        "gw_00824_r15_r16_05",
+        "gw_00824_r15_r16_04"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r15_r16_01",
+          "automatic_score": 0.20929,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r15_r16_02",
+          "automatic_score": 0.142476,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r15_r16_03",
+          "automatic_score": 0.070032,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "gw_00824_r15_r16_05",
+          "automatic_score": -0.009968,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "gw_00824_r15_r16_04",
+          "automatic_score": -0.373841,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": null,
+      "selection_reason": "no candidate passed truth-blind primary criteria",
+      "composite_support_hypotheses": []
+    },
+    "r1_r3": {
+      "pair_key": "r1_r3",
+      "selected_primary_candidate_id": "gw_00824_r1_r3_01",
+      "selected_primary": {
+        "candidate_id": "gw_00824_r1_r3_01",
+        "center_xy": [
+          5.0948,
+          1.8396
+        ],
+        "crossing_pose": {
+          "x": 5.0948,
+          "y": 1.8396,
+          "yaw": -2.221151
+        },
+        "approach_from_room_a": {
+          "x": 5.3067,
+          "y": 2.1181,
+          "yaw": -2.221151
+        },
+        "approach_from_room_b": {
+          "x": 4.8829,
+          "y": 1.561,
+          "yaw": -2.221151
+        },
+        "bbox_map_xy": [
+          4.95,
+          1.5,
+          5.25,
+          2.15
+        ],
+        "automatic_score": 0.910355,
+        "score_breakdown": {
+          "two_sided_connectivity_score": 1.0,
+          "doorway_gap_score": 0.35,
+          "free_space_crossing_score": 1.0,
+          "free_space_crossing_raw": 1.0,
+          "compactness_score": 1.0,
+          "boundary_transition_score": 1.0,
+          "label10_warning_penalty": 0.0,
+          "overextended_bbox_penalty": 0.0,
+          "corridor_fragment_penalty": 0.0,
+          "annex_or_closet_likelihood_penalty": 0.0,
+          "duplicate_overlap_penalty": 0.0,
+          "support_fragment_penalty": 0.0,
+          "passability_warning_score": 1.0,
+          "wall_block_conflict_penalty": 0.0,
+          "hypothesis_geometry_score": 0.93569,
+          "bbox_width_m": 0.3,
+          "bbox_height_m": 0.65,
+          "bbox_long_dim_m": 0.65,
+          "bbox_area_m2": 0.195,
+          "component_area_m2": 0.1675,
+          "bbox_aspect_ratio": 2.166667,
+          "room_id_cell_counts_margin_0p25m": {
+            "1": 143,
+            "3": 148
+          },
+          "target_room_pair_cell_fraction": 0.713235,
+          "target_room_balance_score": 0.491409,
+          "target_room_dominance": 0.508591,
+          "both_target_rooms_present": true
+        }
+      },
+      "automatic_role": "primary_route_gateway",
+      "passability_status": "strong",
+      "warnings": [],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r1_r3_04",
+        "gw_00824_r1_r3_07",
+        "gw_00824_r1_r3_02",
+        "gw_00824_r1_r3_03",
+        "gw_00824_r1_r3_06",
+        "gw_00824_r1_r3_05",
+        "gw_00824_r1_r3_08"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r1_r3_01",
+        "gw_00824_r1_r3_04",
+        "gw_00824_r1_r3_07",
+        "gw_00824_r1_r3_02",
+        "gw_00824_r1_r3_03",
+        "gw_00824_r1_r3_06",
+        "gw_00824_r1_r3_05",
+        "gw_00824_r1_r3_08"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r1_r3_01",
+          "automatic_score": 0.910355,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "strong",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r1_r3_04",
+          "automatic_score": 0.415714,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r1_r3_07",
+          "automatic_score": 0.362543,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "reviewable",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "gw_00824_r1_r3_02",
+          "automatic_score": 0.336434,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "gw_00824_r1_r3_03",
+          "automatic_score": 0.326329,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": {
+        "two_sided_connectivity_score": 1.0,
+        "doorway_gap_score": 0.35,
+        "free_space_crossing_score": 1.0,
+        "free_space_crossing_raw": 1.0,
+        "compactness_score": 1.0,
+        "boundary_transition_score": 1.0,
+        "label10_warning_penalty": 0.0,
+        "overextended_bbox_penalty": 0.0,
+        "corridor_fragment_penalty": 0.0,
+        "annex_or_closet_likelihood_penalty": 0.0,
+        "duplicate_overlap_penalty": 0.0,
+        "support_fragment_penalty": 0.0,
+        "passability_warning_score": 1.0,
+        "wall_block_conflict_penalty": 0.0,
+        "hypothesis_geometry_score": 0.93569,
+        "bbox_width_m": 0.3,
+        "bbox_height_m": 0.65,
+        "bbox_long_dim_m": 0.65,
+        "bbox_area_m2": 0.195,
+        "component_area_m2": 0.1675,
+        "bbox_aspect_ratio": 2.166667,
+        "room_id_cell_counts_margin_0p25m": {
+          "1": 143,
+          "3": 148
+        },
+        "target_room_pair_cell_fraction": 0.713235,
+        "target_room_balance_score": 0.491409,
+        "target_room_dominance": 0.508591,
+        "both_target_rooms_present": true
+      },
+      "selection_reason": "highest truth-blind primary-eligible candidate by geometry score",
+      "composite_support_hypotheses": []
+    },
+    "r3_r11": {
+      "pair_key": "r3_r11",
+      "selected_primary_candidate_id": null,
+      "selected_primary": null,
+      "automatic_role": "no_primary_route_gateway_selected",
+      "passability_status": null,
+      "warnings": [],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r3_r11_01",
+        "gw_00824_r3_r11_03",
+        "gw_00824_r3_r11_02",
+        "gw_00824_r3_r11_04"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r3_r11_01",
+        "gw_00824_r3_r11_03",
+        "gw_00824_r3_r11_02",
+        "gw_00824_r3_r11_04"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r3_r11_01",
+          "automatic_score": 0.371634,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r3_r11_03",
+          "automatic_score": 0.306091,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r3_r11_02",
+          "automatic_score": -0.407071,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "gw_00824_r3_r11_04",
+          "automatic_score": -0.487071,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": null,
+      "selection_reason": "no candidate passed truth-blind primary criteria",
+      "composite_support_hypotheses": []
+    },
+    "r3_r15": {
+      "pair_key": "r3_r15",
+      "selected_primary_candidate_id": null,
+      "selected_primary": null,
+      "automatic_role": "no_primary_route_gateway_selected",
+      "passability_status": null,
+      "warnings": [],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r3_r15_05",
+        "gw_00824_r3_r15_01",
+        "gw_00824_r3_r15_02",
+        "gw_00824_r3_r15_03",
+        "gw_00824_r3_r15_04"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r3_r15_05",
+        "gw_00824_r3_r15_01",
+        "gw_00824_r3_r15_02",
+        "gw_00824_r3_r15_03",
+        "gw_00824_r3_r15_04"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r3_r15_05",
+          "automatic_score": 0.257534,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "reviewable",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r3_r15_01",
+          "automatic_score": 0.175038,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r3_r15_02",
+          "automatic_score": 0.174252,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "gw_00824_r3_r15_03",
+          "automatic_score": 0.110138,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "gw_00824_r3_r15_04",
+          "automatic_score": 0.058395,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": null,
+      "selection_reason": "no candidate passed truth-blind primary criteria",
+      "composite_support_hypotheses": []
+    },
+    "r3_r7": {
+      "pair_key": "r3_r7",
+      "selected_primary_candidate_id": "gw_00824_r3_r7_01",
+      "selected_primary": {
+        "candidate_id": "gw_00824_r3_r7_01",
+        "center_xy": [
+          0.872,
+          -3.5878
+        ],
+        "crossing_pose": {
+          "x": 0.872,
+          "y": -3.5878,
+          "yaw": -2.210772
+        },
+        "approach_from_room_a": {
+          "x": 1.081,
+          "y": -3.3071,
+          "yaw": -2.210772
+        },
+        "approach_from_room_b": {
+          "x": 0.6629,
+          "y": -3.8685,
+          "yaw": -2.210772
+        },
+        "bbox_map_xy": [
+          0.6,
+          -3.65,
+          1.15,
+          -3.5
+        ],
+        "automatic_score": 0.866696,
+        "score_breakdown": {
+          "two_sided_connectivity_score": 1.0,
+          "doorway_gap_score": 0.35,
+          "free_space_crossing_score": 1.0,
+          "free_space_crossing_raw": 1.0,
+          "compactness_score": 1.0,
+          "boundary_transition_score": 1.0,
+          "label10_warning_penalty": 0.00569,
+          "overextended_bbox_penalty": 0.0,
+          "corridor_fragment_penalty": 0.0,
+          "annex_or_closet_likelihood_penalty": 0.0,
+          "duplicate_overlap_penalty": 0.0,
+          "support_fragment_penalty": 0.0,
+          "passability_warning_score": 0.571429,
+          "wall_block_conflict_penalty": 0.0,
+          "hypothesis_geometry_score": 0.675357,
+          "bbox_width_m": 0.55,
+          "bbox_height_m": 0.15,
+          "bbox_long_dim_m": 0.55,
+          "bbox_area_m2": 0.0825,
+          "component_area_m2": 0.1025,
+          "bbox_aspect_ratio": 3.666667,
+          "room_id_cell_counts_margin_0p25m": {
+            "3": 122,
+            "7": 99
+          },
+          "target_room_pair_cell_fraction": 0.717532,
+          "target_room_balance_score": 0.447964,
+          "target_room_dominance": 0.552036,
+          "both_target_rooms_present": true
+        }
+      },
+      "automatic_role": "primary_route_gateway",
+      "passability_status": "reviewable",
+      "warnings": [
+        "passability_reviewable"
+      ],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r3_r7_02",
+        "gw_00824_r3_r7_03"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r3_r7_01",
+        "gw_00824_r3_r7_02",
+        "gw_00824_r3_r7_03"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r3_r7_01",
+          "automatic_score": 0.866696,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "reviewable",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r3_r7_02",
+          "automatic_score": 0.300837,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r3_r7_03",
+          "automatic_score": 0.018857,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": {
+        "two_sided_connectivity_score": 1.0,
+        "doorway_gap_score": 0.35,
+        "free_space_crossing_score": 1.0,
+        "free_space_crossing_raw": 1.0,
+        "compactness_score": 1.0,
+        "boundary_transition_score": 1.0,
+        "label10_warning_penalty": 0.00569,
+        "overextended_bbox_penalty": 0.0,
+        "corridor_fragment_penalty": 0.0,
+        "annex_or_closet_likelihood_penalty": 0.0,
+        "duplicate_overlap_penalty": 0.0,
+        "support_fragment_penalty": 0.0,
+        "passability_warning_score": 0.571429,
+        "wall_block_conflict_penalty": 0.0,
+        "hypothesis_geometry_score": 0.675357,
+        "bbox_width_m": 0.55,
+        "bbox_height_m": 0.15,
+        "bbox_long_dim_m": 0.55,
+        "bbox_area_m2": 0.0825,
+        "component_area_m2": 0.1025,
+        "bbox_aspect_ratio": 3.666667,
+        "room_id_cell_counts_margin_0p25m": {
+          "3": 122,
+          "7": 99
+        },
+        "target_room_pair_cell_fraction": 0.717532,
+        "target_room_balance_score": 0.447964,
+        "target_room_dominance": 0.552036,
+        "both_target_rooms_present": true
+      },
+      "selection_reason": "highest truth-blind primary-eligible candidate by geometry score",
+      "composite_support_hypotheses": []
+    },
+    "r3_r8": {
+      "pair_key": "r3_r8",
+      "selected_primary_candidate_id": "gw_00824_r3_r8_01",
+      "selected_primary": {
+        "candidate_id": "gw_00824_r3_r8_01",
+        "center_xy": [
+          6.5879,
+          -3.7741
+        ],
+        "crossing_pose": {
+          "x": 6.5879,
+          "y": -3.7741,
+          "yaw": -1.012365
+        },
+        "approach_from_room_a": {
+          "x": 6.4025,
+          "y": -3.4773,
+          "yaw": -1.012365
+        },
+        "approach_from_room_b": {
+          "x": 6.7734,
+          "y": -4.071,
+          "yaw": -1.012365
+        },
+        "bbox_map_xy": [
+          6.25,
+          -3.8,
+          6.95,
+          -3.75
+        ],
+        "automatic_score": 0.371169,
+        "score_breakdown": {
+          "two_sided_connectivity_score": 0.52,
+          "doorway_gap_score": 0.35,
+          "free_space_crossing_score": 0.0,
+          "free_space_crossing_raw": 0.0,
+          "compactness_score": 0.4,
+          "boundary_transition_score": 0.813528,
+          "label10_warning_penalty": 0.025936,
+          "overextended_bbox_penalty": 0.2,
+          "corridor_fragment_penalty": 0.0,
+          "annex_or_closet_likelihood_penalty": 0.0,
+          "duplicate_overlap_penalty": 0.0,
+          "support_fragment_penalty": 0.0,
+          "passability_warning_score": 0.285714,
+          "wall_block_conflict_penalty": 0.0,
+          "hypothesis_geometry_score": 0.0,
+          "bbox_width_m": 0.7,
+          "bbox_height_m": 0.05,
+          "bbox_long_dim_m": 0.7,
+          "bbox_area_m2": 0.035,
+          "component_area_m2": 0.0725,
+          "bbox_aspect_ratio": 14.0,
+          "room_id_cell_counts_margin_0p25m": {
+            "3": 37,
+            "8": 117
+          },
+          "target_room_pair_cell_fraction": 0.513333,
+          "target_room_balance_score": 0.24026,
+          "target_room_dominance": 0.75974,
+          "both_target_rooms_present": true
+        }
+      },
+      "automatic_role": "primary_route_gateway_with_passability_warning",
+      "passability_status": "low_or_uncertain",
+      "warnings": [
+        "composite_support_available",
+        "passability_low_or_uncertain"
+      ],
+      "supporting_candidate_ids": [
+        "gw_00824_r3_r8_03",
+        "gw_00824_r3_r8_04",
+        "gw_00824_r3_r8_05"
+      ],
+      "rejected_candidate_ids": [
+        "gw_00824_r3_r8_02",
+        "gw_00824_r3_r8_03",
+        "gw_00824_r3_r8_05",
+        "gw_00824_r3_r8_04"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r3_r8_01",
+        "gw_00824_r3_r8_02",
+        "gw_00824_r3_r8_03",
+        "gw_00824_r3_r8_05",
+        "gw_00824_r3_r8_04"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r3_r8_01",
+          "automatic_score": 0.371169,
+          "automatic_geometry_status": "candidate_level_geometric_gateway_with_composite_support",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r3_r8_02",
+          "automatic_score": 0.356165,
+          "automatic_geometry_status": "candidate_level_geometric_gateway_with_composite_support",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r3_r8_03",
+          "automatic_score": 0.241659,
+          "automatic_geometry_status": "supporting_fragment",
+          "automatic_passability_status": "reviewable",
+          "automatic_role": "supporting_fragment"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "gw_00824_r3_r8_05",
+          "automatic_score": 0.064357,
+          "automatic_geometry_status": "supporting_fragment",
+          "automatic_passability_status": "reviewable",
+          "automatic_role": "supporting_fragment"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "gw_00824_r3_r8_04",
+          "automatic_score": -0.027871,
+          "automatic_geometry_status": "supporting_fragment",
+          "automatic_passability_status": "strong",
+          "automatic_role": "supporting_fragment"
+        }
+      ],
+      "score_breakdown": {
+        "two_sided_connectivity_score": 0.52,
+        "doorway_gap_score": 0.35,
+        "free_space_crossing_score": 0.0,
+        "free_space_crossing_raw": 0.0,
+        "compactness_score": 0.4,
+        "boundary_transition_score": 0.813528,
+        "label10_warning_penalty": 0.025936,
+        "overextended_bbox_penalty": 0.2,
+        "corridor_fragment_penalty": 0.0,
+        "annex_or_closet_likelihood_penalty": 0.0,
+        "duplicate_overlap_penalty": 0.0,
+        "support_fragment_penalty": 0.0,
+        "passability_warning_score": 0.285714,
+        "wall_block_conflict_penalty": 0.0,
+        "hypothesis_geometry_score": 0.0,
+        "bbox_width_m": 0.7,
+        "bbox_height_m": 0.05,
+        "bbox_long_dim_m": 0.7,
+        "bbox_area_m2": 0.035,
+        "component_area_m2": 0.0725,
+        "bbox_aspect_ratio": 14.0,
+        "room_id_cell_counts_margin_0p25m": {
+          "3": 37,
+          "8": 117
+        },
+        "target_room_pair_cell_fraction": 0.513333,
+        "target_room_balance_score": 0.24026,
+        "target_room_dominance": 0.75974,
+        "both_target_rooms_present": true
+      },
+      "selection_reason": "highest compact candidate with boundary evidence and composite support",
+      "composite_support_hypotheses": [
+        {
+          "hypothesis_id": "hyp_00824_r3_r8_composite_01",
+          "pair_key": "r3_r8",
+          "source_candidate_ids": [
+            "gw_00824_r3_r8_03",
+            "gw_00824_r3_r8_04",
+            "gw_00824_r3_r8_05"
+          ],
+          "combined_bbox_xy": [
+            4.6,
+            -3.85,
+            7.65,
+            -3.3
+          ],
+          "geometry_evidence_score": 0.679739,
+          "geometry_evidence": {
+            "crop_extent_xy": [
+              4.6,
+              7.7,
+              -3.9,
+              -3.25
+            ],
+            "crop_shape_rc": [
+              13,
+              62
+            ],
+            "cell_count": 806,
+            "free_fraction": 0.509926,
+            "gateway_wall_preclose_fraction": 0.316377,
+            "gateway_wall_open_fraction": 0.683623,
+            "segmentation_wall_processed_fraction": 0.486352,
+            "unknown_fraction": 0.0,
+            "room_id_cell_counts": {
+              "3": 269,
+              "8": 107,
+              "11": 20
+            }
+          }
+        }
+      ]
+    },
+    "r7_r11": {
+      "pair_key": "r7_r11",
+      "selected_primary_candidate_id": "gw_00824_r7_r11_02",
+      "selected_primary": {
+        "candidate_id": "gw_00824_r7_r11_02",
+        "center_xy": [
+          1.9533,
+          -4.1917
+        ],
+        "crossing_pose": {
+          "x": 1.9533,
+          "y": -4.1917,
+          "yaw": 0.010764
+        },
+        "approach_from_room_a": {
+          "x": 1.6034,
+          "y": -4.1954,
+          "yaw": 0.010764
+        },
+        "approach_from_room_b": {
+          "x": 2.3033,
+          "y": -4.1879,
+          "yaw": 0.010764
+        },
+        "bbox_map_xy": [
+          1.9,
+          -4.45,
+          2.0,
+          -3.95
+        ],
+        "automatic_score": 0.829669,
+        "score_breakdown": {
+          "two_sided_connectivity_score": 1.0,
+          "doorway_gap_score": 0.9676,
+          "free_space_crossing_score": 0.6,
+          "free_space_crossing_raw": 0.6,
+          "compactness_score": 1.0,
+          "boundary_transition_score": 0.989441,
+          "label10_warning_penalty": 0.018286,
+          "overextended_bbox_penalty": 0.0,
+          "corridor_fragment_penalty": 0.0,
+          "annex_or_closet_likelihood_penalty": 0.0,
+          "duplicate_overlap_penalty": 0.04,
+          "support_fragment_penalty": 0.0,
+          "passability_warning_score": 0.428571,
+          "wall_block_conflict_penalty": 0.0,
+          "hypothesis_geometry_score": 0.466832,
+          "bbox_width_m": 0.1,
+          "bbox_height_m": 0.5,
+          "bbox_long_dim_m": 0.5,
+          "bbox_area_m2": 0.05,
+          "component_area_m2": 0.075,
+          "bbox_aspect_ratio": 5.0,
+          "room_id_cell_counts_margin_0p25m": {
+            "7": 95,
+            "11": 74
+          },
+          "target_room_pair_cell_fraction": 0.590909,
+          "target_room_balance_score": 0.43787,
+          "target_room_dominance": 0.56213,
+          "both_target_rooms_present": true
+        }
+      },
+      "automatic_role": "primary_route_gateway_with_passability_warning",
+      "passability_status": "low_or_uncertain",
+      "warnings": [
+        "passability_low_or_uncertain"
+      ],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r7_r11_03",
+        "gw_00824_r7_r11_04",
+        "gw_00824_r7_r11_01",
+        "gw_00824_r7_r11_05",
+        "gw_00824_r7_r11_06"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r7_r11_02",
+        "gw_00824_r7_r11_03",
+        "gw_00824_r7_r11_04",
+        "gw_00824_r7_r11_01",
+        "gw_00824_r7_r11_05",
+        "gw_00824_r7_r11_06"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r7_r11_02",
+          "automatic_score": 0.829669,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r7_r11_03",
+          "automatic_score": 0.675804,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r7_r11_04",
+          "automatic_score": 0.61888,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "gw_00824_r7_r11_01",
+          "automatic_score": 0.498075,
+          "automatic_geometry_status": "annex_or_closet_likelihood",
+          "automatic_passability_status": "reviewable",
+          "automatic_role": "annex_or_closet_gateway"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "gw_00824_r7_r11_05",
+          "automatic_score": 0.171803,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": {
+        "two_sided_connectivity_score": 1.0,
+        "doorway_gap_score": 0.9676,
+        "free_space_crossing_score": 0.6,
+        "free_space_crossing_raw": 0.6,
+        "compactness_score": 1.0,
+        "boundary_transition_score": 0.989441,
+        "label10_warning_penalty": 0.018286,
+        "overextended_bbox_penalty": 0.0,
+        "corridor_fragment_penalty": 0.0,
+        "annex_or_closet_likelihood_penalty": 0.0,
+        "duplicate_overlap_penalty": 0.04,
+        "support_fragment_penalty": 0.0,
+        "passability_warning_score": 0.428571,
+        "wall_block_conflict_penalty": 0.0,
+        "hypothesis_geometry_score": 0.466832,
+        "bbox_width_m": 0.1,
+        "bbox_height_m": 0.5,
+        "bbox_long_dim_m": 0.5,
+        "bbox_area_m2": 0.05,
+        "component_area_m2": 0.075,
+        "bbox_aspect_ratio": 5.0,
+        "room_id_cell_counts_margin_0p25m": {
+          "7": 95,
+          "11": 74
+        },
+        "target_room_pair_cell_fraction": 0.590909,
+        "target_room_balance_score": 0.43787,
+        "target_room_dominance": 0.56213,
+        "both_target_rooms_present": true
+      },
+      "selection_reason": "highest truth-blind primary-eligible candidate by geometry score",
+      "composite_support_hypotheses": []
+    },
+    "r7_r14": {
+      "pair_key": "r7_r14",
+      "selected_primary_candidate_id": "gw_00824_r7_r14_01",
+      "selected_primary": {
+        "candidate_id": "gw_00824_r7_r14_01",
+        "center_xy": [
+          -1.975,
+          -4.125
+        ],
+        "crossing_pose": {
+          "x": -1.975,
+          "y": -4.125,
+          "yaw": 3.113237
+        },
+        "approach_from_room_a": {
+          "x": -1.6251,
+          "y": -4.1349,
+          "yaw": 3.113237
+        },
+        "approach_from_room_b": {
+          "x": -2.3249,
+          "y": -4.1151,
+          "yaw": 3.113237
+        },
+        "bbox_map_xy": [
+          -2.0,
+          -4.35,
+          -1.95,
+          -3.9
+        ],
+        "automatic_score": 0.772076,
+        "score_breakdown": {
+          "two_sided_connectivity_score": 1.0,
+          "doorway_gap_score": 0.9405,
+          "free_space_crossing_score": 0.2,
+          "free_space_crossing_raw": 0.2,
+          "compactness_score": 0.9,
+          "boundary_transition_score": 0.946382,
+          "label10_warning_penalty": 0.044,
+          "overextended_bbox_penalty": 0.0,
+          "corridor_fragment_penalty": 0.0,
+          "annex_or_closet_likelihood_penalty": 0.0,
+          "duplicate_overlap_penalty": 0.0,
+          "support_fragment_penalty": 0.0,
+          "passability_warning_score": 0.285714,
+          "wall_block_conflict_penalty": 0.0,
+          "hypothesis_geometry_score": 0.452229,
+          "bbox_width_m": 0.05,
+          "bbox_height_m": 0.45,
+          "bbox_long_dim_m": 0.45,
+          "bbox_area_m2": 0.0225,
+          "component_area_m2": 0.05,
+          "bbox_aspect_ratio": 9.0,
+          "room_id_cell_counts_margin_0p25m": {
+            "7": 52,
+            "14": 67
+          },
+          "target_room_pair_cell_fraction": 0.472222,
+          "target_room_balance_score": 0.436975,
+          "target_room_dominance": 0.563025,
+          "both_target_rooms_present": true
+        }
+      },
+      "automatic_role": "primary_route_gateway_with_passability_warning",
+      "passability_status": "low_or_uncertain",
+      "warnings": [
+        "passability_low_or_uncertain"
+      ],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r7_r14_03",
+        "gw_00824_r7_r14_02",
+        "gw_00824_r7_r14_04",
+        "gw_00824_r7_r14_06",
+        "gw_00824_r7_r14_05"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r7_r14_01",
+        "gw_00824_r7_r14_03",
+        "gw_00824_r7_r14_02",
+        "gw_00824_r7_r14_04",
+        "gw_00824_r7_r14_06",
+        "gw_00824_r7_r14_05"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r7_r14_01",
+          "automatic_score": 0.772076,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r7_r14_03",
+          "automatic_score": 0.717958,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r7_r14_02",
+          "automatic_score": 0.308808,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "gw_00824_r7_r14_04",
+          "automatic_score": 0.225777,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "gw_00824_r7_r14_06",
+          "automatic_score": 0.191282,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "reviewable",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": {
+        "two_sided_connectivity_score": 1.0,
+        "doorway_gap_score": 0.9405,
+        "free_space_crossing_score": 0.2,
+        "free_space_crossing_raw": 0.2,
+        "compactness_score": 0.9,
+        "boundary_transition_score": 0.946382,
+        "label10_warning_penalty": 0.044,
+        "overextended_bbox_penalty": 0.0,
+        "corridor_fragment_penalty": 0.0,
+        "annex_or_closet_likelihood_penalty": 0.0,
+        "duplicate_overlap_penalty": 0.0,
+        "support_fragment_penalty": 0.0,
+        "passability_warning_score": 0.285714,
+        "wall_block_conflict_penalty": 0.0,
+        "hypothesis_geometry_score": 0.452229,
+        "bbox_width_m": 0.05,
+        "bbox_height_m": 0.45,
+        "bbox_long_dim_m": 0.45,
+        "bbox_area_m2": 0.0225,
+        "component_area_m2": 0.05,
+        "bbox_aspect_ratio": 9.0,
+        "room_id_cell_counts_margin_0p25m": {
+          "7": 52,
+          "14": 67
+        },
+        "target_room_pair_cell_fraction": 0.472222,
+        "target_room_balance_score": 0.436975,
+        "target_room_dominance": 0.563025,
+        "both_target_rooms_present": true
+      },
+      "selection_reason": "highest truth-blind primary-eligible candidate by geometry score",
+      "composite_support_hypotheses": []
+    },
+    "r7_r15": {
+      "pair_key": "r7_r15",
+      "selected_primary_candidate_id": "gw_00824_r7_r15_01",
+      "selected_primary": {
+        "candidate_id": "gw_00824_r7_r15_01",
+        "center_xy": [
+          -1.4328,
+          -3.6017
+        ],
+        "crossing_pose": {
+          "x": -1.4328,
+          "y": -3.6017,
+          "yaw": 1.958385
+        },
+        "approach_from_room_a": {
+          "x": -1.3005,
+          "y": -3.9258,
+          "yaw": 1.958385
+        },
+        "approach_from_room_b": {
+          "x": -1.565,
+          "y": -3.2777,
+          "yaw": 1.958385
+        },
+        "bbox_map_xy": [
+          -1.65,
+          -3.65,
+          -1.2,
+          -3.55
+        ],
+        "automatic_score": 0.733545,
+        "score_breakdown": {
+          "two_sided_connectivity_score": 1.0,
+          "doorway_gap_score": 0.35,
+          "free_space_crossing_score": 0.0,
+          "free_space_crossing_raw": 0.0,
+          "compactness_score": 1.0,
+          "boundary_transition_score": 1.0,
+          "label10_warning_penalty": 0.017333,
+          "overextended_bbox_penalty": 0.0,
+          "corridor_fragment_penalty": 0.0,
+          "annex_or_closet_likelihood_penalty": 0.0,
+          "duplicate_overlap_penalty": 0.0,
+          "support_fragment_penalty": 0.0,
+          "passability_warning_score": 0.428571,
+          "wall_block_conflict_penalty": 0.0,
+          "hypothesis_geometry_score": 0.477943,
+          "bbox_width_m": 0.45,
+          "bbox_height_m": 0.1,
+          "bbox_long_dim_m": 0.45,
+          "bbox_area_m2": 0.045,
+          "component_area_m2": 0.0725,
+          "bbox_aspect_ratio": 4.5,
+          "room_id_cell_counts_margin_0p25m": {
+            "7": 78,
+            "15": 85
+          },
+          "target_room_pair_cell_fraction": 0.626923,
+          "target_room_balance_score": 0.478528,
+          "target_room_dominance": 0.521472,
+          "both_target_rooms_present": true
+        }
+      },
+      "automatic_role": "primary_route_gateway_with_passability_warning",
+      "passability_status": "low_or_uncertain",
+      "warnings": [
+        "passability_low_or_uncertain"
+      ],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r7_r15_02",
+        "gw_00824_r7_r15_03",
+        "gw_00824_r7_r15_04"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r7_r15_01",
+        "gw_00824_r7_r15_02",
+        "gw_00824_r7_r15_03",
+        "gw_00824_r7_r15_04"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r7_r15_01",
+          "automatic_score": 0.733545,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r7_r15_02",
+          "automatic_score": 0.626468,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r7_r15_03",
+          "automatic_score": 0.546752,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "gw_00824_r7_r15_04",
+          "automatic_score": -0.007291,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": {
+        "two_sided_connectivity_score": 1.0,
+        "doorway_gap_score": 0.35,
+        "free_space_crossing_score": 0.0,
+        "free_space_crossing_raw": 0.0,
+        "compactness_score": 1.0,
+        "boundary_transition_score": 1.0,
+        "label10_warning_penalty": 0.017333,
+        "overextended_bbox_penalty": 0.0,
+        "corridor_fragment_penalty": 0.0,
+        "annex_or_closet_likelihood_penalty": 0.0,
+        "duplicate_overlap_penalty": 0.0,
+        "support_fragment_penalty": 0.0,
+        "passability_warning_score": 0.428571,
+        "wall_block_conflict_penalty": 0.0,
+        "hypothesis_geometry_score": 0.477943,
+        "bbox_width_m": 0.45,
+        "bbox_height_m": 0.1,
+        "bbox_long_dim_m": 0.45,
+        "bbox_area_m2": 0.045,
+        "component_area_m2": 0.0725,
+        "bbox_aspect_ratio": 4.5,
+        "room_id_cell_counts_margin_0p25m": {
+          "7": 78,
+          "15": 85
+        },
+        "target_room_pair_cell_fraction": 0.626923,
+        "target_room_balance_score": 0.478528,
+        "target_room_dominance": 0.521472,
+        "both_target_rooms_present": true
+      },
+      "selection_reason": "highest truth-blind primary-eligible candidate by geometry score",
+      "composite_support_hypotheses": []
+    },
+    "r7_r16": {
+      "pair_key": "r7_r16",
+      "selected_primary_candidate_id": null,
+      "selected_primary": null,
+      "automatic_role": "no_primary_route_gateway_selected",
+      "passability_status": null,
+      "warnings": [],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r7_r16_01"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r7_r16_01"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r7_r16_01",
+          "automatic_score": 0.110373,
+          "automatic_geometry_status": "rejected_no_two_sided_geometry",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": null,
+      "selection_reason": "no candidate passed truth-blind primary criteria",
+      "composite_support_hypotheses": []
+    },
+    "r8_r11": {
+      "pair_key": "r8_r11",
+      "selected_primary_candidate_id": "gw_00824_r8_r11_01",
+      "selected_primary": {
+        "candidate_id": "gw_00824_r8_r11_01",
+        "center_xy": [
+          5.0125,
+          -4.2229
+        ],
+        "crossing_pose": {
+          "x": 5.0125,
+          "y": -4.2229,
+          "yaw": 3.091667
+        },
+        "approach_from_room_a": {
+          "x": 5.3621,
+          "y": -4.2404,
+          "yaw": 3.091667
+        },
+        "approach_from_room_b": {
+          "x": 4.6629,
+          "y": -4.2054,
+          "yaw": 3.091667
+        },
+        "bbox_map_xy": [
+          4.85,
+          -4.6,
+          5.1,
+          -3.8
+        ],
+        "automatic_score": 0.891049,
+        "score_breakdown": {
+          "two_sided_connectivity_score": 1.0,
+          "doorway_gap_score": 0.8646,
+          "free_space_crossing_score": 0.56,
+          "free_space_crossing_raw": 0.56,
+          "compactness_score": 0.958333,
+          "boundary_transition_score": 0.967362,
+          "label10_warning_penalty": 0.008138,
+          "overextended_bbox_penalty": 0.0,
+          "corridor_fragment_penalty": 0.0,
+          "annex_or_closet_likelihood_penalty": 0.0,
+          "duplicate_overlap_penalty": 0.0,
+          "support_fragment_penalty": 0.0,
+          "passability_warning_score": 0.857143,
+          "wall_block_conflict_penalty": 0.0,
+          "hypothesis_geometry_score": 0.733545,
+          "bbox_width_m": 0.25,
+          "bbox_height_m": 0.8,
+          "bbox_long_dim_m": 0.8,
+          "bbox_area_m2": 0.2,
+          "component_area_m2": 0.12,
+          "bbox_aspect_ratio": 3.2,
+          "room_id_cell_counts_margin_0p25m": {
+            "8": 110,
+            "11": 172
+          },
+          "target_room_pair_cell_fraction": 0.629464,
+          "target_room_balance_score": 0.390071,
+          "target_room_dominance": 0.609929,
+          "both_target_rooms_present": true
+        }
+      },
+      "automatic_role": "primary_route_gateway",
+      "passability_status": "reviewable",
+      "warnings": [
+        "passability_reviewable"
+      ],
+      "supporting_candidate_ids": [],
+      "rejected_candidate_ids": [
+        "gw_00824_r8_r11_02",
+        "gw_00824_r8_r11_03",
+        "gw_00824_r8_r11_04",
+        "gw_00824_r8_r11_06",
+        "gw_00824_r8_r11_05"
+      ],
+      "ranked_candidate_ids": [
+        "gw_00824_r8_r11_01",
+        "gw_00824_r8_r11_02",
+        "gw_00824_r8_r11_03",
+        "gw_00824_r8_r11_04",
+        "gw_00824_r8_r11_06",
+        "gw_00824_r8_r11_05"
+      ],
+      "top_k_candidates": [
+        {
+          "rank": 1,
+          "candidate_id": "gw_00824_r8_r11_01",
+          "automatic_score": 0.891049,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "reviewable",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 2,
+          "candidate_id": "gw_00824_r8_r11_02",
+          "automatic_score": 0.626635,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 3,
+          "candidate_id": "gw_00824_r8_r11_03",
+          "automatic_score": 0.593088,
+          "automatic_geometry_status": "candidate_level_geometric_gateway",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "primary_candidate_eligible"
+        },
+        {
+          "rank": 4,
+          "candidate_id": "gw_00824_r8_r11_04",
+          "automatic_score": 0.414972,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        },
+        {
+          "rank": 5,
+          "candidate_id": "gw_00824_r8_r11_06",
+          "automatic_score": 0.344202,
+          "automatic_geometry_status": "geometry_detected_below_primary_threshold",
+          "automatic_passability_status": "low_or_uncertain",
+          "automatic_role": "rejected_false_positive"
+        }
+      ],
+      "score_breakdown": {
+        "two_sided_connectivity_score": 1.0,
+        "doorway_gap_score": 0.8646,
+        "free_space_crossing_score": 0.56,
+        "free_space_crossing_raw": 0.56,
+        "compactness_score": 0.958333,
+        "boundary_transition_score": 0.967362,
+        "label10_warning_penalty": 0.008138,
+        "overextended_bbox_penalty": 0.0,
+        "corridor_fragment_penalty": 0.0,
+        "annex_or_closet_likelihood_penalty": 0.0,
+        "duplicate_overlap_penalty": 0.0,
+        "support_fragment_penalty": 0.0,
+        "passability_warning_score": 0.857143,
+        "wall_block_conflict_penalty": 0.0,
+        "hypothesis_geometry_score": 0.733545,
+        "bbox_width_m": 0.25,
+        "bbox_height_m": 0.8,
+        "bbox_long_dim_m": 0.8,
+        "bbox_area_m2": 0.2,
+        "component_area_m2": 0.12,
+        "bbox_aspect_ratio": 3.2,
+        "room_id_cell_counts_margin_0p25m": {
+          "8": 110,
+          "11": 172
+        },
+        "target_room_pair_cell_fraction": 0.629464,
+        "target_room_balance_score": 0.390071,
+        "target_room_dominance": 0.609929,
+        "both_target_rooms_present": true
+      },
+      "selection_reason": "highest truth-blind primary-eligible candidate by geometry score",
+      "composite_support_hypotheses": []
+    }
+  }
+}

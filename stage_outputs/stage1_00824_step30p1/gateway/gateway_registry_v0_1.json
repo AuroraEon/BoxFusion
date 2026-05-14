@@ -1,0 +1,595 @@
+{
+  "artifact_type": "gateway_registry",
+  "version": "v0_1",
+  "created_utc": "2026-05-13T13:51:40.811954+00:00",
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "description": "Unified gateway registry for all 8 confirmed 00824 gateways. Merges data from hypotheses, auto-selection, and truth benchmark.",
+  "gateway_count": 8,
+  "gateways_by_id": {
+    "gw_00824_r14_r16_01": {
+      "gateway_id": "gw_00824_r14_r16_01",
+      "pair_key": "r14_r16",
+      "room_a": 14,
+      "room_b": 16,
+      "room_a_id": "room_14",
+      "room_b_id": "room_16",
+      "representative_crossing_pose": {
+        "x": -4.1396,
+        "y": -3.3007,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_a": {
+        "x": -4.131,
+        "y": -3.6506,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_b": {
+        "x": -4.1481,
+        "y": -2.9508,
+        "yaw": 1.595138
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.909722,
+        "hypothesis_source": "hyp_00824_r14_r16_01",
+        "auto_selection_candidate_id": "gw_00824_r14_r16_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "gw_00824_r1_r3_01": {
+      "gateway_id": "gw_00824_r1_r3_01",
+      "pair_key": "r1_r3",
+      "room_a": 1,
+      "room_b": 3,
+      "room_a_id": "room_1",
+      "room_b_id": "room_3",
+      "representative_crossing_pose": {
+        "x": 5.0939,
+        "y": 1.8447,
+        "yaw": -2.221151
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.3059,
+        "y": 2.1233,
+        "yaw": -2.221151
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.882,
+        "y": 1.5661,
+        "yaw": -2.221151
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.910355,
+        "hypothesis_source": "hyp_00824_r1_r3_01",
+        "auto_selection_candidate_id": "gw_00824_r1_r3_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "gw_00824_r3_r7_01": {
+      "gateway_id": "gw_00824_r3_r7_01",
+      "pair_key": "r3_r7",
+      "room_a": 3,
+      "room_b": 7,
+      "room_a_id": "room_3",
+      "room_b_id": "room_7",
+      "representative_crossing_pose": {
+        "x": 1.0118,
+        "y": -3.3317,
+        "yaw": -2.210772
+      },
+      "representative_approach_from_room_a": {
+        "x": 1.2208,
+        "y": -3.0509,
+        "yaw": -2.210772
+      },
+      "representative_approach_from_room_b": {
+        "x": 0.8028,
+        "y": -3.6124,
+        "yaw": -2.210772
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.866696,
+        "hypothesis_source": "hyp_00824_r3_r7_01",
+        "auto_selection_candidate_id": "gw_00824_r3_r7_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "gw_00824_r3_r8_01": {
+      "gateway_id": "gw_00824_r3_r8_01",
+      "pair_key": "r3_r8",
+      "room_a": 3,
+      "room_b": 8,
+      "room_a_id": "room_3",
+      "room_b_id": "room_8",
+      "representative_crossing_pose": {
+        "x": 6.5879,
+        "y": -3.7741,
+        "yaw": -1.012365
+      },
+      "representative_approach_from_room_a": {
+        "x": 6.4025,
+        "y": -3.4773,
+        "yaw": -1.012365
+      },
+      "representative_approach_from_room_b": {
+        "x": 6.7734,
+        "y": -4.071,
+        "yaw": -1.012365
+      },
+      "pose_source": "auto_gateway_selection",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.371169,
+        "hypothesis_source": null,
+        "auto_selection_candidate_id": "gw_00824_r3_r8_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "gw_00824_r7_r11_02": {
+      "gateway_id": "gw_00824_r7_r11_02",
+      "pair_key": "r7_r11",
+      "room_a": 7,
+      "room_b": 11,
+      "room_a_id": "room_7",
+      "room_b_id": "room_11",
+      "representative_crossing_pose": {
+        "x": 1.8312,
+        "y": -4.163,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_a": {
+        "x": 1.4812,
+        "y": -4.1668,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_b": {
+        "x": 2.1812,
+        "y": -4.1592,
+        "yaw": 0.010764
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.829669,
+        "hypothesis_source": "hyp_00824_r7_r11_01",
+        "auto_selection_candidate_id": "gw_00824_r7_r11_02"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "gw_00824_r7_r14_01": {
+      "gateway_id": "gw_00824_r7_r14_01",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "room_a_id": "room_7",
+      "room_b_id": "room_14",
+      "representative_crossing_pose": {
+        "x": -1.975,
+        "y": -4.125,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.6251,
+        "y": -4.1349,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.3249,
+        "y": -4.1151,
+        "yaw": 3.113237
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.772076,
+        "hypothesis_source": "hyp_00824_r7_r14_01",
+        "auto_selection_candidate_id": "gw_00824_r7_r14_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "gw_00824_r7_r15_01": {
+      "gateway_id": "gw_00824_r7_r15_01",
+      "pair_key": "r7_r15",
+      "room_a": 7,
+      "room_b": 15,
+      "room_a_id": "room_7",
+      "room_b_id": "room_15",
+      "representative_crossing_pose": {
+        "x": -1.4328,
+        "y": -3.6017,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.3005,
+        "y": -3.9258,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_b": {
+        "x": -1.565,
+        "y": -3.2777,
+        "yaw": 1.958385
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.733545,
+        "hypothesis_source": "hyp_00824_r7_r15_01",
+        "auto_selection_candidate_id": "gw_00824_r7_r15_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "gw_00824_r8_r11_01": {
+      "gateway_id": "gw_00824_r8_r11_01",
+      "pair_key": "r8_r11",
+      "room_a": 8,
+      "room_b": 11,
+      "room_a_id": "room_8",
+      "room_b_id": "room_11",
+      "representative_crossing_pose": {
+        "x": 4.996,
+        "y": -4.1277,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.3456,
+        "y": -4.1452,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.6464,
+        "y": -4.1102,
+        "yaw": 3.091667
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.891049,
+        "hypothesis_source": "hyp_00824_r8_r11_01",
+        "auto_selection_candidate_id": "gw_00824_r8_r11_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    }
+  },
+  "gateways_by_pair": {
+    "r14_r16": {
+      "gateway_id": "gw_00824_r14_r16_01",
+      "pair_key": "r14_r16",
+      "room_a": 14,
+      "room_b": 16,
+      "room_a_id": "room_14",
+      "room_b_id": "room_16",
+      "representative_crossing_pose": {
+        "x": -4.1396,
+        "y": -3.3007,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_a": {
+        "x": -4.131,
+        "y": -3.6506,
+        "yaw": 1.595138
+      },
+      "representative_approach_from_room_b": {
+        "x": -4.1481,
+        "y": -2.9508,
+        "yaw": 1.595138
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.909722,
+        "hypothesis_source": "hyp_00824_r14_r16_01",
+        "auto_selection_candidate_id": "gw_00824_r14_r16_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "r1_r3": {
+      "gateway_id": "gw_00824_r1_r3_01",
+      "pair_key": "r1_r3",
+      "room_a": 1,
+      "room_b": 3,
+      "room_a_id": "room_1",
+      "room_b_id": "room_3",
+      "representative_crossing_pose": {
+        "x": 5.0939,
+        "y": 1.8447,
+        "yaw": -2.221151
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.3059,
+        "y": 2.1233,
+        "yaw": -2.221151
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.882,
+        "y": 1.5661,
+        "yaw": -2.221151
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.910355,
+        "hypothesis_source": "hyp_00824_r1_r3_01",
+        "auto_selection_candidate_id": "gw_00824_r1_r3_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "r3_r7": {
+      "gateway_id": "gw_00824_r3_r7_01",
+      "pair_key": "r3_r7",
+      "room_a": 3,
+      "room_b": 7,
+      "room_a_id": "room_3",
+      "room_b_id": "room_7",
+      "representative_crossing_pose": {
+        "x": 1.0118,
+        "y": -3.3317,
+        "yaw": -2.210772
+      },
+      "representative_approach_from_room_a": {
+        "x": 1.2208,
+        "y": -3.0509,
+        "yaw": -2.210772
+      },
+      "representative_approach_from_room_b": {
+        "x": 0.8028,
+        "y": -3.6124,
+        "yaw": -2.210772
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.866696,
+        "hypothesis_source": "hyp_00824_r3_r7_01",
+        "auto_selection_candidate_id": "gw_00824_r3_r7_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "r3_r8": {
+      "gateway_id": "gw_00824_r3_r8_01",
+      "pair_key": "r3_r8",
+      "room_a": 3,
+      "room_b": 8,
+      "room_a_id": "room_3",
+      "room_b_id": "room_8",
+      "representative_crossing_pose": {
+        "x": 6.5879,
+        "y": -3.7741,
+        "yaw": -1.012365
+      },
+      "representative_approach_from_room_a": {
+        "x": 6.4025,
+        "y": -3.4773,
+        "yaw": -1.012365
+      },
+      "representative_approach_from_room_b": {
+        "x": 6.7734,
+        "y": -4.071,
+        "yaw": -1.012365
+      },
+      "pose_source": "auto_gateway_selection",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.371169,
+        "hypothesis_source": null,
+        "auto_selection_candidate_id": "gw_00824_r3_r8_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "r7_r11": {
+      "gateway_id": "gw_00824_r7_r11_02",
+      "pair_key": "r7_r11",
+      "room_a": 7,
+      "room_b": 11,
+      "room_a_id": "room_7",
+      "room_b_id": "room_11",
+      "representative_crossing_pose": {
+        "x": 1.8312,
+        "y": -4.163,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_a": {
+        "x": 1.4812,
+        "y": -4.1668,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_b": {
+        "x": 2.1812,
+        "y": -4.1592,
+        "yaw": 0.010764
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.829669,
+        "hypothesis_source": "hyp_00824_r7_r11_01",
+        "auto_selection_candidate_id": "gw_00824_r7_r11_02"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "r7_r14": {
+      "gateway_id": "gw_00824_r7_r14_01",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "room_a_id": "room_7",
+      "room_b_id": "room_14",
+      "representative_crossing_pose": {
+        "x": -1.975,
+        "y": -4.125,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.6251,
+        "y": -4.1349,
+        "yaw": 3.113237
+      },
+      "representative_approach_from_room_b": {
+        "x": -2.3249,
+        "y": -4.1151,
+        "yaw": 3.113237
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.772076,
+        "hypothesis_source": "hyp_00824_r7_r14_01",
+        "auto_selection_candidate_id": "gw_00824_r7_r14_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "r7_r15": {
+      "gateway_id": "gw_00824_r7_r15_01",
+      "pair_key": "r7_r15",
+      "room_a": 7,
+      "room_b": 15,
+      "room_a_id": "room_7",
+      "room_b_id": "room_15",
+      "representative_crossing_pose": {
+        "x": -1.4328,
+        "y": -3.6017,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_a": {
+        "x": -1.3005,
+        "y": -3.9258,
+        "yaw": 1.958385
+      },
+      "representative_approach_from_room_b": {
+        "x": -1.565,
+        "y": -3.2777,
+        "yaw": 1.958385
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.733545,
+        "hypothesis_source": "hyp_00824_r7_r15_01",
+        "auto_selection_candidate_id": "gw_00824_r7_r15_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    },
+    "r8_r11": {
+      "gateway_id": "gw_00824_r8_r11_01",
+      "pair_key": "r8_r11",
+      "room_a": 8,
+      "room_b": 11,
+      "room_a_id": "room_8",
+      "room_b_id": "room_11",
+      "representative_crossing_pose": {
+        "x": 4.996,
+        "y": -4.1277,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.3456,
+        "y": -4.1452,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.6464,
+        "y": -4.1102,
+        "yaw": 3.091667
+      },
+      "pose_source": "gateway_hypotheses_with_roles",
+      "selected_for_active_topology_routing": true,
+      "provenance": {
+        "is_truth_pair": false,
+        "auto_selection_score": 0.891049,
+        "hypothesis_source": "hyp_00824_r8_r11_01",
+        "auto_selection_candidate_id": "gw_00824_r8_r11_01"
+      },
+      "source_artifacts": {
+        "gateway_hypotheses": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+        "auto_selection": "stage1_process/gateway_extraction/assets/00824_step30b2_auto_gateway_selection_v0_1.json",
+        "config": "config/step30s7_gateway_projection_config_v0_1.json"
+      }
+    }
+  },
+  "forbidden_gateway_pairs": [
+    "r14_r15",
+    "r15_r16",
+    "r3_r11",
+    "r3_r15",
+    "r7_r16"
+  ]
+}

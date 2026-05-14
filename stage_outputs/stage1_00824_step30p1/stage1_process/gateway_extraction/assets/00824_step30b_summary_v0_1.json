@@ -1,0 +1,42 @@
+{
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "step": "step30b",
+  "artifact_type": "summary",
+  "version": "v0_1",
+  "output_directory": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+  "input_step30a_output_directory": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+  "stage_a_rerun_completed": false,
+  "stage_a_rerun_attempted": false,
+  "topology_generated": false,
+  "ros_nav2_gazebo_run": false,
+  "positive_pairs_total": 8,
+  "positive_pairs_with_candidates": 8,
+  "positive_pairs_with_hypotheses": 8,
+  "positive_pairs_with_primary_or_reviewable": 8,
+  "negative_pairs_checked": 1,
+  "r3_r11_rejected": true,
+  "composite_hypotheses_count": 1,
+  "low_passability_geometry_hypotheses_count": 5,
+  "visualization_count": 57,
+  "route_candidate_count_for_later_topology_only": 8,
+  "validation_passed": true,
+  "hypothesis_role_counts": {
+    "primary_route_gateway": 4,
+    "needs_review": 4,
+    "rejected_duplicate": 5,
+    "high_confidence_needs_review": 3,
+    "geometry_detected_but_low_passability": 5,
+    "rejected_negative_sanity": 1,
+    "rejected_non_truth_pair": 4
+  },
+  "benchmark_case_status": {
+    "r1_r3": "pass",
+    "r3_r7": "pass",
+    "r7_r11": "pass",
+    "r7_r14": "pass",
+    "r14_r16": "pass",
+    "r7_r15": "pass",
+    "r8_r11": "pass",
+    "r3_r8": "pass"
+  }
+}

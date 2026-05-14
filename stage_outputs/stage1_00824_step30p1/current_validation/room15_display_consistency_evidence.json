@@ -1,0 +1,12 @@
+{
+  "artifact_type": "room15_display_consistency_evidence",
+  "created_utc": "2026-05-14T03:50:56.829874+00:00",
+  "request_aware_nav_map_is_debug_nav_layer_not_display_floorplan": true,
+  "room15_marker_topic": "/stage1_nav/semantic_overlay_markers",
+  "room15_mask_area_cells": 1324,
+  "room15_not_in_room8_request": true,
+  "room8_marker_topic": "/stage1_nav/semantic_overlay_markers",
+  "stable_overlay_source_contains_room15_color": true,
+  "stable_overlay_source_uses_full_room_mask": true,
+  "status": "passed"
+}

@@ -1,0 +1,143 @@
+{
+  "artifact_type": "stage1_room_segmentation_process_manifest",
+  "created_utc": "2026-05-13T01:41:53.407662+00:00",
+  "file_count": 19,
+  "files": [
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/assets/00824_step30a_global_room_mask_v0_1.npy",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "5b2189db7e55dcb387eca946f68ac809a6976c9a855e9323ff3c4e4eb13c8853",
+      "size_bytes": 5727764
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/assets/00824_step30a_layered_bev_v0_1.json",
+      "sanitized_old_step_paths_in_active_copy": true,
+      "sha256": "a7c4db19b2ad3b1f4e6292a0e34d95c270545e554ddfc33572bf154bc7aebabc",
+      "size_bytes": 1220
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/assets/00824_step30a_layered_bev_v0_1.npz",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "b78e42ee9750ddd842f02f2c3e0640aa913226e8d25b148d2afeb0b89652dd1f",
+      "size_bytes": 71494
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/assets/00824_step30a_dual_wall_layer_metadata_v0_1.json",
+      "sanitized_old_step_paths_in_active_copy": true,
+      "sha256": "ee682e1745a3d185c307c1da2bbbda8007afd780998ca2e89025904023154354",
+      "size_bytes": 5528
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/assets/00824_step30a_summary_v0_1.json",
+      "sanitized_old_step_paths_in_active_copy": true,
+      "sha256": "b71811c15b047d703d71e5ab72bab6dd50b7f3ba2c887943596f303b363f2453",
+      "size_bytes": 1680
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/assets/00824_step30a_stage_a_rerun_manifest_v0_1.json",
+      "sanitized_old_step_paths_in_active_copy": true,
+      "sha256": "62b05c73a4e1bf5e1a14cf380b9f4aebe65cbd8f2a074e152b522e59313cf807",
+      "size_bytes": 3753
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/assets/00824_step30a_validation_results_v0_1.json",
+      "sanitized_old_step_paths_in_active_copy": true,
+      "sha256": "af4f0201a5b5000f6ca81d4182cf3bb81b8fdbc7ab32285e46833f83c38b9235",
+      "size_bytes": 3313
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/final_gateway_wall_preclose_thr_0p25.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "a893d88745af53c5efbae4f06f0808e92e945ee5b82b2d7b5505ff0468abc374",
+      "size_bytes": 7705
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/final_walls_skeleton.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "dbc40c9997c614396d8861b557c86783f4eacb362b99afab7e86cdc31378cbb9",
+      "size_bytes": 8152
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/free_space.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "a53e924dbb67c42b2b0e436ecea06a903ec9e78c1811f5b534a2e5b030c4a94d",
+      "size_bytes": 33406
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/gateway_wall_preclose.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "08bdd7124ef7727b23e93a4c6c9d9ea5d89a8e1cca82ad69e531bb04afd02598",
+      "size_bytes": 37951
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/outside_boundary.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "b52258004ab907a309be6b67a6c2197df16774fcafc6a1e17ce782e27b791a2e",
+      "size_bytes": 25845
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/room_mask_global_id.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "d9fd08ce80cc97491458f6553d34a66d075382dee208a71cec2765e831dbe8d6",
+      "size_bytes": 304676
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/segmentation_wall_processed.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "03987114fe0435219aa6d403db6ac1bf5ec6427ef574bb9b843d363152ed3571",
+      "size_bytes": 39066
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/unknown_layer.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "c064a05b59c391d85cf9d8ed4ce390200a6abc37def5c868881e47aa0b091254",
+      "size_bytes": 26756
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/gateway_wall_preclose_over_free_space.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "e130221f96332770236de140e3df116589e3818f2e52c1c48bc7e5576c84713a",
+      "size_bytes": 43637
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/gateway_wall_preclose_over_room_mask.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "56b2fb301cd3abd3cd4800b9d61839c5d5ee1c3090a1722181312d11e836d41c",
+      "size_bytes": 317546
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/gateway_wall_preclose_threshold_metadata.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "c91914471b6471bfa2d7fe915282de715ce79e0e633adecbb6159a5fb5443a04",
+      "size_bytes": 38489
+    },
+    {
+      "category": "room_segmentation",
+      "destination": "stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/segmentation_wall_vs_gateway_wall_preclose.png",
+      "sanitized_old_step_paths_in_active_copy": false,
+      "sha256": "baf97521ff9836448d0429a773d3541ca4617aea407fe703c11c0fc0141f1ad8",
+      "size_bytes": 46546
+    }
+  ],
+  "missing": [],
+  "stage_output_dir": "stage_outputs/stage1_00824_step30p1",
+  "version": "v0_1"
+}

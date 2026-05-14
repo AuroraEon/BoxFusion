@@ -1,0 +1,20 @@
+{
+  "artifact_type": "step30p1_gateway_sequence",
+  "created_utc": "2026-05-12T13:34:04+00:00",
+  "gateway_sequence": [
+    "gw_00824_r1_r3_01",
+    "gw_00824_r3_r8_01",
+    "gw_00824_r8_r11_01",
+    "gw_00824_r7_r11_02",
+    "gw_00824_r7_r14_01",
+    "gw_00824_r14_r16_01"
+  ],
+  "pair_sequence": [
+    "r1_r3",
+    "r3_r8",
+    "r8_r11",
+    "r7_r11",
+    "r7_r14",
+    "r14_r16"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "artifact_type": "route_topology_integrity_report",
+  "bridge_waypoints_used_as_goals": {
+    "room15": false,
+    "room8": false
+  },
+  "created_utc": "2026-05-14T08:40:44.805522+00:00",
+  "forbidden_shortcuts": [
+    "r3_r11",
+    "r8_r14",
+    "r14_r15",
+    "r15_r16",
+    "r3_r15",
+    "r7_r16"
+  ],
+  "room15_route_matches_expected": true,
+  "room8_route_matches_expected": true,
+  "status": "passed"
+}

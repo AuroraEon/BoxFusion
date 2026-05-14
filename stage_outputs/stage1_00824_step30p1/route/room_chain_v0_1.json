@@ -1,0 +1,13 @@
+{
+  "artifact_type": "step30p1_room_chain",
+  "created_utc": "2026-05-12T13:34:04+00:00",
+  "room_chain": [
+    "room_1",
+    "room_3",
+    "room_8",
+    "room_11",
+    "room_7",
+    "room_14",
+    "room_16"
+  ]
+}

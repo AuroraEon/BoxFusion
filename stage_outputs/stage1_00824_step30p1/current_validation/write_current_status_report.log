@@ -1,0 +1,32 @@
+{
+  "artifact_type": "current_stage1_nav_status_report",
+  "created_utc": "2026-05-14T03:50:56.831935+00:00",
+  "evidence_files": {
+    "gui_performance_process_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/gui_performance_process_report.json",
+    "map_projection_provenance": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/map_projection_provenance.json",
+    "marker_lifecycle_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/marker_lifecycle_report.json",
+    "room15_display_consistency_evidence": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_display_consistency_evidence.json",
+    "room15_run_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through",
+    "room8_local_wall_spinning_diagnostic_evidence": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_local_wall_spinning_diagnostic_evidence.json",
+    "room8_run_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_canonical",
+    "route_topology_integrity_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/route_topology_integrity_report.json"
+  },
+  "evidence_root": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation",
+  "gui_performance_status": "passed",
+  "marker_lifecycle_status": "passed",
+  "notes": {
+    "accepted_step30p1_wording": "Step30P1 repaired execution succeeded with clean forward-only fallback.",
+    "amcl_used": false,
+    "manual_cmd_vel_used": false,
+    "object_level_navigation_complete": false
+  },
+  "overall_status": "passed",
+  "room15_display_consistency_status": "passed",
+  "room15_physical_visit_status": "passed",
+  "room8_behavior_status": "passed",
+  "route_topology_integrity_status": "passed",
+  "run_ids": [
+    "room8_canonical",
+    "room15_through"
+  ]
+}

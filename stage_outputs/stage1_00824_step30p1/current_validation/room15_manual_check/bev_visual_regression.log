@@ -1,0 +1,38 @@
+{
+  "artifact_type": "step30s7_bev_visual_regression_report",
+  "broad_uncontrolled_cleanup_occurred": false,
+  "changed_cells_inside_requested_route_rooms": 1206,
+  "changed_cells_outside_requested_route_rooms": 0,
+  "changed_cells_vs_h8r2": 1206,
+  "created_utc": "2026-05-14T07:21:12.395967+00:00",
+  "non_route_rooms_touched": [],
+  "not_compared_against_step30s5_patched_map": true,
+  "original_h8r2_map": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/h8r2_gateway_preserving_nav_map.yaml",
+  "resolved_route": [
+    "room_1",
+    "room_3",
+    "room_7",
+    "room_15",
+    "room_7",
+    "room_14",
+    "room_16"
+  ],
+  "room_floorplan_boundaries_visually_distorted": false,
+  "rviz_bev_display_remains_clean_and_interpretable": true,
+  "semantic_mask_and_nav2_free_space_are_separate_layers": true,
+  "step30s7_map": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.yaml",
+  "unknown_cells_changed_to_free": 1206,
+  "validation_passed": true,
+  "version": "v0_1",
+  "visual_diagnostics": [
+    "full_map_difference_visualization.png",
+    "original_h8r2_map_clipped_around_route.png",
+    "requested_room_coverage_visualization.png",
+    "room15_semantic_mask_vs_h8r2_free.png",
+    "room15_semantic_mask_vs_step30s7_free.png",
+    "rviz_expected_layer_preview.png",
+    "step30s7_map_clipped_around_route.png"
+  ],
+  "visual_diagnostics_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_manual_check/visual_diagnostics",
+  "wall_or_occupied_evidence_cells_changed_to_free": 0
+}

@@ -1,0 +1,20 @@
+{
+  "artifact_type": "stage1_step30p1_rviz_manifest",
+  "version": "v0_1",
+  "rviz_configs": [
+    "00824_stage1_step30p1_bev_semantic_route_demo.rviz"
+  ],
+  "primary_config": "00824_stage1_step30p1_bev_semantic_route_demo.rviz",
+  "primary_marker_topic": "/step30s4_rviz_overlay_markers",
+  "expected_topics": [
+    "/map",
+    "/tf",
+    "/tf_static",
+    "/scan",
+    "/robot_description",
+    "/plan",
+    "/local_plan",
+    "/step30s4_rviz_overlay_markers"
+  ],
+  "description": "Step30S4 BEV/floorplan RViz config for semantic topology route, room, gateway, planned path, robot TF/model, scan, and executed trajectory overlays."
+}

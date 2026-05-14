@@ -1,0 +1,2008 @@
+{
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "step": "step30a",
+  "artifact_type": "gateway_hypotheses",
+  "version": "v0_1",
+  "gateway_filter_wall_layer": "gateway_wall_preclose",
+  "segmentation_wall_processed_used_as_hard_gateway_blocker": false,
+  "topology_generated": false,
+  "hypotheses": [
+    {
+      "hypothesis_id": "hyp_00824_r1_r3_01",
+      "pair_key": "r1_r3",
+      "room_a": 1,
+      "room_b": 3,
+      "source_candidate_ids": [
+        "gw_00824_r1_r3_01"
+      ],
+      "representative_center_xy": [
+        5.0939,
+        1.8447
+      ],
+      "representative_center_rc": [
+        1037,
+        1102
+      ],
+      "representative_crossing_pose": {
+        "x": 5.0939,
+        "y": 1.8447,
+        "yaw": -2.221151
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.3059,
+        "y": 2.1233,
+        "yaw": -2.221151
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.882,
+        "y": 1.5661,
+        "yaw": -2.221151
+      },
+      "merged_bbox_cells": [
+        1030,
+        1099,
+        1043,
+        1105
+      ],
+      "merged_bbox_map_xy": [
+        [
+          4.95,
+          1.5
+        ],
+        [
+          5.25,
+          2.15
+        ]
+      ],
+      "step29b3_auto_status": "auto_accept_strict",
+      "step29b3_selected_for_step29c_candidate": true,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.0253,
+        "raw_wall_core_overlap_count_b3r": 2,
+        "corridor_cell_count_b3r": 79,
+        "bbox_wall_overlap_ratio_b3r": 0.051,
+        "endpoint_wall_touch_ratio_b3r": 0.0556,
+        "wall_filter_status_b3r": "endpoint_wall_touch_only",
+        "b3_original_wall_core_overlap_ratio": 0.0253,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.35,
+        "raw_wall_gap_width_m": 0.0,
+        "wall_endpoint_support_score": 0.0,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.0
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.8857,
+        "room_a_support_score": 0.9388,
+        "room_b_support_score": 0.7755,
+        "free_space_crossing_score": 1.0,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.35,
+        "merged_span_width_m": 0.6323,
+        "raw_wall_gap_width_m": 0.0,
+        "effective_opening_width_m": 0.6323,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.2692,
+        "label10_fraction_repaired": 0.2692,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 0
+      },
+      "route_role": "primary_route_gateway",
+      "use_for_default_route": true,
+      "eligible_as_navigation_fallback": true,
+      "nav_priority": 1,
+      "step29c_role": "primary",
+      "role_source": "positive_control",
+      "role_reason": "Strict positive control gateway.",
+      "calibration_label": "positive_control",
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r1_r3_01"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.0052,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.0682,
+        "wall_core_overlap_count": 9,
+        "corridor_cell_count": 132,
+        "wall_filter_status": "clear",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.35,
+        "raw_wall_gap_width_m": 0.0,
+        "wall_endpoint_support_score": 0.0,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.0,
+        "two_sided_support_score": 0.5636,
+        "room_a_support_score": 0.4711,
+        "room_b_support_score": 0.438,
+        "free_space_crossing_score": 1.0,
+        "effective_opening_width_m": 0.6
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r3_r7_01",
+      "pair_key": "r3_r7",
+      "room_a": 3,
+      "room_b": 7,
+      "source_candidate_ids": [
+        "gw_00824_r3_r7_01",
+        "gw_00824_r3_r7_03"
+      ],
+      "representative_center_xy": [
+        1.0118,
+        -3.3317
+      ],
+      "representative_center_rc": [
+        933,
+        1020
+      ],
+      "representative_crossing_pose": {
+        "x": 1.0118,
+        "y": -3.3317,
+        "yaw": -2.210772
+      },
+      "representative_approach_from_room_a": {
+        "x": 1.2208,
+        "y": -3.0509,
+        "yaw": -2.210772
+      },
+      "representative_approach_from_room_b": {
+        "x": 0.8028,
+        "y": -3.6124,
+        "yaw": -2.210772
+      },
+      "merged_bbox_cells": [
+        927,
+        1002,
+        939,
+        1044
+      ],
+      "merged_bbox_map_xy": [
+        [
+          0.1,
+          -3.65
+        ],
+        [
+          2.2,
+          -3.05
+        ]
+      ],
+      "step29b3_auto_status": "needs_review",
+      "step29b3_selected_for_step29c_candidate": false,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.1349,
+        "raw_wall_core_overlap_count_b3r": 17,
+        "corridor_cell_count_b3r": 126,
+        "bbox_wall_overlap_ratio_b3r": 0.2683,
+        "endpoint_wall_touch_ratio_b3r": 0.3333,
+        "wall_filter_status_b3r": "wall_core_uncertain",
+        "b3_original_wall_core_overlap_ratio": 0.1349,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.35,
+        "raw_wall_gap_width_m": 0.0,
+        "wall_endpoint_support_score": 0.0,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.0
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.7551,
+        "room_a_support_score": 1.0,
+        "room_b_support_score": 0.3878,
+        "free_space_crossing_score": 1.0,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.55,
+        "merged_span_width_m": 2.0427,
+        "raw_wall_gap_width_m": 0.0,
+        "effective_opening_width_m": 1.0,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.3337,
+        "label10_fraction_repaired": 0.3337,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 0
+      },
+      "route_role": "primary_route_gateway",
+      "use_for_default_route": true,
+      "eligible_as_navigation_fallback": true,
+      "nav_priority": null,
+      "step29c_role": "review_only",
+      "role_source": "user_confirmed_step30a",
+      "role_reason": "User confirmed room3-room7 hypothesis 01 is the correct doorway.",
+      "calibration_label": null,
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r3_r7_01"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.2918,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.0221,
+        "wall_core_overlap_count": 3,
+        "corridor_cell_count": 136,
+        "wall_filter_status": "clear",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.35,
+        "raw_wall_gap_width_m": 0.0,
+        "wall_endpoint_support_score": 0.0,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.0,
+        "two_sided_support_score": 0.5207,
+        "room_a_support_score": 0.8017,
+        "room_b_support_score": 0.0,
+        "free_space_crossing_score": 1.0,
+        "effective_opening_width_m": 0.6
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r11_01",
+      "pair_key": "r7_r11",
+      "room_a": 7,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r7_r11_05",
+        "gw_00824_r7_r11_08",
+        "gw_00824_r7_r11_09"
+      ],
+      "representative_center_xy": [
+        1.8312,
+        -4.163
+      ],
+      "representative_center_rc": [
+        917,
+        1037
+      ],
+      "representative_crossing_pose": {
+        "x": 1.8312,
+        "y": -4.163,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_a": {
+        "x": 1.4812,
+        "y": -4.1668,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_b": {
+        "x": 2.1812,
+        "y": -4.1592,
+        "yaw": 0.010764
+      },
+      "merged_bbox_cells": [
+        910,
+        1033,
+        927,
+        1043
+      ],
+      "merged_bbox_map_xy": [
+        [
+          1.65,
+          -4.5
+        ],
+        [
+          2.15,
+          -3.65
+        ]
+      ],
+      "step29b3_auto_status": "auto_accept_label10_boundary_repair",
+      "step29b3_selected_for_step29c_candidate": true,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.25,
+        "raw_wall_core_overlap_count_b3r": 18,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.4545,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.25,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.7424,
+        "raw_wall_gap_width_m": 0.55,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 0.5714,
+        "gap_consistency_score": 0.462
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.92,
+        "room_a_support_score": 1.0,
+        "room_b_support_score": 1.0,
+        "free_space_crossing_score": 0.6,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.25,
+        "merged_span_width_m": 0.8553,
+        "raw_wall_gap_width_m": 0.55,
+        "effective_opening_width_m": 0.8553,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.6197,
+        "label10_fraction_repaired": 0.6197,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": true,
+        "source_label10_warning_count": 2
+      },
+      "route_role": "primary_route_gateway",
+      "use_for_default_route": true,
+      "eligible_as_navigation_fallback": true,
+      "nav_priority": 1,
+      "step29c_role": "primary",
+      "role_source": "user_calibrated",
+      "role_reason": "Closest to the true main room7-room11 passage per user visual review.",
+      "calibration_label": "true_main_passage",
+      "calibration_metric_conflict": true,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [
+        "user_primary_but_wall_blocked_high_gap_support"
+      ],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r7_r11_02"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.1254,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.0833,
+        "wall_core_overlap_count": 12,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "uncertain",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.9676,
+        "raw_wall_gap_width_m": 0.65,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.8378,
+        "two_sided_support_score": 0.3977,
+        "room_a_support_score": 0.5372,
+        "room_b_support_score": 0.157,
+        "free_space_crossing_score": 0.6,
+        "effective_opening_width_m": 0.65
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r11_02",
+      "pair_key": "r7_r11",
+      "room_a": 7,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r7_r11_03",
+        "gw_00824_r7_r11_07"
+      ],
+      "representative_center_xy": [
+        1.9584,
+        -6.7924
+      ],
+      "representative_center_rc": [
+        864,
+        1039
+      ],
+      "representative_crossing_pose": {
+        "x": 1.9584,
+        "y": -6.7924,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_a": {
+        "x": 1.6084,
+        "y": -6.7962,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_b": {
+        "x": 2.3084,
+        "y": -6.7887,
+        "yaw": 0.010764
+      },
+      "merged_bbox_cells": [
+        850,
+        1034,
+        873,
+        1044
+      ],
+      "merged_bbox_map_xy": [
+        [
+          1.7,
+          -7.5
+        ],
+        [
+          2.2,
+          -6.35
+        ]
+      ],
+      "step29b3_auto_status": "needs_review",
+      "step29b3_selected_for_step29c_candidate": false,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.2778,
+        "raw_wall_core_overlap_count_b3r": 20,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.4167,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.2778,
+        "wall_core_overlap_delta_vs_b3": -0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.6129,
+        "raw_wall_gap_width_m": 0.325,
+        "wall_endpoint_support_score": 0.8571,
+        "gap_center_clear_score": 0.4286,
+        "gap_consistency_score": 0.5413
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.896,
+        "room_a_support_score": 1.0,
+        "room_b_support_score": 1.0,
+        "free_space_crossing_score": 0.48,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.3,
+        "merged_span_width_m": 1.1553,
+        "raw_wall_gap_width_m": 0.325,
+        "effective_opening_width_m": 1.0,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.4318,
+        "label10_fraction_repaired": 0.4318,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 1
+      },
+      "route_role": "rejected",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "nav_priority": null,
+      "step29c_role": "exclude",
+      "role_source": "user_calibrated",
+      "role_reason": "User determined this hypothesis is wrong.",
+      "calibration_label": "wrong",
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r7_r11_03"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.1857,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.2569,
+        "wall_core_overlap_count": 37,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.6241,
+        "raw_wall_gap_width_m": 0.5,
+        "wall_endpoint_support_score": 0.7143,
+        "gap_center_clear_score": 0.4286,
+        "gap_consistency_score": 0.5491,
+        "two_sided_support_score": 0.3572,
+        "room_a_support_score": 0.4463,
+        "room_b_support_score": 0.2066,
+        "free_space_crossing_score": 0.48,
+        "effective_opening_width_m": 0.6
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r11_03",
+      "pair_key": "r7_r11",
+      "room_a": 7,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r7_r11_02",
+        "gw_00824_r7_r11_04"
+      ],
+      "representative_center_xy": [
+        1.9001,
+        -5.0363
+      ],
+      "representative_center_rc": [
+        899,
+        1038
+      ],
+      "representative_crossing_pose": {
+        "x": 1.9001,
+        "y": -5.0363,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_a": {
+        "x": 1.5501,
+        "y": -5.0401,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_b": {
+        "x": 2.2501,
+        "y": -5.0325,
+        "yaw": 0.010764
+      },
+      "merged_bbox_cells": [
+        891,
+        1037,
+        906,
+        1039
+      ],
+      "merged_bbox_map_xy": [
+        [
+          1.85,
+          -5.45
+        ],
+        [
+          1.95,
+          -4.7
+        ]
+      ],
+      "step29b3_auto_status": "needs_review",
+      "step29b3_selected_for_step29c_candidate": false,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.3056,
+        "raw_wall_core_overlap_count_b3r": 22,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.2917,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.3056,
+        "wall_core_overlap_delta_vs_b3": -0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.537,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 0.5714,
+        "gap_center_clear_score": 0.5714,
+        "gap_consistency_score": 0.5276
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.8792,
+        "room_a_support_score": 1.0,
+        "room_b_support_score": 0.898,
+        "free_space_crossing_score": 0.6,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.1,
+        "merged_span_width_m": 0.751,
+        "raw_wall_gap_width_m": 0.2,
+        "effective_opening_width_m": 0.751,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.4577,
+        "label10_fraction_repaired": 0.4577,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 1
+      },
+      "route_role": "annex_or_closet_gateway",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "nav_priority": null,
+      "step29c_role": "annotation_only",
+      "role_source": "user_calibrated",
+      "role_reason": "Likely belongs to a room11 closet/annex gateway per user review.",
+      "calibration_label": "room11_closet_annex",
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r7_r11_04"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.263,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.2083,
+        "wall_core_overlap_count": 30,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.5886,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 0.4286,
+        "gap_center_clear_score": 0.5714,
+        "gap_consistency_score": 1.0,
+        "two_sided_support_score": 0.3878,
+        "room_a_support_score": 0.5372,
+        "room_b_support_score": 0.1322,
+        "free_space_crossing_score": 0.6,
+        "effective_opening_width_m": 0.6
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r11_04",
+      "pair_key": "r7_r11",
+      "room_a": 7,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r7_r11_01"
+      ],
+      "representative_center_xy": [
+        1.95,
+        -5.875
+      ],
+      "representative_center_rc": [
+        883,
+        1039
+      ],
+      "representative_crossing_pose": {
+        "x": 1.95,
+        "y": -5.875,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_a": {
+        "x": 1.6,
+        "y": -5.8788,
+        "yaw": 0.010764
+      },
+      "representative_approach_from_room_b": {
+        "x": 2.3,
+        "y": -5.8712,
+        "yaw": 0.010764
+      },
+      "merged_bbox_cells": [
+        880,
+        1039,
+        885,
+        1039
+      ],
+      "merged_bbox_map_xy": [
+        [
+          1.95,
+          -6.0
+        ],
+        [
+          1.95,
+          -5.75
+        ]
+      ],
+      "step29b3_auto_status": "auto_accept_wall_thin_repair",
+      "step29b3_selected_for_step29c_candidate": true,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.1111,
+        "raw_wall_core_overlap_count_b3r": 8,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.0,
+        "endpoint_wall_touch_ratio_b3r": 0.1111,
+        "wall_filter_status_b3r": "wall_core_uncertain",
+        "b3_original_wall_core_overlap_ratio": 0.1111,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.6246,
+        "raw_wall_gap_width_m": 0.3,
+        "wall_endpoint_support_score": 0.4286,
+        "gap_center_clear_score": 0.7143,
+        "gap_consistency_score": 0.7799
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.8057,
+        "room_a_support_score": 0.7143,
+        "room_b_support_score": 1.0,
+        "free_space_crossing_score": 0.6,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.05,
+        "merged_span_width_m": 0.25,
+        "raw_wall_gap_width_m": 0.25,
+        "effective_opening_width_m": 0.25,
+        "passability_status": "possible_narrow"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.3571,
+        "label10_fraction_repaired": 0.3571,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 0
+      },
+      "route_role": "annex_or_closet_gateway",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "nav_priority": null,
+      "step29c_role": "annotation_only",
+      "role_source": "user_calibrated",
+      "role_reason": "Likely belongs to a room11 closet/annex gateway per user review.",
+      "calibration_label": "room11_closet_annex",
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r7_r11_01"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.1601,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.0,
+        "wall_core_overlap_count": 0,
+        "corridor_cell_count": 72,
+        "wall_filter_status": "clear",
+        "corridor_width_m": 0.25,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.35,
+        "raw_wall_gap_width_m": 0.0,
+        "wall_endpoint_support_score": 0.0,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.0,
+        "two_sided_support_score": 0.4307,
+        "room_a_support_score": 0.5041,
+        "room_b_support_score": 0.2727,
+        "free_space_crossing_score": 0.6,
+        "effective_opening_width_m": 0.25
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r8_r11_01",
+      "pair_key": "r8_r11",
+      "room_a": 8,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r8_r11_01",
+        "gw_00824_r8_r11_04"
+      ],
+      "representative_center_xy": [
+        4.996,
+        -4.1277
+      ],
+      "representative_center_rc": [
+        917,
+        1100
+      ],
+      "representative_crossing_pose": {
+        "x": 4.996,
+        "y": -4.1277,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.3456,
+        "y": -4.1452,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.6464,
+        "y": -4.1102,
+        "yaw": 3.091667
+      },
+      "merged_bbox_cells": [
+        913,
+        1097,
+        925,
+        1103
+      ],
+      "merged_bbox_map_xy": [
+        [
+          4.85,
+          -4.35
+        ],
+        [
+          5.15,
+          -3.75
+        ]
+      ],
+      "step29b3_auto_status": "needs_review",
+      "step29b3_selected_for_step29c_candidate": false,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.2222,
+        "raw_wall_core_overlap_count_b3r": 16,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.3956,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.2222,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.6956,
+        "raw_wall_gap_width_m": 0.35,
+        "wall_endpoint_support_score": 0.7143,
+        "gap_center_clear_score": 0.7143,
+        "gap_consistency_score": 0.6316
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.8957,
+        "room_a_support_score": 0.9592,
+        "room_b_support_score": 1.0,
+        "free_space_crossing_score": 0.56,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.3,
+        "merged_span_width_m": 0.6142,
+        "raw_wall_gap_width_m": 0.35,
+        "effective_opening_width_m": 0.6142,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.4767,
+        "label10_fraction_repaired": 0.4767,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 1
+      },
+      "route_role": "primary_route_gateway",
+      "use_for_default_route": true,
+      "eligible_as_navigation_fallback": true,
+      "nav_priority": 1,
+      "step29c_role": "primary",
+      "role_source": "user_calibrated",
+      "role_reason": "Closest to the true room8-room11 passage per user visual review.",
+      "calibration_label": "true_main_passage",
+      "calibration_metric_conflict": true,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [
+        "user_primary_but_wall_blocked_high_gap_support"
+      ],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r8_r11_01"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.0966,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.1389,
+        "wall_core_overlap_count": 20,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "uncertain",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.8646,
+        "raw_wall_gap_width_m": 0.65,
+        "wall_endpoint_support_score": 0.5714,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.966,
+        "two_sided_support_score": 0.4161,
+        "room_a_support_score": 0.3306,
+        "room_b_support_score": 0.4298,
+        "free_space_crossing_score": 0.56,
+        "effective_opening_width_m": 0.65
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r8_r11_02",
+      "pair_key": "r8_r11",
+      "room_a": 8,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r8_r11_05",
+        "gw_00824_r8_r11_06"
+      ],
+      "representative_center_xy": [
+        5.1,
+        -5.9
+      ],
+      "representative_center_rc": [
+        882,
+        1102
+      ],
+      "representative_crossing_pose": {
+        "x": 5.1,
+        "y": -5.9,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.4496,
+        "y": -5.9175,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.7504,
+        "y": -5.8825,
+        "yaw": 3.091667
+      },
+      "merged_bbox_cells": [
+        875,
+        1098,
+        889,
+        1106
+      ],
+      "merged_bbox_map_xy": [
+        [
+          4.9,
+          -6.25
+        ],
+        [
+          5.3,
+          -5.55
+        ]
+      ],
+      "step29b3_auto_status": "needs_review",
+      "step29b3_selected_for_step29c_candidate": false,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.5,
+        "raw_wall_core_overlap_count_b3r": 36,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.7778,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.5,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.56,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 0.0,
+        "gap_consistency_score": 1.0
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.8,
+        "room_a_support_score": 1.0,
+        "room_b_support_score": 1.0,
+        "free_space_crossing_score": 0.0,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.05,
+        "merged_span_width_m": 0.7191,
+        "raw_wall_gap_width_m": 0.2,
+        "effective_opening_width_m": 0.7191,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.449,
+        "label10_fraction_repaired": 0.449,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 0
+      },
+      "route_role": "rejected",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "nav_priority": null,
+      "step29c_role": "exclude",
+      "role_source": "user_calibrated",
+      "role_reason": "User determined all r8_r11 hypotheses except 01 are wrong.",
+      "calibration_label": "wrong",
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r8_r11_06"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.195,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.4167,
+        "wall_core_overlap_count": 60,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.5671,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 0.8571,
+        "gap_center_clear_score": 0.1429,
+        "gap_consistency_score": 1.0,
+        "two_sided_support_score": 0.1455,
+        "room_a_support_score": 0.1818,
+        "room_b_support_score": 0.1818,
+        "free_space_crossing_score": 0.0,
+        "effective_opening_width_m": 0.6
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r8_r11_03",
+      "pair_key": "r8_r11",
+      "room_a": 8,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r8_r11_02"
+      ],
+      "representative_center_xy": [
+        5.1,
+        -7.15
+      ],
+      "representative_center_rc": [
+        857,
+        1102
+      ],
+      "representative_crossing_pose": {
+        "x": 5.1,
+        "y": -7.15,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.4496,
+        "y": -7.1675,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.7504,
+        "y": -7.1325,
+        "yaw": 3.091667
+      },
+      "merged_bbox_cells": [
+        856,
+        1102,
+        858,
+        1102
+      ],
+      "merged_bbox_map_xy": [
+        [
+          5.1,
+          -7.2
+        ],
+        [
+          5.1,
+          -7.1
+        ]
+      ],
+      "step29b3_auto_status": "auto_accept_label10_boundary_repair",
+      "step29b3_selected_for_step29c_candidate": true,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.3611,
+        "raw_wall_core_overlap_count_b3r": 26,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.0,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.3611,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.7033,
+        "raw_wall_gap_width_m": 0.25,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 0.5714,
+        "gap_consistency_score": 0.6415
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.7667,
+        "room_a_support_score": 0.9796,
+        "room_b_support_score": 0.8571,
+        "free_space_crossing_score": 0.16,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.05,
+        "merged_span_width_m": 0.0999,
+        "raw_wall_gap_width_m": 0.25,
+        "effective_opening_width_m": 0.25,
+        "passability_status": "possible_narrow"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.8254,
+        "label10_fraction_repaired": 0.8254,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": true,
+        "source_label10_warning_count": 1
+      },
+      "route_role": "rejected",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "nav_priority": null,
+      "step29c_role": "exclude",
+      "role_source": "user_calibrated",
+      "role_reason": "User determined all r8_r11 hypotheses except 01 are wrong.",
+      "calibration_label": "wrong",
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r8_r11_02"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.05,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.2361,
+        "wall_core_overlap_count": 17,
+        "corridor_cell_count": 72,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.25,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.6071,
+        "raw_wall_gap_width_m": 0.275,
+        "wall_endpoint_support_score": 0.5714,
+        "gap_center_clear_score": 0.7143,
+        "gap_consistency_score": 0.5157,
+        "two_sided_support_score": 0.1708,
+        "room_a_support_score": 0.2562,
+        "room_b_support_score": 0.0909,
+        "free_space_crossing_score": 0.16,
+        "effective_opening_width_m": 0.275
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r8_r11_04",
+      "pair_key": "r8_r11",
+      "room_a": 8,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r8_r11_03"
+      ],
+      "representative_center_xy": [
+        5.0,
+        -4.85
+      ],
+      "representative_center_rc": [
+        903,
+        1100
+      ],
+      "representative_crossing_pose": {
+        "x": 5.0,
+        "y": -4.85,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.3496,
+        "y": -4.8675,
+        "yaw": 3.091667
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.6504,
+        "y": -4.8325,
+        "yaw": 3.091667
+      },
+      "merged_bbox_cells": [
+        902,
+        1100,
+        904,
+        1100
+      ],
+      "merged_bbox_map_xy": [
+        [
+          5.0,
+          -4.9
+        ],
+        [
+          5.0,
+          -4.8
+        ]
+      ],
+      "step29b3_auto_status": "auto_accept_label10_boundary_repair",
+      "step29b3_selected_for_step29c_candidate": true,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.3611,
+        "raw_wall_core_overlap_count_b3r": 26,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.0,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.3611,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.6552,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 0.7143,
+        "gap_center_clear_score": 0.5714,
+        "gap_consistency_score": 0.9048
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.7829,
+        "room_a_support_score": 0.8571,
+        "room_b_support_score": 1.0,
+        "free_space_crossing_score": 0.2,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.05,
+        "merged_span_width_m": 0.0999,
+        "raw_wall_gap_width_m": 0.2,
+        "effective_opening_width_m": 0.2,
+        "passability_status": "possible_narrow"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.746,
+        "label10_fraction_repaired": 0.746,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": true,
+        "source_label10_warning_count": 1
+      },
+      "route_role": "rejected",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "nav_priority": null,
+      "step29c_role": "exclude",
+      "role_source": "user_calibrated",
+      "role_reason": "User determined all r8_r11 hypotheses except 01 are wrong.",
+      "calibration_label": "wrong",
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r8_r11_03"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.0,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.3333,
+        "wall_core_overlap_count": 24,
+        "corridor_cell_count": 72,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.25,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.6814,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 0.5714,
+        "gap_center_clear_score": 0.7143,
+        "gap_consistency_score": 1.0,
+        "two_sided_support_score": 0.2218,
+        "room_a_support_score": 0.1074,
+        "room_b_support_score": 0.3471,
+        "free_space_crossing_score": 0.2,
+        "effective_opening_width_m": 0.25
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r3_r11_01",
+      "pair_key": "r3_r11",
+      "room_a": 3,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r3_r11_02",
+        "gw_00824_r3_r11_04"
+      ],
+      "representative_center_xy": [
+        4.0385,
+        -3.6156
+      ],
+      "representative_center_rc": [
+        928,
+        1081
+      ],
+      "representative_crossing_pose": {
+        "x": 4.0385,
+        "y": -3.6156,
+        "yaw": -1.639124
+      },
+      "representative_approach_from_room_a": {
+        "x": 4.0624,
+        "y": -3.2664,
+        "yaw": -1.639124
+      },
+      "representative_approach_from_room_b": {
+        "x": 4.0146,
+        "y": -3.9648,
+        "yaw": -1.639124
+      },
+      "merged_bbox_cells": [
+        923,
+        1058,
+        932,
+        1097
+      ],
+      "merged_bbox_map_xy": [
+        [
+          2.9,
+          -3.85
+        ],
+        [
+          4.85,
+          -3.4
+        ]
+      ],
+      "step29b3_auto_status": "auto_reject_negative_sanity",
+      "step29b3_selected_for_step29c_candidate": false,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.4167,
+        "raw_wall_core_overlap_count_b3r": 30,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.6475,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.4167,
+        "wall_core_overlap_delta_vs_b3": -0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.4908,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 0.1429,
+        "gap_consistency_score": 0.4042
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.8,
+        "room_a_support_score": 1.0,
+        "room_b_support_score": 1.0,
+        "free_space_crossing_score": 0.0,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.1,
+        "merged_span_width_m": 1.9762,
+        "raw_wall_gap_width_m": 0.2,
+        "effective_opening_width_m": 1.0,
+        "passability_status": "strong"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.4389,
+        "label10_fraction_repaired": 0.4389,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": false,
+        "source_label10_warning_count": 1
+      },
+      "route_role": "rejected",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "nav_priority": null,
+      "step29c_role": "exclude",
+      "role_source": "negative_sanity",
+      "role_reason": "Negative sanity: no direct r3-r11 route; corridor belongs to room7.",
+      "calibration_label": null,
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r3_r11_04"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.197,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.4514,
+        "wall_core_overlap_count": 65,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.4718,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 0.1429,
+        "gap_consistency_score": 0.3091,
+        "two_sided_support_score": 0.1785,
+        "room_a_support_score": 0.2645,
+        "room_b_support_score": 0.1818,
+        "free_space_crossing_score": 0.0,
+        "effective_opening_width_m": 0.6
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r3_r11_02",
+      "pair_key": "r3_r11",
+      "room_a": 3,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r3_r11_01"
+      ],
+      "representative_center_xy": [
+        2.175,
+        -3.7
+      ],
+      "representative_center_rc": [
+        926,
+        1043
+      ],
+      "representative_crossing_pose": {
+        "x": 2.175,
+        "y": -3.7,
+        "yaw": -1.639124
+      },
+      "representative_approach_from_room_a": {
+        "x": 2.1989,
+        "y": -3.3508,
+        "yaw": -1.639124
+      },
+      "representative_approach_from_room_b": {
+        "x": 2.1511,
+        "y": -4.0492,
+        "yaw": -1.639124
+      },
+      "merged_bbox_cells": [
+        926,
+        1042,
+        926,
+        1045
+      ],
+      "merged_bbox_map_xy": [
+        [
+          2.1,
+          -3.7
+        ],
+        [
+          2.25,
+          -3.7
+        ]
+      ],
+      "step29b3_auto_status": "auto_reject_negative_sanity",
+      "step29b3_selected_for_step29c_candidate": false,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.5972,
+        "raw_wall_core_overlap_count_b3r": 43,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.0,
+        "endpoint_wall_touch_ratio_b3r": 0.0,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.5972,
+        "wall_core_overlap_delta_vs_b3": 0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.6773,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 0.4286,
+        "gap_consistency_score": 0.8367
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.6686,
+        "room_a_support_score": 0.8571,
+        "room_b_support_score": 0.7143,
+        "free_space_crossing_score": 0.2,
+        "strict_two_sided_support": true
+      },
+      "width_passability": {
+        "max_source_width_m": 0.05,
+        "merged_span_width_m": 0.1496,
+        "raw_wall_gap_width_m": 0.2,
+        "effective_opening_width_m": 0.2,
+        "passability_status": "possible_narrow"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.8571,
+        "label10_fraction_repaired": 0.8571,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": true,
+        "source_label10_warning_count": 1
+      },
+      "route_role": "rejected",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "nav_priority": null,
+      "step29c_role": "exclude",
+      "role_source": "negative_sanity",
+      "role_reason": "Negative sanity: no direct r3-r11 route; corridor belongs to room7.",
+      "calibration_label": null,
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r3_r11_01"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.1,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.4861,
+        "wall_core_overlap_count": 35,
+        "corridor_cell_count": 72,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.25,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.6069,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 1.0,
+        "gap_center_clear_score": 0.4286,
+        "gap_consistency_score": 0.4846,
+        "two_sided_support_score": 0.0995,
+        "room_a_support_score": 0.0909,
+        "room_b_support_score": 0.0579,
+        "free_space_crossing_score": 0.2,
+        "effective_opening_width_m": 0.25
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r3_r11_03",
+      "pair_key": "r3_r11",
+      "room_a": 3,
+      "room_b": 11,
+      "source_candidate_ids": [
+        "gw_00824_r3_r11_03"
+      ],
+      "representative_center_xy": [
+        5.175,
+        -3.7375
+      ],
+      "representative_center_rc": [
+        925,
+        1103
+      ],
+      "representative_crossing_pose": {
+        "x": 5.175,
+        "y": -3.7375,
+        "yaw": -1.639124
+      },
+      "representative_approach_from_room_a": {
+        "x": 5.1989,
+        "y": -3.3883,
+        "yaw": -1.639124
+      },
+      "representative_approach_from_room_b": {
+        "x": 5.1511,
+        "y": -4.0867,
+        "yaw": -1.639124
+      },
+      "merged_bbox_cells": [
+        924,
+        1102,
+        926,
+        1105
+      ],
+      "merged_bbox_map_xy": [
+        [
+          5.1,
+          -3.8
+        ],
+        [
+          5.25,
+          -3.7
+        ]
+      ],
+      "step29b3_auto_status": "auto_reject_negative_sanity",
+      "step29b3_selected_for_step29c_candidate": false,
+      "b3r_wall_source_audit": {
+        "raw_wall_metrics_recomputed": true,
+        "raw_wall_core_overlap_ratio_b3r": 0.6806,
+        "raw_wall_core_overlap_count_b3r": 49,
+        "corridor_cell_count_b3r": 72,
+        "bbox_wall_overlap_ratio_b3r": 0.0,
+        "endpoint_wall_touch_ratio_b3r": 0.6667,
+        "wall_filter_status_b3r": "wall_core_blocked",
+        "b3_original_wall_core_overlap_ratio": 0.6806,
+        "wall_core_overlap_delta_vs_b3": -0.0,
+        "status_changed": false,
+        "suspicious_large_delta": false
+      },
+      "b3r_coordinate_audit": {
+        "coordinate_view": "map_xy",
+        "roundtrip_error_m": 0.031346
+      },
+      "b3r_doorway_gap": {
+        "doorway_gap_score": 0.6065,
+        "raw_wall_gap_width_m": 0.25,
+        "wall_endpoint_support_score": 0.7143,
+        "gap_center_clear_score": 0.5714,
+        "gap_consistency_score": 0.586
+      },
+      "b3r_two_sided_support": {
+        "two_sided_support_score": 0.1538,
+        "room_a_support_score": 0.2245,
+        "room_b_support_score": 0.0,
+        "free_space_crossing_score": 0.32,
+        "strict_two_sided_support": false
+      },
+      "width_passability": {
+        "max_source_width_m": 0.15,
+        "merged_span_width_m": 0.1565,
+        "raw_wall_gap_width_m": 0.25,
+        "effective_opening_width_m": 0.25,
+        "passability_status": "possible_narrow"
+      },
+      "label10_unknown": {
+        "label10_fraction_raw": 0.6333,
+        "label10_fraction_repaired": 0.6333,
+        "unknown_fraction": 0.0,
+        "label10_or_unknown_heavy": true,
+        "source_label10_warning_count": 1
+      },
+      "route_role": "rejected",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "nav_priority": null,
+      "step29c_role": "exclude",
+      "role_source": "negative_sanity",
+      "role_reason": "Negative sanity: no direct r3-r11 route; corridor belongs to room7.",
+      "calibration_label": null,
+      "calibration_metric_conflict": false,
+      "requires_visual_confirmation_before_nav": false,
+      "warnings": [],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r3_r11_03"
+      ],
+      "current_step30a_nearest_candidate_distance_m": 0.0,
+      "current_step30a_extraction_match": true,
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.5694,
+        "wall_core_overlap_count": 41,
+        "corridor_cell_count": 72,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.25,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.6327,
+        "raw_wall_gap_width_m": 0.4,
+        "wall_endpoint_support_score": 0.5714,
+        "gap_center_clear_score": 0.5714,
+        "gap_consistency_score": 0.7061,
+        "two_sided_support_score": 0.0838,
+        "room_a_support_score": 0.0165,
+        "room_b_support_score": 0.0331,
+        "free_space_crossing_score": 0.32,
+        "effective_opening_width_m": 0.4
+      },
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "segmentation_wall_processed_used_as_hard_blocker": false
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_01",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "representative_center_xy": [
+        -1.975,
+        -4.125
+      ],
+      "representative_center_rc": [
+        918,
+        960
+      ],
+      "representative_crossing_pose": {
+        "x": -1.975,
+        "y": -4.125,
+        "yaw": 3.113237
+      },
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_01"
+      ],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r7_r14_01"
+      ],
+      "route_role": "needs_review",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.0625,
+        "wall_core_overlap_count": 9,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "clear",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.9405,
+        "raw_wall_gap_width_m": 0.625,
+        "wall_endpoint_support_score": 0.8571,
+        "gap_center_clear_score": 1.0,
+        "gap_consistency_score": 0.9168,
+        "two_sided_support_score": 0.2945,
+        "room_a_support_score": 0.2727,
+        "room_b_support_score": 0.3636,
+        "free_space_crossing_score": 0.2,
+        "effective_opening_width_m": 0.625
+      }
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_02",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "representative_center_xy": [
+        -1.925,
+        -7.625
+      ],
+      "representative_center_rc": [
+        848,
+        962
+      ],
+      "representative_crossing_pose": {
+        "x": -1.925,
+        "y": -7.625,
+        "yaw": 3.113237
+      },
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_02"
+      ],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r7_r14_02"
+      ],
+      "route_role": "needs_review",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.3542,
+        "wall_core_overlap_count": 51,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.0,
+        "raw_wall_gap_width_m": 0.0,
+        "wall_endpoint_support_score": 0.0,
+        "gap_center_clear_score": 0.0,
+        "gap_consistency_score": 0.0,
+        "two_sided_support_score": 0.108,
+        "room_a_support_score": 0.1157,
+        "room_b_support_score": 0.0744,
+        "free_space_crossing_score": 0.16,
+        "effective_opening_width_m": 0.6
+      }
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_03",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "representative_center_xy": [
+        -1.9767,
+        -5.1867
+      ],
+      "representative_center_rc": [
+        896,
+        960
+      ],
+      "representative_crossing_pose": {
+        "x": -1.9767,
+        "y": -5.1867,
+        "yaw": 3.113237
+      },
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_03"
+      ],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r7_r14_03"
+      ],
+      "route_role": "needs_review",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.3333,
+        "wall_core_overlap_count": 48,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.7013,
+        "raw_wall_gap_width_m": 0.35,
+        "wall_endpoint_support_score": 0.7143,
+        "gap_center_clear_score": 0.7143,
+        "gap_consistency_score": 0.6599,
+        "two_sided_support_score": 0.3183,
+        "room_a_support_score": 0.0909,
+        "room_b_support_score": 0.405,
+        "free_space_crossing_score": 0.6,
+        "effective_opening_width_m": 0.6
+      }
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_04",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "representative_center_xy": [
+        -1.95,
+        -4.8
+      ],
+      "representative_center_rc": [
+        904,
+        961
+      ],
+      "representative_crossing_pose": {
+        "x": -1.95,
+        "y": -4.8,
+        "yaw": 3.113237
+      },
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_04"
+      ],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r7_r14_04"
+      ],
+      "route_role": "needs_review",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.4722,
+        "wall_core_overlap_count": 68,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.5671,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 0.8571,
+        "gap_center_clear_score": 0.1429,
+        "gap_consistency_score": 1.0,
+        "two_sided_support_score": 0.1298,
+        "room_a_support_score": 0.0744,
+        "room_b_support_score": 0.1901,
+        "free_space_crossing_score": 0.12,
+        "effective_opening_width_m": 0.6
+      }
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_05",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "representative_center_xy": [
+        -1.7187,
+        -5.9253
+      ],
+      "representative_center_rc": [
+        881,
+        966
+      ],
+      "representative_crossing_pose": {
+        "x": -1.7187,
+        "y": -5.9253,
+        "yaw": 3.113237
+      },
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_05"
+      ],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r7_r14_05"
+      ],
+      "route_role": "needs_review",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.3194,
+        "wall_core_overlap_count": 46,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.5957,
+        "raw_wall_gap_width_m": 0.2,
+        "wall_endpoint_support_score": 0.2857,
+        "gap_center_clear_score": 0.7143,
+        "gap_consistency_score": 1.0,
+        "two_sided_support_score": 0.4145,
+        "room_a_support_score": 0.6364,
+        "room_b_support_score": 0.0,
+        "free_space_crossing_score": 0.8,
+        "effective_opening_width_m": 0.6
+      }
+    },
+    {
+      "hypothesis_id": "hyp_00824_r7_r14_06",
+      "pair_key": "r7_r14",
+      "room_a": 7,
+      "room_b": 14,
+      "representative_center_xy": [
+        -2.0,
+        -3.5944
+      ],
+      "representative_center_rc": [
+        928,
+        960
+      ],
+      "representative_crossing_pose": {
+        "x": -2.0,
+        "y": -3.5944,
+        "yaw": 3.113237
+      },
+      "source_candidate_ids": [
+        "gw_00824_r7_r14_06"
+      ],
+      "current_step30a_source_candidate_ids": [
+        "gw_00824_r7_r14_06"
+      ],
+      "route_role": "needs_review",
+      "use_for_default_route": false,
+      "eligible_as_navigation_fallback": false,
+      "gateway_filter_wall_layer": "gateway_wall_preclose",
+      "step30a_gateway_wall_metrics": {
+        "wall_core_overlap_ratio": 0.3819,
+        "wall_core_overlap_count": 55,
+        "corridor_cell_count": 144,
+        "wall_filter_status": "blocked",
+        "corridor_width_m": 0.6,
+        "corridor_length_m": 0.6,
+        "doorway_gap_score": 0.409,
+        "raw_wall_gap_width_m": 0.3,
+        "wall_endpoint_support_score": 0.2857,
+        "gap_center_clear_score": 0.2857,
+        "gap_consistency_score": 0.6667,
+        "two_sided_support_score": 0.107,
+        "room_a_support_score": 0.0496,
+        "room_b_support_score": 0.0579,
+        "free_space_crossing_score": 0.32,
+        "effective_opening_width_m": 0.6
+      }
+    }
+  ]
+}

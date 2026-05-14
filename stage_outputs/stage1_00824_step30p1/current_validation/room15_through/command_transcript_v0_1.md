@@ -1,0 +1,970 @@
+# Step30S7 Request-Aware Projection GUI Command Transcript
+
+Started: `2026-05-14T03:37:57Z`
+Run id: `room15_through`
+Stage output: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1`
+Evidence: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through`
+
+## build_request_aware_map
+
+```bash
+/usr/bin/python3 /home/ws/workspace/BoxFusion/tools/stage1_step30p1/build_stage1_step30p1_request_aware_nav_map.py --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --start-room room_1 --goal-room room_16 --through-rooms room_15 --terminal-room room_16 
+```
+
+Exit code: `0`
+Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/build_request_aware_map.log`
+
+<details><summary>tail</summary>
+
+```text
+        230,
+        225,
+        12
+      ],
+      "h8r2_free_cells": 20343,
+      "h8r2_free_fraction": 0.995157,
+      "included_because": [
+        "intermediate_route"
+      ],
+      "largest_free_component_area_cells": 19876,
+      "occupied_to_free_cells": 0,
+      "semantic_mask_area_cells": 20442,
+      "step30s7_free_cells": 20343,
+      "step30s7_free_fraction": 0.995157,
+      "unknown_to_free_cells": 0
+    },
+    "room_7": {
+      "changed_cells": 0,
+      "connected_component_count": 2,
+      "free_connected_component_sizes_desc": [
+        4687,
+        318
+      ],
+      "h8r2_free_cells": 5005,
+      "h8r2_free_fraction": 0.998006,
+      "included_because": [
+        "intermediate_route"
+      ],
+      "largest_free_component_area_cells": 4687,
+      "occupied_to_free_cells": 0,
+      "semantic_mask_area_cells": 5015,
+      "step30s7_free_cells": 5005,
+      "step30s7_free_fraction": 0.998006,
+      "unknown_to_free_cells": 0
+    }
+  },
+  "gateway_to_interior_connectivity_by_requested_room": {},
+  "general_request_aware_successor": true,
+  "included_room_ids": [
+    1,
+    3,
+    7,
+    14,
+    15,
+    16
+  ],
+  "included_room_names": [
+    "room_1",
+    "room_3",
+    "room_7",
+    "room_14",
+    "room_15",
+    "room_16"
+  ],
+  "included_room_reasons": {
+    "room_1": [
+      "resolved_route",
+      "start"
+    ],
+    "room_14": [
+      "intermediate_route"
+    ],
+    "room_15": [
+      "resolved_route",
+      "through"
+    ],
+    "room_16": [
+      "goal",
+      "resolved_route",
+      "terminal"
+    ],
+    "room_3": [
+      "intermediate_route"
+    ],
+    "room_7": [
+      "intermediate_route"
+    ]
+  },
+  "not_room15_only_patched_map": true,
+  "outputs": {
+    "map_npz": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.npz",
+    "map_pgm": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.pgm",
+    "map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.yaml"
+  },
+  "request_rooms": {
+    "goal_room": "room_16",
+    "start_room": "room_1",
+    "terminal_room": "room_16",
+    "through_rooms": [
+      "room_15"
+    ]
+  },
+  "resolved_route": [
+    "room_1",
+    "room_3",
+    "room_7",
+    "room_15",
+    "room_7",
+    "room_14",
+    "room_16"
+  ],
+  "selected_gateway_ids": [
+    "gw_00824_r1_r3_01",
+    "gw_00824_r3_r7_01",
+    "gw_00824_r7_r15_01",
+    "gw_00824_r7_r15_01",
+    "gw_00824_r7_r14_01",
+    "gw_00824_r14_r16_01"
+  ],
+  "source_inputs": {
+    "gateway_hypotheses": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+    "h8r2_map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/h8r2_gateway_preserving_nav_map.yaml",
+    "h8r2_masks_npz": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/h8r2_gateway_preserving_masks.npz",
+    "stage1_layered_bev": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/assets/00824_step30a_layered_bev_v0_1.npz",
+    "stage1_room_mask": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/assets/00824_step30a_global_room_mask_v0_1.npy"
+  },
+  "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+  "validation_passed": null,
+  "version": "v0_1"
+}
+```
+</details>
+
+## request_map_validation
+
+```bash
+/usr/bin/python3 /home/ws/workspace/BoxFusion/tools/stage1_step30p1/validate_stage1_step30p1_request_map.py --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --start-room room_1 --goal-room room_16 --through-rooms room_15 --terminal-room room_16 --map-yaml /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.yaml --output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/request_map_validation_v0_1.json --output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/request_map_validation_v0_1.md 
+```
+
+Exit code: `0`
+Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/request_map_validation.log`
+
+<details><summary>tail</summary>
+
+```text
+      "semantic_mask_area_cells": 1324,
+      "step30s7_free_cells": 1295,
+      "step30s7_free_space_overlap_fraction": 0.978097,
+      "target_distance_from_nearest_gateway_m": 0.814108,
+      "target_wall_clearance_m": 0.699225,
+      "unknown_or_non_free_overlap_cells": 29,
+      "validation_passed": true,
+      "wall_clearance_conflict_cells": 0
+    },
+    "room_16": {
+      "connected_component_count": 2,
+      "gateway_to_interior_connectivity": true,
+      "included_because": [
+        "goal",
+        "resolved_route",
+        "terminal"
+      ],
+      "interior_target": {
+        "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+        "distance_to_nearest_gateway_m": 0.813083,
+        "distance_to_occupied_or_unknown_m": 0.45,
+        "meets_preferred_gateway_distance": true,
+        "meets_wall_distance_threshold": true,
+        "room_id": "room_16",
+        "x": -3.55,
+        "y": -2.4,
+        "yaw": 0.0
+      },
+      "interior_target_feasible": true,
+      "largest_free_component_area_cells": 1325,
+      "original_h8r2_free_cells": 1556,
+      "original_h8r2_free_space_overlap_fraction": 0.982323,
+      "preexisting_wall_label_free_overlap_cells": 0,
+      "room": "room_16",
+      "semantic_mask_area_cells": 1584,
+      "step30s7_free_cells": 1556,
+      "step30s7_free_space_overlap_fraction": 0.982323,
+      "target_distance_from_nearest_gateway_m": 0.813083,
+      "target_wall_clearance_m": 0.45,
+      "unknown_or_non_free_overlap_cells": 28,
+      "validation_passed": true,
+      "wall_clearance_conflict_cells": 0
+    },
+    "room_3": {
+      "connected_component_count": 4,
+      "gateway_to_interior_connectivity": true,
+      "included_because": [
+        "intermediate_route"
+      ],
+      "interior_target": {
+        "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+        "distance_to_nearest_gateway_m": 2.421304,
+        "distance_to_occupied_or_unknown_m": 0.55,
+        "meets_preferred_gateway_distance": true,
+        "meets_wall_distance_threshold": true,
+        "room_id": "room_3",
+        "x": 3.8,
+        "y": -0.6,
+        "yaw": 0.0
+      },
+      "interior_target_feasible": true,
+      "largest_free_component_area_cells": 19876,
+      "original_h8r2_free_cells": 20343,
+      "original_h8r2_free_space_overlap_fraction": 0.995157,
+      "preexisting_wall_label_free_overlap_cells": 17,
+      "room": "room_3",
+      "semantic_mask_area_cells": 20442,
+      "step30s7_free_cells": 20343,
+      "step30s7_free_space_overlap_fraction": 0.995157,
+      "target_distance_from_nearest_gateway_m": 2.421304,
+      "target_wall_clearance_m": 0.55,
+      "unknown_or_non_free_overlap_cells": 99,
+      "validation_passed": true,
+      "wall_clearance_conflict_cells": 0
+    },
+    "room_7": {
+      "connected_component_count": 2,
+      "gateway_to_interior_connectivity": true,
+      "included_because": [
+        "intermediate_route"
+      ],
+      "interior_target": {
+        "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+        "distance_to_nearest_gateway_m": 2.100968,
+        "distance_to_occupied_or_unknown_m": 0.85,
+        "meets_preferred_gateway_distance": true,
+        "meets_wall_distance_threshold": true,
+        "room_id": "room_7",
+        "x": -0.1,
+        "y": -5.65,
+        "yaw": 0.0
+      },
+      "interior_target_feasible": true,
+      "largest_free_component_area_cells": 4687,
+      "original_h8r2_free_cells": 5005,
+      "original_h8r2_free_space_overlap_fraction": 0.998006,
+      "preexisting_wall_label_free_overlap_cells": 6,
+      "room": "room_7",
+      "semantic_mask_area_cells": 5015,
+      "step30s7_free_cells": 5005,
+      "step30s7_free_space_overlap_fraction": 0.998006,
+      "target_distance_from_nearest_gateway_m": 2.100968,
+      "target_wall_clearance_m": 0.85,
+      "unknown_or_non_free_overlap_cells": 10,
+      "validation_passed": true,
+      "wall_clearance_conflict_cells": 0
+    }
+  },
+  "selected_gateway_ids": [
+    "gw_00824_r1_r3_01",
+    "gw_00824_r3_r7_01",
+    "gw_00824_r7_r15_01",
+    "gw_00824_r7_r15_01",
+    "gw_00824_r7_r14_01",
+    "gw_00824_r14_r16_01"
+  ],
+  "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+  "validation_passed": true,
+  "version": "v0_1"
+}
+```
+</details>
+
+## bev_visual_regression
+
+```bash
+/usr/bin/python3 /home/ws/workspace/BoxFusion/tools/stage1_step30p1/audit_stage1_step30p1_bev_visual_regression.py --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --start-room room_1 --goal-room room_16 --through-rooms room_15 --terminal-room room_16 --map-yaml /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.yaml --output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/bev_visual_regression_report_v0_1.json --output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/bev_visual_regression_report_v0_1.md --visual-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/visual_diagnostics 
+```
+
+Exit code: `0`
+Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/bev_visual_regression.log`
+
+<details><summary>tail</summary>
+
+```text
+{
+  "artifact_type": "step30s7_bev_visual_regression_report",
+  "broad_uncontrolled_cleanup_occurred": false,
+  "changed_cells_inside_requested_route_rooms": 1206,
+  "changed_cells_outside_requested_route_rooms": 0,
+  "changed_cells_vs_h8r2": 1206,
+  "created_utc": "2026-05-14T03:37:58.610184+00:00",
+  "non_route_rooms_touched": [],
+  "not_compared_against_step30s5_patched_map": true,
+  "original_h8r2_map": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/h8r2_gateway_preserving_nav_map.yaml",
+  "resolved_route": [
+    "room_1",
+    "room_3",
+    "room_7",
+    "room_15",
+    "room_7",
+    "room_14",
+    "room_16"
+  ],
+  "room_floorplan_boundaries_visually_distorted": false,
+  "rviz_bev_display_remains_clean_and_interpretable": true,
+  "semantic_mask_and_nav2_free_space_are_separate_layers": true,
+  "step30s7_map": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.yaml",
+  "unknown_cells_changed_to_free": 1206,
+  "validation_passed": true,
+  "version": "v0_1",
+  "visual_diagnostics": [
+    "full_map_difference_visualization.png",
+    "original_h8r2_map_clipped_around_route.png",
+    "requested_room_coverage_visualization.png",
+    "room15_semantic_mask_vs_h8r2_free.png",
+    "room15_semantic_mask_vs_step30s7_free.png",
+    "rviz_expected_layer_preview.png",
+    "step30s7_map_clipped_around_route.png"
+  ],
+  "visual_diagnostics_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/visual_diagnostics",
+  "wall_or_occupied_evidence_cells_changed_to_free": 0
+}
+```
+</details>
+
+## gateway_generalization_readiness
+
+```bash
+/usr/bin/python3 /home/ws/workspace/BoxFusion/tools/stage1_step30p1/write_stage1_step30p1_gateway_readiness_report.py --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/gateway_generalization_readiness_report_v0_1.json --output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/gateway_generalization_readiness_report_v0_1.md 
+```
+
+Exit code: `0`
+Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/gateway_generalization_readiness.log`
+
+<details><summary>tail</summary>
+
+```text
+{
+  "active_route_projection_code_hard_codes_room15": false,
+  "active_route_projection_code_hard_codes_route_room_ids": false,
+  "artifact_type": "step30s7_gateway_generalization_readiness_report",
+  "created_utc": "2026-05-14T03:37:58.839695+00:00",
+  "externalized": {
+    "forbidden_gateway_pairs": [
+      "r14_r15",
+      "r15_r16",
+      "r3_r11",
+      "r3_r15",
+      "r7_r16"
+    ],
+    "gateway_hypotheses_path": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+    "projection_inputs": [
+      "stage1_process/room_segmentation/assets/00824_step30a_global_room_mask_v0_1.npy",
+      "stage1_process/room_segmentation/assets/00824_step30a_layered_bev_v0_1.npz",
+      "maps/h8r2_gateway_preserving_masks.npz"
+    ],
+    "selected_gateway_pairs": {
+      "r14_r16": "gw_00824_r14_r16_01",
+      "r1_r3": "gw_00824_r1_r3_01",
+      "r3_r7": "gw_00824_r3_r7_01",
+      "r3_r8": "gw_00824_r3_r8_01",
+      "r7_r11": "gw_00824_r7_r11_02",
+      "r7_r14": "gw_00824_r7_r14_01",
+      "r7_r15": "gw_00824_r7_r15_01",
+      "r8_r11": "gw_00824_r8_r11_01"
+    }
+  },
+  "full_multi_scene_gateway_generalization_claimed": false,
+  "readiness_summary": "Step30S7 externalizes obvious route/projection constants and uses request-aware inclusion, but does not claim full multi-scene gateway extraction generalization.",
+  "scene_specific_remaining": [
+    "The config is still for scene 00824 and depends on scene-local gateway artifacts.",
+    "Gateway extraction itself is not re-run as a multi-scene truth-blind package in Step30S7.",
+    "Topology quality still depends on the selected gateway artifact produced for this scene."
+  ],
+  "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+  "version": "v0_1"
+}
+```
+</details>
+
+## route_query
+
+```bash
+/usr/bin/python3 /home/ws/workspace/BoxFusion/tools/stage1_step30p1/prepare_stage1_step30p1_semantic_route.py --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --start-room room_1 --goal-room room_16 --through-rooms room_15 --terminal-room room_16 --map-profile step30s7_request_aware --output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/route_query_result_v0_1.json --output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/route_query_result_v0_1.md --waypoints-output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/semantic_route_waypoints_v0_1.json --target-selection-output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/room15_target_selection_v0_1.json --target-selection-output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/room15_target_selection_v0_1.md 
+```
+
+Exit code: `0`
+Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/route_query.log`
+
+<details><summary>tail</summary>
+
+```text
+    },
+    {
+      "adjusted": false,
+      "adjusted_xy": {
+        "x": -4.15,
+        "y": -3.3
+      },
+      "from_room": "room_14",
+      "gateway_id": "gw_00824_r14_r16_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.010424,
+      "nav_map_clearance_m": 0.309845,
+      "original_xy": {
+        "x": -4.1396,
+        "y": -3.3007
+      },
+      "room_constraint": null,
+      "structural_wall_clearance_m": 0.35,
+      "to_room": "room_16",
+      "waypoint_source": "segment_crossing"
+    },
+    {
+      "adjusted": true,
+      "adjusted_xy": {
+        "x": -3.95,
+        "y": -2.45
+      },
+      "from_room": "room_14",
+      "gateway_id": "gw_00824_r14_r16_01",
+      "method": "nearby_free_cell_maximizing_nav_and_structural_clearance",
+      "move_distance_m": 0.538558,
+      "nav_map_clearance_m": 0.529843,
+      "original_xy": {
+        "x": -4.1481,
+        "y": -2.9508
+      },
+      "room_constraint": 16,
+      "structural_wall_clearance_m": 0.529843,
+      "to_room": "room_16",
+      "waypoint_source": "segment_goal"
+    }
+  ],
+  "goal_room": "room_16",
+  "included_room_reasons": {
+    "room_1": [
+      "resolved_route",
+      "start"
+    ],
+    "room_14": [
+      "intermediate_route"
+    ],
+    "room_15": [
+      "resolved_route",
+      "through"
+    ],
+    "room_16": [
+      "goal",
+      "resolved_route",
+      "terminal"
+    ],
+    "room_3": [
+      "intermediate_route"
+    ],
+    "room_7": [
+      "intermediate_route"
+    ]
+  },
+  "interior_targets": {
+    "room_15": {
+      "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+      "distance_to_nearest_gateway_m": 0.8,
+      "distance_to_occupied_or_unknown_m": 0.389844,
+      "meets_preferred_gateway_distance": true,
+      "meets_wall_distance_threshold": true,
+      "room_id": "room_15",
+      "x": -1.2,
+      "y": -2.1,
+      "yaw": 0.0
+    },
+    "room_16": {
+      "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+      "distance_to_nearest_gateway_m": 0.807775,
+      "distance_to_occupied_or_unknown_m": 0.36969,
+      "meets_preferred_gateway_distance": true,
+      "meets_wall_distance_threshold": true,
+      "room_id": "room_16",
+      "x": -3.2,
+      "y": -2.75,
+      "yaw": 0.0
+    }
+  },
+  "map_profile": "step30s7_request_aware",
+  "map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.yaml",
+  "not_room15_specific": true,
+  "revisited_rooms": [
+    "room_3",
+    "room_7",
+    "room_14",
+    "room_15"
+  ],
+  "room_sequence": [
+    "room_1",
+    "room_3",
+    "room_7",
+    "room_15",
+    "room_7",
+    "room_14",
+    "room_16"
+  ],
+  "route_id": "room_chain_r1_r3_r7_r15_r7_r14_r16",
+  "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+  "start_room": "room_1",
+  "terminal_room": "room_16",
+  "through_rooms": [
+    "room_15"
+  ],
+  "version": "v0_1",
+  "waypoint_count": 94,
+  "waypoints_path": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/semantic_route_waypoints_v0_1.json"
+}
+```
+</details>
+
+## clean_old_processes
+
+```bash
+/home/ws/workspace/BoxFusion/tools/stage1_step30p1/launch_stage1_step30p1_gazebo_nav2.sh --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --log-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/bringup_logs --stop 
+```
+
+Exit code: `0`
+Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/clean_old_processes.log`
+
+<details><summary>tail</summary>
+
+```text
+gazebo: not running
+robot_state_publisher: not running
+static_tf: not running
+nav2: not running
+```
+</details>
+
+## bringup
+
+```bash
+/home/ws/workspace/BoxFusion/tools/stage1_step30p1/launch_stage1_step30p1_gazebo_nav2.sh --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --ros-domain-id 84 --gui --map-profile step30s7_request_aware --log-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/bringup_logs --spawn-x 5.85 --spawn-y 2.1 --spawn-yaw 3.141593 
+```
+
+Exit code: `0`
+Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/bringup.log`
+
+<details><summary>tail</summary>
+
+```text
+[stage1_step30p1] starting Gazebo world: /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/worlds/00824_step30p1_large_continuous_floor_world.sdf
+[stage1_step30p1] starting robot_state_publisher
+[stage1_step30p1] spawning TurtleBot3 burger
+[stage1_step30p1] starting static map->odom TF
+[stage1_step30p1] starting Nav2 staticloc stack
+[stage1_step30p1] launched. Logs: /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/bringup_logs
+gazebo: running pid=9749
+robot_state_publisher: running pid=9989
+static_tf: running pid=10032
+nav2: running pid=10034
+```
+</details>
+
+## dataplane_probe
+
+```bash
+/usr/bin/python3 /home/ws/workspace/BoxFusion/tools/stage1_step30p1/probe_stage1_step30p1_dataplane.py --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --timeout-sec 25 --output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/dataplane_probe_result_v0_1.json --output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/dataplane_probe_result_v0_1.md 
+```
+
+Exit code: `0`
+Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/dataplane_probe.log`
+
+<details><summary>tail</summary>
+
+```text
+    "odom_nonzero_rate": true,
+    "scan_nonzero_rate": true,
+    "staticloc_dataplane_ready": true,
+    "tf_base_footprint_to_base_link_exists_or_recoverable": true,
+    "tf_base_link_to_base_scan_exists": true,
+    "tf_has_frames": true,
+    "tf_map_to_odom_exists": true,
+    "tf_odom_to_robot_exists": true,
+    "tf_static_has_frames": true
+  },
+  "samples": {
+    "map": {
+      "frame_id": "map",
+      "height": 1167,
+      "origin": {
+        "x": -50.0,
+        "y": -50.0
+      },
+      "resolution": 0.05000000074505806,
+      "width": 1227
+    },
+    "odom": {
+      "child_frame_id": "base_footprint",
+      "frame_id": "odom",
+      "x": 5.849963,
+      "y": 2.099998,
+      "yaw": -3.141586
+    },
+    "scan": {
+      "finite_count": 0,
+      "finite_max": null,
+      "finite_min": null,
+      "frame_id": "base_scan",
+      "range_count": 360
+    }
+  },
+  "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+  "tf_edges_observed": {
+    "/tf": [
+      "base_link->wheel_left_link",
+      "base_link->wheel_right_link",
+      "odom->base_footprint"
+    ],
+    "/tf_static": [
+      "base_footprint->base_link",
+      "base_link->base_scan",
+      "base_link->caster_back_link",
+      "base_link->imu_link",
+      "map->odom"
+    ]
+  },
+  "tf_frames": {
+    "base_footprint_to_base_link": true,
+    "base_link_to_base_scan": true,
+    "map_to_base_footprint": true,
+    "map_to_base_link": true,
+    "map_to_odom": true,
+    "odom_to_base_footprint": true,
+    "odom_to_base_link": true
+  },
+  "topics": {
+    "/clock": {
+      "message_count_observed": 249,
+      "message_received": true,
+      "observed_rate_hz": 9.951,
+      "probe_window_sec": 25.0,
+      "publisher_count": 1,
+      "subscription_count": 21
+    },
+    "/cmd_vel": {
+      "message_count_observed": 0,
+      "message_received": false,
+      "observed_rate_hz": 0.0,
+      "probe_window_sec": 25.0,
+      "publisher_count": 4,
+      "subscription_count": 2
+    },
+    "/map": {
+      "message_count_observed": 1,
+      "message_received": true,
+      "observed_rate_hz": 0.0,
+      "probe_window_sec": 25.0,
+      "publisher_count": 1,
+      "subscription_count": 3
+    },
+    "/odom": {
+      "message_count_observed": 736,
+      "message_received": true,
+      "observed_rate_hz": 29.388,
+      "probe_window_sec": 25.0,
+      "publisher_count": 1,
+      "subscription_count": 2
+    },
+    "/scan": {
+      "message_count_observed": 125,
+      "message_received": true,
+      "observed_rate_hz": 4.994,
+      "probe_window_sec": 25.0,
+      "publisher_count": 1,
+      "subscription_count": 4
+    },
+    "/tf": {
+      "message_count_observed": 1221,
+      "message_received": true,
+      "observed_rate_hz": 48.845,
+      "probe_window_sec": 25.0,
+      "publisher_count": 2,
+      "subscription_count": 7
+    },
+    "/tf_static": {
+      "message_count_observed": 501,
+      "message_received": true,
+      "observed_rate_hz": 20.04,
+      "probe_window_sec": 25.0,
+      "publisher_count": 2,
+      "subscription_count": 7
+    }
+  },
+  "version": "v0_1"
+}
+```
+</details>
+
+## route_execution
+
+```bash
+/usr/bin/python3 /home/ws/workspace/BoxFusion/tools/stage1_step30p1/run_stage1_step30p1_route.py --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --waypoints-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/semantic_route_waypoints_v0_1.json --expected-room-chain room_1\,room_3\,room_7\,room_15\,room_7\,room_14\,room_16 --expected-gateway-sequence gw_00824_r1_r3_01\,gw_00824_r3_r7_01\,gw_00824_r7_r15_01\,gw_00824_r7_r15_01\,gw_00824_r7_r14_01\,gw_00824_r14_r16_01 --allow-non-step30p1-truth --from-start --reset-to-route-start --follow-path-timeout-sec 480 --goal-timeout-sec 180 --split-dwell-source room15_interior_terminal --split-dwell-sec 3.0 --output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/route_execution_result_v0_1.json --output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/route_execution_result_v0_1.md --trajectory-output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/trajectory_sample_result_v0_1.json --latest-slice-output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/latest_follow_path_slice_v0_1.json 
+```
+
+Exit code: `0`
+Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/route_execution.log`
+
+<details><summary>tail</summary>
+
+```text
+      "x": -4.05673409043133,
+      "y": -3.1147810193108922,
+      "yaw": 1.3591654950331833,
+      "z": 0.008730982190593154
+    },
+    {
+      "frame_id": "map",
+      "sample_index": 243,
+      "source": "/tf map->base_footprint",
+      "time_wall_sec": 1778730048.840693,
+      "x": -4.038661451879986,
+      "y": -3.0283459604235707,
+      "yaw": 1.3659021542409802,
+      "z": 0.008724981800241264
+    },
+    {
+      "frame_id": "map",
+      "sample_index": 244,
+      "source": "/tf map->base_footprint",
+      "time_wall_sec": 1778730049.341312,
+      "x": -4.019026031042174,
+      "y": -2.9452708257422775,
+      "yaw": 1.3263923716003378,
+      "z": 0.00873106172628735
+    },
+    {
+      "frame_id": "map",
+      "sample_index": 245,
+      "source": "/tf map->base_footprint",
+      "time_wall_sec": 1778730049.8619785,
+      "x": -3.9838086662697614,
+      "y": -2.857736387958232,
+      "yaw": 1.0242448411716236,
+      "z": 0.008730891061148906
+    },
+    {
+      "frame_id": "map",
+      "sample_index": 246,
+      "source": "/tf map->base_footprint",
+      "time_wall_sec": 1778730050.3726778,
+      "x": -3.9309421046863124,
+      "y": -2.7987273689225414,
+      "yaw": 0.6686902043254376,
+      "z": 0.008722062191126995
+    },
+    {
+      "frame_id": "map",
+      "sample_index": 247,
+      "source": "/tf map->base_footprint",
+      "time_wall_sec": 1778730050.872934,
+      "x": -3.862809528223632,
+      "y": -2.7615378590582944,
+      "yaw": 0.35620680153146533,
+      "z": 0.008723681090960842
+    },
+    {
+      "frame_id": "map",
+      "sample_index": 248,
+      "source": "/tf map->base_footprint",
+      "time_wall_sec": 1778730051.3731027,
+      "x": -3.7800709400705625,
+      "y": -2.7393284338719517,
+      "yaw": 0.16938384169041035,
+      "z": 0.008723207621649619
+    },
+    {
+      "frame_id": "map",
+      "sample_index": 249,
+      "source": "/tf map->base_footprint",
+      "time_wall_sec": 1778730051.9038854,
+      "x": -3.6881136664691976,
+      "y": -2.732828058917193,
+      "yaw": -0.010361810963373954,
+      "z": 0.008726443475802422
+    },
+    {
+      "frame_id": "map",
+      "sample_index": 250,
+      "source": "/tf map->base_footprint",
+      "time_wall_sec": 1778730052.4149642,
+      "x": -3.6089964175041165,
+      "y": -2.736970507425332,
+      "yaw": -0.07687239707506842,
+      "z": 0.008701598511852234
+    },
+    {
+      "frame_id": "map",
+      "sample_index": 251,
+      "source": "/tf map->base_footprint",
+      "time_wall_sec": 1778730052.9229615,
+      "x": -3.5231388078695454,
+      "y": -2.744845542207656,
+      "yaw": -0.10580533250731215,
+      "z": 0.008731057586899044
+    },
+    {
+      "frame_id": "map",
+      "sample_index": 252,
+      "source": "/tf map->base_footprint",
+      "time_wall_sec": 1778730053.436771,
+      "x": -3.4416793284502236,
+      "y": -2.7542591342908103,
+      "yaw": -0.11827218894749618,
+      "z": 0.008731139511026186
+    },
+    {
+      "frame_id": "map",
+      "sample_index": 253,
+      "source": "/tf map->base_footprint",
+      "time_wall_sec": 1778730053.94169,
+      "x": -3.3915142501185946,
+      "y": -2.760670957945824,
+      "yaw": -0.1780120074634732,
+      "z": 0.00873106316190191
+    }
+  ],
+  "version": "v0_1",
+  "waypoint_results": [],
+  "waypoints_source": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/semantic_route_waypoints_v0_1.json"
+}
+```
+</details>
+
+## physical_validation
+
+```bash
+/usr/bin/python3 /home/ws/workspace/BoxFusion/tools/stage1_step30p1/validate_stage1_step30p1_physical.py --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --route-query-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/route_query_result_v0_1.json --waypoints-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/semantic_route_waypoints_v0_1.json --route-execution-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/route_execution_result_v0_1.json --trajectory-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/trajectory_sample_result_v0_1.json --through-output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/through_room15_physical_visit_validation_v0_1.json --through-output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/through_room15_physical_visit_validation_v0_1.md --terminal-output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/room16_terminal_quality_validation_v0_1.json --terminal-output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/room16_terminal_quality_validation_v0_1.md --wall-output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/trajectory_wall_crossing_validation_v0_2.json --wall-output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/trajectory_wall_crossing_validation_v0_2.md --spin-output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/local_looping_spin_validation_v0_2.json --spin-output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/local_looping_spin_validation_v0_2.md --room15-min-inside-samples 8 --through-room-dwell-sec 3.0 
+```
+
+Exit code: `0`
+Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through/physical_validation.log`
+
+<details><summary>tail</summary>
+
+```text
+    "local_loop_count_around_gateway": 0,
+    "local_looping_validation_passed": true,
+    "near_gateway_interval_count": 22,
+    "near_stationary_high_yaw_change_interval_count": 0,
+    "repeated_revisit_cell_count_near_gateway": 0,
+    "spinning_detected": false,
+    "total_angular_travel_near_gateway_rad": 3.063011,
+    "version": "v0_1"
+  },
+  "terminal": {
+    "artifact_type": "stage1_room16_terminal_quality_validation",
+    "created_utc": "2026-05-14T03:40:54.749155+00:00",
+    "final_arrival_action_success": true,
+    "final_pose": {
+      "frame_id": "map",
+      "source": "/tf map->base_footprint",
+      "x": -3.389127056845711,
+      "y": -2.761045133263549,
+      "yaw": -0.32470489586167095,
+      "z": 0.008731062875248236
+    },
+    "final_pose_distance_to_r14_r16_gateway_m": 0.932416,
+    "final_pose_distance_to_room16_interior_target_m": 0.189449,
+    "final_pose_inside_room16_interior_region": true,
+    "final_pose_inside_room16_mask": true,
+    "final_pose_near_r14_r16_gateway": false,
+    "min_distance_to_room16_interior_target": 0.191811,
+    "room16_interior_target": {
+      "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+      "distance_to_nearest_gateway_m": 0.807775,
+      "distance_to_occupied_or_unknown_m": 0.36969,
+      "meets_preferred_gateway_distance": true,
+      "meets_wall_distance_threshold": true,
+      "room_id": "room_16",
+      "x": -3.2,
+      "y": -2.75,
+      "yaw": 0.0
+    },
+    "route_execution_success": true,
+    "terminal_visual_quality_passed": true,
+    "version": "v0_1"
+  },
+  "through": {
+    "all_through_rooms_success": true,
+    "artifact_type": "through_room_physical_visit_validation",
+    "created_utc": "2026-05-14T03:40:54.749127+00:00",
+    "gateway_only_failure_guard_passed": true,
+    "room15_inside_dwell_sec": 23.044,
+    "room15_inside_sample_count": 52,
+    "route_topology_includes_room15": true,
+    "through_room_results": {
+      "room_15": {
+        "gateway_crossed": true,
+        "gateway_only_failure_guard_passed": true,
+        "inside_dwell_sec": 23.044,
+        "inside_sample_count": 52,
+        "interior_target": {
+          "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+          "distance_to_nearest_gateway_m": 0.8,
+          "distance_to_occupied_or_unknown_m": 0.389844,
+          "meets_preferred_gateway_distance": true,
+          "meets_wall_distance_threshold": true,
+          "room_id": "room_15",
+          "x": -1.2,
+          "y": -2.1,
+          "yaw": 0.0
+        },
+        "max_distance_from_gateway_while_inside_m": 1.831304,
+        "min_distance_to_gateway_m": 0.222197,
+        "min_distance_to_interior_target_m": 0.12893,
+        "required_dwell_sec": 3.0,
+        "required_inside_sample_count": 8,
+        "room_id": "room_15",
+        "route_topology_includes_room": true,
+        "trajectory_entered_room_mask": true,
+        "visual_through_room_success": true
+      }
+    },
+    "through_rooms_requested": [
+      "room_15"
+    ],
+    "trajectory_entered_room15_mask": true,
+    "trajectory_sample_count": 254,
+    "version": "v0_2",
+    "visual_through_room15_success": true
+  },
+  "wall": {
+    "active_map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.yaml",
+    "artifact_type": "step30s7_trajectory_wall_crossing_validation",
+    "boundary_tolerance_not_used_for_pass": true,
+    "boundary_tolerance_point_violations_h8r2": 0,
+    "boundary_tolerance_point_violations_step30s7": 0,
+    "boundary_tolerance_segment_violations_h8r2": 0,
+    "boundary_tolerance_segment_violations_step30s7": 0,
+    "created_utc": "2026-05-14T03:40:54.886610+00:00",
+    "final_wall_validation_passed": true,
+    "h8r2_map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/h8r2_gateway_preserving_nav_map.yaml",
+    "max_wall_penetration_or_occupied_crossing": 0,
+    "point_violations": [],
+    "real_point_violations_h8r2": 0,
+    "real_point_violations_step30s7": 0,
+    "real_segment_violations_h8r2": 0,
+    "real_segment_violations_step30s7": 0,
+    "step30s7_map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/step30s7_request_aware_nav_map.yaml",
+    "structural_wall_boundary_count": 0,
+    "structural_wall_overlap_count": 0,
+    "suspicious_wall_crossing_segments": [],
+    "trajectory_sample_count": 254,
+    "trajectory_wall_point_violation_count": 0,
+    "trajectory_wall_segment_violation_count": 0,
+    "version": "v0_2",
+    "visualization_artifact_possible": false,
+    "visualization_interpolation_artifact_possible": false,
+    "wall_crossing_validation_passed": true,
+    "wall_point_violations_h8r2": 0,
+    "wall_point_violations_step30s7": 0,
+    "wall_segment_violations_h8r2": 0,
+    "wall_segment_violations_step30s7": 0
+  }
+}
+```
+</details>
+
+Keeping Gazebo/RViz runtime open for 8s before this command exits.

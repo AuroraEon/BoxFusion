@@ -1,0 +1,129 @@
+{
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "step": "step30a",
+  "artifact_type": "gateway_wall_benchmark",
+  "gateway_wall_layer": "gateway_wall_preclose",
+  "wall_filter_status_thresholds": {
+    "clear": "ratio < 0.08",
+    "uncertain": "0.08 <= ratio < 0.18",
+    "blocked": "ratio >= 0.18"
+  },
+  "positive_benchmark_cases": [
+    "hyp_00824_r1_r3_01",
+    "hyp_00824_r3_r7_01",
+    "hyp_00824_r7_r11_01",
+    "hyp_00824_r8_r11_01"
+  ],
+  "negative_sanity_cases": [
+    "hyp_00824_r3_r11_01",
+    "hyp_00824_r3_r11_02",
+    "hyp_00824_r3_r11_03"
+  ],
+  "cases": {
+    "hyp_00824_r1_r3_01": {
+      "hypothesis_id": "hyp_00824_r1_r3_01",
+      "label": "positive",
+      "pair_key": "r1_r3",
+      "route_role": "primary_route_gateway",
+      "wall_core_overlap_ratio": 0.0682,
+      "wall_filter_status": "clear",
+      "doorway_gap_score": 0.35,
+      "two_sided_support_score": 0.5636,
+      "effective_opening_width_m": 0.6,
+      "free_space_crossing_score": 1.0,
+      "room_a_support_score": 0.4711,
+      "room_b_support_score": 0.438,
+      "conflict_with_user_confirmed_label": false
+    },
+    "hyp_00824_r3_r7_01": {
+      "hypothesis_id": "hyp_00824_r3_r7_01",
+      "label": "positive",
+      "pair_key": "r3_r7",
+      "route_role": "primary_route_gateway",
+      "wall_core_overlap_ratio": 0.0221,
+      "wall_filter_status": "clear",
+      "doorway_gap_score": 0.35,
+      "two_sided_support_score": 0.5207,
+      "effective_opening_width_m": 0.6,
+      "free_space_crossing_score": 1.0,
+      "room_a_support_score": 0.8017,
+      "room_b_support_score": 0.0,
+      "conflict_with_user_confirmed_label": false
+    },
+    "hyp_00824_r7_r11_01": {
+      "hypothesis_id": "hyp_00824_r7_r11_01",
+      "label": "positive",
+      "pair_key": "r7_r11",
+      "route_role": "primary_route_gateway",
+      "wall_core_overlap_ratio": 0.0833,
+      "wall_filter_status": "uncertain",
+      "doorway_gap_score": 0.9676,
+      "two_sided_support_score": 0.3977,
+      "effective_opening_width_m": 0.65,
+      "free_space_crossing_score": 0.6,
+      "room_a_support_score": 0.5372,
+      "room_b_support_score": 0.157,
+      "conflict_with_user_confirmed_label": false
+    },
+    "hyp_00824_r8_r11_01": {
+      "hypothesis_id": "hyp_00824_r8_r11_01",
+      "label": "positive",
+      "pair_key": "r8_r11",
+      "route_role": "primary_route_gateway",
+      "wall_core_overlap_ratio": 0.1389,
+      "wall_filter_status": "uncertain",
+      "doorway_gap_score": 0.8646,
+      "two_sided_support_score": 0.4161,
+      "effective_opening_width_m": 0.65,
+      "free_space_crossing_score": 0.56,
+      "room_a_support_score": 0.3306,
+      "room_b_support_score": 0.4298,
+      "conflict_with_user_confirmed_label": false
+    },
+    "hyp_00824_r3_r11_01": {
+      "hypothesis_id": "hyp_00824_r3_r11_01",
+      "label": "negative",
+      "pair_key": "r3_r11",
+      "route_role": "rejected",
+      "wall_core_overlap_ratio": 0.4514,
+      "wall_filter_status": "blocked",
+      "doorway_gap_score": 0.4718,
+      "two_sided_support_score": 0.1785,
+      "effective_opening_width_m": 0.6,
+      "free_space_crossing_score": 0.0,
+      "room_a_support_score": 0.2645,
+      "room_b_support_score": 0.1818,
+      "conflict_with_user_confirmed_label": false
+    },
+    "hyp_00824_r3_r11_02": {
+      "hypothesis_id": "hyp_00824_r3_r11_02",
+      "label": "negative",
+      "pair_key": "r3_r11",
+      "route_role": "rejected",
+      "wall_core_overlap_ratio": 0.4861,
+      "wall_filter_status": "blocked",
+      "doorway_gap_score": 0.6069,
+      "two_sided_support_score": 0.0995,
+      "effective_opening_width_m": 0.25,
+      "free_space_crossing_score": 0.2,
+      "room_a_support_score": 0.0909,
+      "room_b_support_score": 0.0579,
+      "conflict_with_user_confirmed_label": false
+    },
+    "hyp_00824_r3_r11_03": {
+      "hypothesis_id": "hyp_00824_r3_r11_03",
+      "label": "negative",
+      "pair_key": "r3_r11",
+      "route_role": "rejected",
+      "wall_core_overlap_ratio": 0.5694,
+      "wall_filter_status": "blocked",
+      "doorway_gap_score": 0.6327,
+      "two_sided_support_score": 0.0838,
+      "effective_opening_width_m": 0.4,
+      "free_space_crossing_score": 0.32,
+      "room_a_support_score": 0.0165,
+      "room_b_support_score": 0.0331,
+      "conflict_with_user_confirmed_label": false
+    }
+  }
+}

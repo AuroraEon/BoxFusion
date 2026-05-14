@@ -1,0 +1,20 @@
+{
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "artifact_type": "step30b2_summary",
+  "step": "step30b2",
+  "version": "v0_1",
+  "stage_a_rerun_attempted": false,
+  "topology_generated": false,
+  "ros_nav2_gazebo_run": false,
+  "truth_file_written": true,
+  "truth_used_for_selection": false,
+  "auto_selection_pairs_total": 13,
+  "positive_pairs_total": 8,
+  "positive_pair_top1_correct": 8,
+  "positive_pair_top3_recall": 8,
+  "candidate_level_top1_accuracy": 1.0,
+  "candidate_level_top3_recall": 1.0,
+  "negative_sanity_false_positives": 0,
+  "non_truth_primary_false_positives": 0,
+  "validation_passed": true
+}

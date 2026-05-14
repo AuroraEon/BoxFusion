@@ -1,0 +1,171 @@
+[INFO] [launch]: All log files can be found below /home/ws/.ros/log/2026-05-14-16-33-39-963056-DESKTOP-24F4MES-7937
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [map_server-1]: process started with pid [7997]
+[INFO] [controller_server-2]: process started with pid [7999]
+[INFO] [planner_server-3]: process started with pid [8001]
+[INFO] [recoveries_server-4]: process started with pid [8003]
+[INFO] [bt_navigator-5]: process started with pid [8005]
+[INFO] [waypoint_follower-6]: process started with pid [8007]
+[INFO] [lifecycle_manager-7]: process started with pid [8009]
+[controller_server-2] [INFO] [1778747624.126830908] [controller_server]: 
+[controller_server-2] 	controller_server lifecycle node launched. 
+[controller_server-2] 	Waiting on external lifecycle transitions to activate
+[controller_server-2] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-2] [INFO] [1778747624.128620154] [controller_server]: Creating controller server
+[controller_server-2] [INFO] [1778747624.148827702] [local_costmap.local_costmap]: 
+[controller_server-2] 	local_costmap lifecycle node launched. 
+[controller_server-2] 	Waiting on external lifecycle transitions to activate
+[controller_server-2] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-2] [INFO] [1778747624.149109920] [local_costmap.local_costmap]: Creating Costmap
+[waypoint_follower-6] [INFO] [1778747624.412359742] [waypoint_follower]: 
+[waypoint_follower-6] 	waypoint_follower lifecycle node launched. 
+[waypoint_follower-6] 	Waiting on external lifecycle transitions to activate
+[waypoint_follower-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-6] [INFO] [1778747624.412478251] [waypoint_follower]: Creating
+[lifecycle_manager-7] [INFO] [1778747624.415510674] [lifecycle_manager_navigation]: Creating
+[lifecycle_manager-7] [INFO] [1778747624.427053477] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[lifecycle_manager-7] [INFO] [1778747624.437585467] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-7] [INFO] [1778747624.437636964] [lifecycle_manager_navigation]: [34m[1mConfiguring map_server[0m[0m
+[bt_navigator-5] [INFO] [1778747624.566720372] [bt_navigator]: 
+[bt_navigator-5] 	bt_navigator lifecycle node launched. 
+[bt_navigator-5] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-5] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-5] [INFO] [1778747624.566852394] [bt_navigator]: Creating
+[map_server-1] [INFO] [1778747625.047210080] [map_server]: 
+[map_server-1] 	map_server lifecycle node launched. 
+[map_server-1] 	Waiting on external lifecycle transitions to activate
+[map_server-1] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-1] [INFO] [1778747625.047322080] [map_server]: Creating
+[map_server-1] [INFO] [1778747625.233141052] [map_server]: Configuring
+[map_server-1] [INFO] [map_io]: Loading yaml file: /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/stage1_full_scene_occupancy_map.yaml
+[map_server-1] [DEBUG] [map_io]: resolution: 0.05
+[map_server-1] [DEBUG] [map_io]: origin[0]: -50
+[map_server-1] [DEBUG] [map_io]: origin[1]: -50
+[map_server-1] [DEBUG] [map_io]: origin[2]: 0
+[map_server-1] [DEBUG] [map_io]: free_thresh: 0.25
+[map_server-1] [DEBUG] [map_io]: occupied_thresh: 0.65
+[map_server-1] [DEBUG] [map_io]: mode: trinary
+[map_server-1] [DEBUG] [map_io]: negate: 0
+[map_server-1] [INFO] [map_io]: Loading image_file: /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/stage1_full_scene_occupancy_map.pgm
+[recoveries_server-4] [INFO] [1778747625.255668740] [recoveries_server]: 
+[recoveries_server-4] 	recoveries_server lifecycle node launched. 
+[recoveries_server-4] 	Waiting on external lifecycle transitions to activate
+[recoveries_server-4] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-3] [INFO] [1778747625.258968882] [planner_server]: 
+[planner_server-3] 	planner_server lifecycle node launched. 
+[planner_server-3] 	Waiting on external lifecycle transitions to activate
+[planner_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-3] [INFO] [1778747625.259836500] [planner_server]: Creating
+[planner_server-3] [INFO] [1778747625.295731605] [global_costmap.global_costmap]: 
+[planner_server-3] 	global_costmap lifecycle node launched. 
+[planner_server-3] 	Waiting on external lifecycle transitions to activate
+[planner_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-3] [INFO] [1778747625.296100377] [global_costmap.global_costmap]: Creating Costmap
+[map_server-1] [DEBUG] [map_io]: Read map /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/stage1_full_scene_occupancy_map.pgm: 1227 X 1167 map @ 0.05 m/cell
+[lifecycle_manager-7] [INFO] [1778747625.345726790] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[controller_server-2] [INFO] [1778747625.346131901] [controller_server]: Configuring controller interface
+[controller_server-2] [INFO] [1778747625.346551942] [controller_server]: Controller frequency set to 10.0000Hz
+[controller_server-2] [INFO] [1778747625.346589101] [local_costmap.local_costmap]: Configuring
+[controller_server-2] [INFO] [1778747625.350529606] [local_costmap.local_costmap]: Using plugin "voxel_layer"
+[controller_server-2] [INFO] [1778747625.354115020] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[controller_server-2] [INFO] [1778747625.363305943] [local_costmap.local_costmap]: Initialized plugin "voxel_layer"
+[controller_server-2] [INFO] [1778747625.363369596] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-2] [INFO] [1778747625.364899881] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[controller_server-2] [INFO] [1778747625.374629213] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[controller_server-2] [INFO] [1778747625.374981308] [controller_server]: Created goal_checker : goal_checker of type nav2_controller::SimpleGoalChecker
+[controller_server-2] [INFO] [1778747625.377336345] [controller_server]: Created controller : FollowPath of type dwb_core::DWBLocalPlanner
+[controller_server-2] [INFO] [1778747625.380109026] [controller_server]: Setting transform_tolerance to 0.200000
+[controller_server-2] [INFO] [1778747625.397931188] [controller_server]: Using critic "RotateToGoal" (dwb_critics::RotateToGoalCritic)
+[controller_server-2] [INFO] [1778747625.398751187] [controller_server]: Critic plugin initialized
+[controller_server-2] [INFO] [1778747625.399302017] [controller_server]: Using critic "Oscillation" (dwb_critics::OscillationCritic)
+[controller_server-2] [INFO] [1778747625.399596143] [controller_server]: Critic plugin initialized
+[controller_server-2] [INFO] [1778747625.399981905] [controller_server]: Using critic "BaseObstacle" (dwb_critics::BaseObstacleCritic)
+[controller_server-2] [INFO] [1778747625.400337447] [controller_server]: Critic plugin initialized
+[controller_server-2] [INFO] [1778747625.401095790] [controller_server]: Using critic "GoalAlign" (dwb_critics::GoalAlignCritic)
+[controller_server-2] [INFO] [1778747625.402194886] [controller_server]: Critic plugin initialized
+[controller_server-2] [INFO] [1778747625.402608416] [controller_server]: Using critic "PathAlign" (dwb_critics::PathAlignCritic)
+[controller_server-2] [INFO] [1778747625.403583225] [controller_server]: Critic plugin initialized
+[controller_server-2] [INFO] [1778747625.403927161] [controller_server]: Using critic "PathDist" (dwb_critics::PathDistCritic)
+[controller_server-2] [INFO] [1778747625.404671168] [controller_server]: Critic plugin initialized
+[controller_server-2] [INFO] [1778747625.405343926] [controller_server]: Using critic "GoalDist" (dwb_critics::GoalDistCritic)
+[controller_server-2] [INFO] [1778747625.405947258] [controller_server]: Critic plugin initialized
+[controller_server-2] [INFO] [1778747625.405993741] [controller_server]: Controller Server has FollowPath  controllers available.
+[lifecycle_manager-7] [INFO] [1778747625.416730409] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[planner_server-3] [INFO] [1778747625.417029957] [planner_server]: Configuring
+[planner_server-3] [INFO] [1778747625.417055127] [global_costmap.global_costmap]: Configuring
+[planner_server-3] [INFO] [1778747625.422303865] [global_costmap.global_costmap]: Using plugin "static_layer"
+[planner_server-3] [INFO] [1778747625.425633281] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[planner_server-3] [INFO] [1778747625.426989074] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[planner_server-3] [INFO] [1778747625.427038894] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[planner_server-3] [INFO] [1778747625.427460398] [global_costmap.global_costmap]: Subscribed to Topics: scan
+[planner_server-3] [INFO] [1778747625.431878596] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[planner_server-3] [INFO] [1778747625.431938317] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[planner_server-3] [INFO] [1778747625.432415222] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[planner_server-3] [INFO] [1778747625.441773457] [planner_server]: Created global planner plugin GridBased of type nav2_navfn_planner/NavfnPlanner
+[planner_server-3] [INFO] [1778747625.441872313] [planner_server]: Configuring plugin GridBased of type NavfnPlanner
+[planner_server-3] [INFO] [1778747625.451383071] [planner_server]: Planner Server has GridBased  planners available.
+[lifecycle_manager-7] [INFO] [1778747625.457446331] [lifecycle_manager_navigation]: [34m[1mConfiguring recoveries_server[0m[0m
+[recoveries_server-4] [INFO] [1778747625.458009565] [recoveries_server]: Configuring
+[recoveries_server-4] [INFO] [1778747625.463940118] [recoveries_server]: Creating recovery plugin spin of type nav2_recoveries/Spin
+[recoveries_server-4] [INFO] [1778747625.465217707] [recoveries_server]: Configuring spin
+[recoveries_server-4] [INFO] [1778747625.471838664] [recoveries_server]: Creating recovery plugin back_up of type nav2_recoveries/BackUp
+[recoveries_server-4] [INFO] [1778747625.473418367] [recoveries_server]: Configuring back_up
+[recoveries_server-4] [INFO] [1778747625.478575123] [recoveries_server]: Creating recovery plugin wait of type nav2_recoveries/Wait
+[recoveries_server-4] [INFO] [1778747625.479557102] [recoveries_server]: Configuring wait
+[lifecycle_manager-7] [INFO] [1778747625.486234837] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[bt_navigator-5] [INFO] [1778747625.486738322] [bt_navigator]: Configuring
+[bt_navigator-5] [INFO] [1778747625.527023834] [bt_navigator_rclcpp_node]: Waiting for "compute_path_to_pose" action server
+[bt_navigator-5] [INFO] [1778747625.527287904] [bt_navigator_rclcpp_node]: "ComputePathToPose" BtActionNode initialized
+[bt_navigator-5] [INFO] [1778747625.528535799] [bt_navigator_rclcpp_node]: Waiting for "global_costmap/clear_entirely_global_costmap" service
+[bt_navigator-5] [INFO] [1778747625.528722038] [bt_navigator_rclcpp_node]: "ClearGlobalCostmap-Context" BtServiceNode initialized
+[bt_navigator-5] [INFO] [1778747625.534067134] [bt_navigator_rclcpp_node]: Waiting for "follow_path" action server
+[bt_navigator-5] [INFO] [1778747625.534391356] [bt_navigator_rclcpp_node]: "FollowPath" BtActionNode initialized
+[bt_navigator-5] [INFO] [1778747625.535269215] [bt_navigator_rclcpp_node]: Waiting for "local_costmap/clear_entirely_local_costmap" service
+[bt_navigator-5] [INFO] [1778747625.535427782] [bt_navigator_rclcpp_node]: "ClearLocalCostmap-Context" BtServiceNode initialized
+[bt_navigator-5] [INFO] [1778747625.536384766] [bt_navigator_rclcpp_node]: Waiting for "local_costmap/clear_entirely_local_costmap" service
+[bt_navigator-5] [INFO] [1778747625.536526783] [bt_navigator_rclcpp_node]: "ClearLocalCostmap-Subtree" BtServiceNode initialized
+[bt_navigator-5] [INFO] [1778747625.537810163] [bt_navigator_rclcpp_node]: Waiting for "global_costmap/clear_entirely_global_costmap" service
+[bt_navigator-5] [INFO] [1778747625.537978416] [bt_navigator_rclcpp_node]: "ClearGlobalCostmap-Subtree" BtServiceNode initialized
+[bt_navigator-5] [INFO] [1778747625.544552186] [bt_navigator_rclcpp_node]: Waiting for "spin" action server
+[bt_navigator-5] [INFO] [1778747625.544732663] [bt_navigator_rclcpp_node]: "Spin" BtActionNode initialized
+[bt_navigator-5] [INFO] [1778747625.549245272] [bt_navigator_rclcpp_node]: Waiting for "wait" action server
+[bt_navigator-5] [INFO] [1778747625.549489316] [bt_navigator_rclcpp_node]: "Wait" BtActionNode initialized
+[lifecycle_manager-7] [INFO] [1778747625.590706486] [lifecycle_manager_navigation]: [34m[1mConfiguring waypoint_follower[0m[0m
+[waypoint_follower-6] [INFO] [1778747625.591245683] [waypoint_follower]: Configuring
+[lifecycle_manager-7] [INFO] [1778747625.612125774] [lifecycle_manager_navigation]: [34m[1mActivating map_server[0m[0m
+[map_server-1] [INFO] [1778747625.612370197] [map_server]: Activating
+[lifecycle_manager-7] [INFO] [1778747625.614508003] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[controller_server-2] [INFO] [1778747625.614929388] [controller_server]: Activating
+[controller_server-2] [INFO] [1778747625.614992854] [local_costmap.local_costmap]: Activating
+[controller_server-2] [INFO] [1778747625.615022752] [local_costmap.local_costmap]: Checking transform
+[controller_server-2] [INFO] [1778747625.615228548] [local_costmap.local_costmap]: start
+[lifecycle_manager-7] [INFO] [1778747625.616521211] [lifecycle_manager_navigation]: [34m[1mActivating planner_server[0m[0m
+[planner_server-3] [INFO] [1778747625.616777633] [planner_server]: Activating
+[planner_server-3] [INFO] [1778747625.616811868] [global_costmap.global_costmap]: Activating
+[planner_server-3] [INFO] [1778747625.616821450] [global_costmap.global_costmap]: Checking transform
+[planner_server-3] [INFO] [1778747625.617106866] [global_costmap.global_costmap]: start
+[planner_server-3] [WARN] [1778747625.617542368] [nav2_costmap_2d]: Robot is out of bounds of the costmap!
+[planner_server-3] [INFO] [1778747625.618452110] [planner_server]: Activating plugin GridBased of type NavfnPlanner
+[lifecycle_manager-7] [INFO] [1778747625.619295132] [lifecycle_manager_navigation]: [34m[1mActivating recoveries_server[0m[0m
+[recoveries_server-4] [INFO] [1778747625.619672096] [recoveries_server]: Activating
+[recoveries_server-4] [INFO] [1778747625.619703860] [recoveries_server]: Activating spin
+[recoveries_server-4] [INFO] [1778747625.619717056] [recoveries_server]: Activating back_up
+[recoveries_server-4] [INFO] [1778747625.619728154] [recoveries_server]: Activating wait
+[lifecycle_manager-7] [INFO] [1778747625.620754833] [lifecycle_manager_navigation]: [34m[1mActivating bt_navigator[0m[0m
+[bt_navigator-5] [INFO] [1778747625.621095897] [bt_navigator]: Activating
+[lifecycle_manager-7] [INFO] [1778747625.621785794] [lifecycle_manager_navigation]: [34m[1mActivating waypoint_follower[0m[0m
+[waypoint_follower-6] [INFO] [1778747625.622143652] [waypoint_follower]: Activating
+[lifecycle_manager-7] [INFO] [1778747625.622894231] [lifecycle_manager_navigation]: [34m[1mManaged nodes are active[0m[0m
+[planner_server-3] [INFO] [1778747625.626930697] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 1227 X 1167 at 0.050000 m/pix
+[controller_server-2] [INFO] [1778747655.747440688] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-2] [INFO] [1778747740.949674574] [controller_server]: Reached the goal!
+[controller_server-2] [INFO] [1778747743.967475300] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-2] [INFO] [1778747781.270398654] [controller_server]: Reached the goal!
+[map_server-1] Magick: quitting due to signal 51 (SIGTERM) "Terminated"...
+[ERROR] [map_server-1]: process has died [pid 7997, exit code 15, cmd '/opt/ros/foxy/lib/nav2_map_server/map_server --ros-args -r __node:=map_server --params-file /tmp/tmplweaosvn -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [controller_server-2]: process has died [pid 7999, exit code -15, cmd '/opt/ros/foxy/lib/nav2_controller/controller_server --ros-args -r __node:=controller_server --params-file /tmp/tmpgmy35oll -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [planner_server-3]: process has died [pid 8001, exit code -15, cmd '/opt/ros/foxy/lib/nav2_planner/planner_server --ros-args -r __node:=planner_server --params-file /tmp/tmpfm0n77yv -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [recoveries_server-4]: process has died [pid 8003, exit code -15, cmd '/opt/ros/foxy/lib/nav2_recoveries/recoveries_server --ros-args -r __node:=recoveries_server --params-file /tmp/tmpfbg1411n -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [bt_navigator-5]: process has died [pid 8005, exit code -15, cmd '/opt/ros/foxy/lib/nav2_bt_navigator/bt_navigator --ros-args -r __node:=bt_navigator --params-file /tmp/tmp_1ofckqd -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [waypoint_follower-6]: process has died [pid 8007, exit code -15, cmd '/opt/ros/foxy/lib/nav2_waypoint_follower/waypoint_follower --ros-args -r __node:=waypoint_follower --params-file /tmp/tmp97bdug1e -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [lifecycle_manager-7]: process has died [pid 8009, exit code -15, cmd '/opt/ros/foxy/lib/nav2_lifecycle_manager/lifecycle_manager --ros-args -r __node:=lifecycle_manager_navigation --params-file /tmp/launch_params_e5bvq1te --params-file /tmp/launch_params_wai9lv0s --params-file /tmp/launch_params_yol9jwyv'].

@@ -1,0 +1,3097 @@
+{
+  "adjacency": [
+    {
+      "relation_type": "transition",
+      "source": "room_1",
+      "status": "supported",
+      "target": "room_3"
+    },
+    {
+      "relation_type": "adjacent",
+      "source": "room_10",
+      "status": "supported",
+      "target": "room_8"
+    },
+    {
+      "relation_type": "possible_connection",
+      "source": "room_11",
+      "status": "weak",
+      "target": "room_3"
+    },
+    {
+      "relation_type": "transition",
+      "source": "room_11",
+      "status": "supported",
+      "target": "room_7"
+    },
+    {
+      "relation_type": "transition",
+      "source": "room_11",
+      "status": "supported",
+      "target": "room_8"
+    },
+    {
+      "relation_type": "adjacent",
+      "source": "room_12",
+      "status": "supported",
+      "target": "room_13"
+    },
+    {
+      "relation_type": "adjacent",
+      "source": "room_12",
+      "status": "supported",
+      "target": "room_2"
+    },
+    {
+      "relation_type": "adjacent",
+      "source": "room_13",
+      "status": "supported",
+      "target": "room_2"
+    },
+    {
+      "relation_type": "transition",
+      "source": "room_14",
+      "status": "supported",
+      "target": "room_15"
+    },
+    {
+      "relation_type": "transition",
+      "source": "room_14",
+      "status": "confirmed",
+      "target": "room_16"
+    },
+    {
+      "relation_type": "possible_connection",
+      "source": "room_14",
+      "status": "weak",
+      "target": "room_3"
+    },
+    {
+      "relation_type": "transition",
+      "source": "room_14",
+      "status": "supported",
+      "target": "room_7"
+    },
+    {
+      "relation_type": "possible_connection",
+      "source": "room_15",
+      "status": "weak",
+      "target": "room_16"
+    },
+    {
+      "relation_type": "possible_connection",
+      "source": "room_15",
+      "status": "weak",
+      "target": "room_3"
+    },
+    {
+      "relation_type": "transition",
+      "source": "room_15",
+      "status": "supported",
+      "target": "room_7"
+    },
+    {
+      "relation_type": "possible_connection",
+      "source": "room_16",
+      "status": "weak",
+      "target": "room_3"
+    },
+    {
+      "relation_type": "possible_connection",
+      "source": "room_16",
+      "status": "weak",
+      "target": "room_7"
+    },
+    {
+      "relation_type": "adjacent",
+      "source": "room_2",
+      "status": "supported",
+      "target": "room_3"
+    },
+    {
+      "relation_type": "transition",
+      "source": "room_3",
+      "status": "confirmed",
+      "target": "room_7"
+    },
+    {
+      "relation_type": "possible_connection",
+      "source": "room_3",
+      "status": "weak",
+      "target": "room_8"
+    },
+    {
+      "relation_type": "adjacent",
+      "source": "room_6",
+      "status": "supported",
+      "target": "room_7"
+    }
+  ],
+  "artifact_kind": "committed_room_world_model",
+  "artifact_semantics": "committed_room_world_model",
+  "artifact_surface": "public",
+  "generated_at_utc": "2026-05-05T07:41:37.801844+00:00",
+  "indices": {
+    "room_to_objects": {
+      "room_1": [
+        "obj_34",
+        "obj_37",
+        "obj_38",
+        "obj_39",
+        "obj_40",
+        "obj_41",
+        "obj_42",
+        "obj_43",
+        "obj_44",
+        "obj_47",
+        "obj_52",
+        "obj_53",
+        "obj_54",
+        "obj_55",
+        "obj_56",
+        "obj_58",
+        "obj_61",
+        "obj_62",
+        "obj_63"
+      ],
+      "room_10": [],
+      "room_11": [
+        "obj_185",
+        "obj_186",
+        "obj_188",
+        "obj_189",
+        "obj_191",
+        "obj_192",
+        "obj_199",
+        "obj_201",
+        "obj_202",
+        "obj_203",
+        "obj_302"
+      ],
+      "room_12": [],
+      "room_13": [
+        "obj_159",
+        "obj_162"
+      ],
+      "room_14": [
+        "obj_236",
+        "obj_251",
+        "obj_252",
+        "obj_254",
+        "obj_256",
+        "obj_258",
+        "obj_259",
+        "obj_261",
+        "obj_264",
+        "obj_267",
+        "obj_277",
+        "obj_279",
+        "obj_281",
+        "obj_284",
+        "obj_296"
+      ],
+      "room_15": [
+        "obj_240",
+        "obj_241",
+        "obj_243",
+        "obj_246"
+      ],
+      "room_16": [
+        "obj_263",
+        "obj_265",
+        "obj_266",
+        "obj_269",
+        "obj_271",
+        "obj_288"
+      ],
+      "room_2": [
+        "obj_139",
+        "obj_140",
+        "obj_142",
+        "obj_143",
+        "obj_145",
+        "obj_146",
+        "obj_151",
+        "obj_152",
+        "obj_157",
+        "obj_161"
+      ],
+      "room_3": [
+        "obj_0",
+        "obj_1",
+        "obj_101",
+        "obj_102",
+        "obj_105",
+        "obj_106",
+        "obj_107",
+        "obj_108",
+        "obj_110",
+        "obj_111",
+        "obj_112",
+        "obj_114",
+        "obj_115",
+        "obj_119",
+        "obj_122",
+        "obj_126",
+        "obj_127",
+        "obj_128",
+        "obj_13",
+        "obj_132",
+        "obj_134",
+        "obj_137",
+        "obj_139",
+        "obj_140",
+        "obj_142",
+        "obj_143",
+        "obj_145",
+        "obj_146",
+        "obj_15",
+        "obj_151",
+        "obj_152",
+        "obj_157",
+        "obj_159",
+        "obj_161",
+        "obj_162",
+        "obj_208",
+        "obj_212",
+        "obj_26",
+        "obj_28",
+        "obj_29",
+        "obj_31",
+        "obj_67",
+        "obj_69",
+        "obj_7",
+        "obj_70",
+        "obj_74",
+        "obj_77",
+        "obj_78",
+        "obj_79",
+        "obj_8",
+        "obj_82",
+        "obj_83",
+        "obj_84",
+        "obj_85",
+        "obj_87",
+        "obj_9",
+        "obj_90",
+        "obj_91",
+        "obj_94",
+        "obj_95",
+        "obj_96"
+      ],
+      "room_4": [],
+      "room_5": [
+        "obj_84"
+      ],
+      "room_6": [],
+      "room_7": [
+        "obj_214",
+        "obj_215",
+        "obj_217",
+        "obj_218",
+        "obj_220",
+        "obj_223",
+        "obj_225",
+        "obj_227",
+        "obj_228",
+        "obj_232",
+        "obj_248"
+      ],
+      "room_8": [
+        "obj_165",
+        "obj_169",
+        "obj_172",
+        "obj_173",
+        "obj_174",
+        "obj_176",
+        "obj_177",
+        "obj_179",
+        "obj_180",
+        "obj_181",
+        "obj_183"
+      ],
+      "room_9": []
+    }
+  },
+  "metadata": {
+    "deferred": [
+      "global_bev_raster",
+      "navigation_policy",
+      "sidecar_authority"
+    ],
+    "future_bev_vln_hook": "room.bev_vln_hook",
+    "stable_room_id_namespace": "room_*"
+  },
+  "public_topology_meaning": "committed/published only",
+  "rooms": [
+    {
+      "anchor_ids": [
+        "anchor_obj_37",
+        "anchor_obj_38",
+        "anchor_obj_43",
+        "anchor_obj_44",
+        "anchor_obj_52",
+        "anchor_obj_54",
+        "anchor_obj_56",
+        "anchor_obj_58",
+        "anchor_room_1"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          -7.547,
+          -4.302
+        ],
+        "extent_bbox_xy": {
+          "max_x": 9.825,
+          "max_y": 7.075,
+          "min_x": 5.225,
+          "min_y": 1.525
+        },
+        "footprint_polygon_xy": [
+          [
+            5.225,
+            1.525
+          ],
+          [
+            5.325,
+            7.025
+          ],
+          [
+            9.825,
+            7.075
+          ],
+          [
+            9.825,
+            1.625
+          ]
+        ],
+        "graph_node_id": "room_1",
+        "neighbor_room_ids": [
+          "room_3"
+        ],
+        "semantic_landmarks": [
+          "couch",
+          "chair",
+          "potted plant",
+          "Dog",
+          "Gas stove"
+        ]
+      },
+      "centroid_xy": [
+        -7.547,
+        -4.302
+      ],
+      "connectivity": [
+        {
+          "relation_type": "transition",
+          "room_id": "room_3",
+          "status": "supported"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 9.825,
+        "max_y": 7.075,
+        "min_x": 5.225,
+        "min_y": 1.525
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 24.907,
+      "footprint_polygon_xy": [
+        [
+          5.225,
+          1.525
+        ],
+        [
+          5.325,
+          7.025
+        ],
+        [
+          9.825,
+          7.075
+        ],
+        [
+          9.825,
+          1.625
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_3"
+      ],
+      "object_ids": [
+        "obj_34",
+        "obj_37",
+        "obj_38",
+        "obj_39",
+        "obj_40",
+        "obj_41",
+        "obj_42",
+        "obj_43",
+        "obj_44",
+        "obj_47",
+        "obj_52",
+        "obj_53",
+        "obj_54",
+        "obj_55",
+        "obj_56",
+        "obj_58",
+        "obj_61",
+        "obj_62",
+        "obj_63"
+      ],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 88,
+        "selective_retrieval_context_room_ids": [
+          "room_6",
+          "room_11",
+          "room_7"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_1",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 9,
+        "dominant_object_labels": [
+          "couch",
+          "chair",
+          "potted plant",
+          "Dog",
+          "Gas stove"
+        ],
+        "object_count": 19,
+        "object_label_counts": {
+          "Dog": 1,
+          "Gas stove": 1,
+          "Horse": 1,
+          "Mop": 1,
+          "Projector": 1,
+          "bird": 1,
+          "cat": 1,
+          "chair": 2,
+          "couch": 5,
+          "door": 1,
+          "potted plant": 2,
+          "sky": 1,
+          "wall": 1
+        }
+      },
+      "stable_room_id": "room_1",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 2252,
+        "committed_at_timestamp": 2252.0,
+        "first_seen_frame_idx": 100,
+        "last_observed_frame_idx": 275
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_room_10"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          -8.735,
+          5.034
+        ],
+        "extent_bbox_xy": {
+          "max_x": 9.325,
+          "max_y": -4.475,
+          "min_x": 8.125,
+          "min_y": -5.675
+        },
+        "footprint_polygon_xy": [
+          [
+            9.325,
+            -5.675
+          ],
+          [
+            8.875,
+            -5.675
+          ],
+          [
+            8.125,
+            -5.325
+          ],
+          [
+            8.125,
+            -4.475
+          ],
+          [
+            9.225,
+            -4.475
+          ]
+        ],
+        "graph_node_id": "room_10",
+        "neighbor_room_ids": [
+          "room_8"
+        ],
+        "semantic_landmarks": []
+      },
+      "centroid_xy": [
+        -8.735,
+        5.034
+      ],
+      "connectivity": [
+        {
+          "relation_type": "adjacent",
+          "room_id": "room_8",
+          "status": "supported"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 9.325,
+        "max_y": -4.475,
+        "min_x": 8.125,
+        "min_y": -5.675
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 1.249,
+      "footprint_polygon_xy": [
+        [
+          9.325,
+          -5.675
+        ],
+        [
+          8.875,
+          -5.675
+        ],
+        [
+          8.125,
+          -5.325
+        ],
+        [
+          8.125,
+          -4.475
+        ],
+        [
+          9.225,
+          -4.475
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_8"
+      ],
+      "object_ids": [],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 24,
+        "selective_retrieval_context_room_ids": [
+          "room_1",
+          "room_10",
+          "room_11"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_10",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 1,
+        "dominant_object_labels": [],
+        "object_count": 0,
+        "object_label_counts": {}
+      },
+      "stable_room_id": "room_10",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 1675,
+        "committed_at_timestamp": 1675.0,
+        "first_seen_frame_idx": 1100,
+        "last_observed_frame_idx": null
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_obj_186",
+        "anchor_obj_302",
+        "anchor_room_11"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          -3.315,
+          5.41
+        ],
+        "extent_bbox_xy": {
+          "max_x": 5.175,
+          "max_y": -3.625,
+          "min_x": 1.175,
+          "min_y": -7.475
+        },
+        "footprint_polygon_xy": [
+          [
+            2.175,
+            -7.475
+          ],
+          [
+            2.175,
+            -4.525
+          ],
+          [
+            1.925,
+            -6.125
+          ],
+          [
+            1.425,
+            -6.125
+          ],
+          [
+            1.175,
+            -3.675
+          ],
+          [
+            5.175,
+            -3.625
+          ],
+          [
+            4.875,
+            -7.475
+          ]
+        ],
+        "graph_node_id": "room_11",
+        "neighbor_room_ids": [
+          "room_3",
+          "room_7",
+          "room_8"
+        ],
+        "semantic_landmarks": [
+          "bed",
+          "Cabinet/shelf",
+          "Cell Phone",
+          "Pie",
+          "Pillow"
+        ]
+      },
+      "centroid_xy": [
+        -3.315,
+        5.41
+      ],
+      "connectivity": [
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_3",
+          "status": "weak"
+        },
+        {
+          "relation_type": "transition",
+          "room_id": "room_7",
+          "status": "supported"
+        },
+        {
+          "relation_type": "transition",
+          "room_id": "room_8",
+          "status": "supported"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 5.175,
+        "max_y": -3.625,
+        "min_x": 1.175,
+        "min_y": -7.475
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 12.866,
+      "footprint_polygon_xy": [
+        [
+          2.175,
+          -7.475
+        ],
+        [
+          2.175,
+          -4.525
+        ],
+        [
+          1.925,
+          -6.125
+        ],
+        [
+          1.425,
+          -6.125
+        ],
+        [
+          1.175,
+          -3.675
+        ],
+        [
+          5.175,
+          -3.625
+        ],
+        [
+          4.875,
+          -7.475
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_3",
+        "room_7",
+        "room_8"
+      ],
+      "object_ids": [
+        "obj_185",
+        "obj_186",
+        "obj_188",
+        "obj_189",
+        "obj_191",
+        "obj_192",
+        "obj_199",
+        "obj_201",
+        "obj_202",
+        "obj_203",
+        "obj_302"
+      ],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 43,
+        "selective_retrieval_context_room_ids": [
+          "room_11",
+          "room_6",
+          "room_7"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_11",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 3,
+        "dominant_object_labels": [
+          "bed",
+          "Cabinet/shelf",
+          "Cell Phone",
+          "Pie",
+          "Pillow"
+        ],
+        "object_count": 11,
+        "object_label_counts": {
+          "Cabinet/shelf": 1,
+          "Cell Phone": 1,
+          "Pie": 1,
+          "Pillow": 1,
+          "Tissue": 1,
+          "bed": 2,
+          "ceiling": 1,
+          "door": 1,
+          "floor": 1,
+          "toilet": 1
+        }
+      },
+      "stable_room_id": "room_11",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 2250,
+        "committed_at_timestamp": 2250.0,
+        "first_seen_frame_idx": 1200,
+        "last_observed_frame_idx": 1325
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_room_12"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          -7.957,
+          -0.374
+        ],
+        "extent_bbox_xy": {
+          "max_x": 8.325,
+          "max_y": 1.075,
+          "min_x": 7.575,
+          "min_y": -0.675
+        },
+        "footprint_polygon_xy": [
+          [
+            8.075,
+            -0.675
+          ],
+          [
+            7.825,
+            -0.425
+          ],
+          [
+            7.575,
+            0.425
+          ],
+          [
+            7.575,
+            1.075
+          ],
+          [
+            8.325,
+            1.025
+          ],
+          [
+            8.325,
+            0.125
+          ],
+          [
+            8.075,
+            -0.125
+          ],
+          [
+            8.175,
+            -0.375
+          ]
+        ],
+        "graph_node_id": "room_12",
+        "neighbor_room_ids": [
+          "room_13",
+          "room_2"
+        ],
+        "semantic_landmarks": []
+      },
+      "centroid_xy": [
+        -7.957,
+        -0.374
+      ],
+      "connectivity": [
+        {
+          "relation_type": "adjacent",
+          "room_id": "room_13",
+          "status": "supported"
+        },
+        {
+          "relation_type": "adjacent",
+          "room_id": "room_2",
+          "status": "supported"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 8.325,
+        "max_y": 1.075,
+        "min_x": 7.575,
+        "min_y": -0.675
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 0.952,
+      "footprint_polygon_xy": [
+        [
+          8.075,
+          -0.675
+        ],
+        [
+          7.825,
+          -0.425
+        ],
+        [
+          7.575,
+          0.425
+        ],
+        [
+          7.575,
+          1.075
+        ],
+        [
+          8.325,
+          1.025
+        ],
+        [
+          8.325,
+          0.125
+        ],
+        [
+          8.075,
+          -0.125
+        ],
+        [
+          8.175,
+          -0.375
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_13",
+        "room_2"
+      ],
+      "object_ids": [],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 8,
+        "selective_retrieval_context_room_ids": [
+          "room_1",
+          "room_10",
+          "room_11"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_12",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 1,
+        "dominant_object_labels": [],
+        "object_count": 0,
+        "object_label_counts": {}
+      },
+      "stable_room_id": "room_12",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 1675,
+        "committed_at_timestamp": 1675.0,
+        "first_seen_frame_idx": 1300,
+        "last_observed_frame_idx": null
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_room_13"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          -8.759,
+          1.008
+        ],
+        "extent_bbox_xy": {
+          "max_x": 9.325,
+          "max_y": -0.475,
+          "min_x": 8.025,
+          "min_y": -1.525
+        },
+        "footprint_polygon_xy": [
+          [
+            8.025,
+            -1.275
+          ],
+          [
+            8.475,
+            -0.475
+          ],
+          [
+            9.325,
+            -0.475
+          ],
+          [
+            9.275,
+            -1.475
+          ],
+          [
+            8.425,
+            -1.525
+          ]
+        ],
+        "graph_node_id": "room_13",
+        "neighbor_room_ids": [
+          "room_2"
+        ],
+        "semantic_landmarks": [
+          "Scallop",
+          "dining-table"
+        ]
+      },
+      "centroid_xy": [
+        -8.759,
+        1.008
+      ],
+      "connectivity": [
+        {
+          "relation_type": "adjacent",
+          "room_id": "room_2",
+          "status": "supported"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 9.325,
+        "max_y": -0.475,
+        "min_x": 8.025,
+        "min_y": -1.525
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 1.086,
+      "footprint_polygon_xy": [
+        [
+          8.025,
+          -1.275
+        ],
+        [
+          8.475,
+          -0.475
+        ],
+        [
+          9.325,
+          -0.475
+        ],
+        [
+          9.275,
+          -1.475
+        ],
+        [
+          8.425,
+          -1.525
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_2"
+      ],
+      "object_ids": [
+        "obj_159",
+        "obj_162"
+      ],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 28,
+        "selective_retrieval_context_room_ids": [
+          "room_16",
+          "room_14",
+          "room_7"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_13",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 1,
+        "dominant_object_labels": [
+          "Scallop",
+          "dining-table"
+        ],
+        "object_count": 2,
+        "object_label_counts": {
+          "Scallop": 1,
+          "dining-table": 1
+        }
+      },
+      "stable_room_id": "room_13",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 2175,
+        "committed_at_timestamp": 2175.0,
+        "first_seen_frame_idx": 1300,
+        "last_observed_frame_idx": null
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_obj_284",
+        "anchor_room_14"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          3.587,
+          5.541
+        ],
+        "extent_bbox_xy": {
+          "max_x": -2.075,
+          "max_y": -3.275,
+          "min_x": -5.075,
+          "min_y": -7.525
+        },
+        "footprint_polygon_xy": [
+          [
+            -5.025,
+            -7.525
+          ],
+          [
+            -5.075,
+            -3.775
+          ],
+          [
+            -4.275,
+            -3.675
+          ],
+          [
+            -4.825,
+            -3.275
+          ],
+          [
+            -2.125,
+            -3.775
+          ],
+          [
+            -2.075,
+            -7.475
+          ]
+        ],
+        "graph_node_id": "room_14",
+        "neighbor_room_ids": [
+          "room_15",
+          "room_16",
+          "room_3",
+          "room_7"
+        ],
+        "semantic_landmarks": [
+          "Pillow",
+          "window",
+          "Lamp",
+          "Mirror",
+          "Nightstand"
+        ]
+      },
+      "centroid_xy": [
+        3.587,
+        5.541
+      ],
+      "connectivity": [
+        {
+          "relation_type": "transition",
+          "room_id": "room_15",
+          "status": "supported"
+        },
+        {
+          "relation_type": "transition",
+          "room_id": "room_16",
+          "status": "confirmed"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_3",
+          "status": "weak"
+        },
+        {
+          "relation_type": "transition",
+          "room_id": "room_7",
+          "status": "supported"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": -2.075,
+        "max_y": -3.275,
+        "min_x": -5.075,
+        "min_y": -7.525
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 11.54,
+      "footprint_polygon_xy": [
+        [
+          -5.025,
+          -7.525
+        ],
+        [
+          -5.075,
+          -3.775
+        ],
+        [
+          -4.275,
+          -3.675
+        ],
+        [
+          -4.825,
+          -3.275
+        ],
+        [
+          -2.125,
+          -3.775
+        ],
+        [
+          -2.075,
+          -7.475
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_15",
+        "room_16",
+        "room_3",
+        "room_7"
+      ],
+      "object_ids": [
+        "obj_236",
+        "obj_251",
+        "obj_252",
+        "obj_254",
+        "obj_256",
+        "obj_258",
+        "obj_259",
+        "obj_261",
+        "obj_264",
+        "obj_267",
+        "obj_277",
+        "obj_279",
+        "obj_281",
+        "obj_284",
+        "obj_296"
+      ],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 36,
+        "selective_retrieval_context_room_ids": [
+          "room_6",
+          "room_11",
+          "room_7"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_14",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 2,
+        "dominant_object_labels": [
+          "Pillow",
+          "window",
+          "Lamp",
+          "Mirror",
+          "Nightstand"
+        ],
+        "object_count": 15,
+        "object_label_counts": {
+          "Lamp": 1,
+          "Mirror": 1,
+          "Nightstand": 1,
+          "Pillow": 3,
+          "bed": 1,
+          "ceiling": 1,
+          "sea": 1,
+          "snow": 1,
+          "toilet": 1,
+          "wall": 1,
+          "window": 2,
+          "window-other": 1
+        }
+      },
+      "stable_room_id": "room_14",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 2252,
+        "committed_at_timestamp": 2252.0,
+        "first_seen_frame_idx": 1400,
+        "last_observed_frame_idx": 2225
+      }
+    },
+    {
+      "anchor_ids": [],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          1.187,
+          2.564
+        ],
+        "extent_bbox_xy": {
+          "max_x": -0.275,
+          "max_y": -1.625,
+          "min_x": -2.175,
+          "min_y": -3.525
+        },
+        "footprint_polygon_xy": [
+          [
+            -2.175,
+            -3.525
+          ],
+          [
+            -1.825,
+            -2.775
+          ],
+          [
+            -2.125,
+            -2.675
+          ],
+          [
+            -2.125,
+            -1.675
+          ],
+          [
+            -0.675,
+            -1.875
+          ],
+          [
+            -0.325,
+            -1.625
+          ],
+          [
+            -0.275,
+            -3.425
+          ],
+          [
+            -1.775,
+            -3.325
+          ]
+        ],
+        "graph_node_id": "room_15",
+        "neighbor_room_ids": [
+          "room_14",
+          "room_16",
+          "room_3",
+          "room_7"
+        ],
+        "semantic_landmarks": [
+          "Bathtub",
+          "Mirror",
+          "door",
+          "window-other"
+        ]
+      },
+      "centroid_xy": [
+        1.187,
+        2.564
+      ],
+      "connectivity": [
+        {
+          "relation_type": "transition",
+          "room_id": "room_14",
+          "status": "supported"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_16",
+          "status": "weak"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_3",
+          "status": "weak"
+        },
+        {
+          "relation_type": "transition",
+          "room_id": "room_7",
+          "status": "supported"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": -0.275,
+        "max_y": -1.625,
+        "min_x": -2.175,
+        "min_y": -3.525
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 2.835,
+      "footprint_polygon_xy": [
+        [
+          -2.175,
+          -3.525
+        ],
+        [
+          -1.825,
+          -2.775
+        ],
+        [
+          -2.125,
+          -2.675
+        ],
+        [
+          -2.125,
+          -1.675
+        ],
+        [
+          -0.675,
+          -1.875
+        ],
+        [
+          -0.325,
+          -1.625
+        ],
+        [
+          -0.275,
+          -3.425
+        ],
+        [
+          -1.775,
+          -3.325
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_14",
+        "room_16",
+        "room_3",
+        "room_7"
+      ],
+      "object_ids": [
+        "obj_240",
+        "obj_241",
+        "obj_243",
+        "obj_246"
+      ],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 22,
+        "selective_retrieval_context_room_ids": [
+          "room_16",
+          "room_14",
+          "room_7"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_15",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 0,
+        "dominant_object_labels": [
+          "Bathtub",
+          "Mirror",
+          "door",
+          "window-other"
+        ],
+        "object_count": 4,
+        "object_label_counts": {
+          "Bathtub": 1,
+          "Mirror": 1,
+          "door": 1,
+          "window-other": 1
+        }
+      },
+      "stable_room_id": "room_15",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 2225,
+        "committed_at_timestamp": 2225.0,
+        "first_seen_frame_idx": 1700,
+        "last_observed_frame_idx": 1800
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_room_16"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          3.677,
+          2.555
+        ],
+        "extent_bbox_xy": {
+          "max_x": -2.575,
+          "max_y": -1.675,
+          "min_x": -5.125,
+          "min_y": -3.575
+        },
+        "footprint_polygon_xy": [
+          [
+            -2.575,
+            -3.525
+          ],
+          [
+            -3.575,
+            -3.575
+          ],
+          [
+            -3.525,
+            -2.775
+          ],
+          [
+            -3.775,
+            -3.275
+          ],
+          [
+            -4.825,
+            -3.175
+          ],
+          [
+            -5.125,
+            -1.725
+          ],
+          [
+            -4.575,
+            -1.975
+          ],
+          [
+            -4.575,
+            -3.025
+          ],
+          [
+            -4.375,
+            -1.675
+          ],
+          [
+            -2.575,
+            -1.775
+          ]
+        ],
+        "graph_node_id": "room_16",
+        "neighbor_room_ids": [
+          "room_14",
+          "room_15",
+          "room_3",
+          "room_7"
+        ],
+        "semantic_landmarks": [
+          "Towel",
+          "toilet",
+          "door",
+          "window-other"
+        ]
+      },
+      "centroid_xy": [
+        3.677,
+        2.555
+      ],
+      "connectivity": [
+        {
+          "relation_type": "transition",
+          "room_id": "room_14",
+          "status": "confirmed"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_15",
+          "status": "weak"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_3",
+          "status": "weak"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_7",
+          "status": "weak"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": -2.575,
+        "max_y": -1.675,
+        "min_x": -5.125,
+        "min_y": -3.575
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 3.676,
+      "footprint_polygon_xy": [
+        [
+          -2.575,
+          -3.525
+        ],
+        [
+          -3.575,
+          -3.575
+        ],
+        [
+          -3.525,
+          -2.775
+        ],
+        [
+          -3.775,
+          -3.275
+        ],
+        [
+          -4.825,
+          -3.175
+        ],
+        [
+          -5.125,
+          -1.725
+        ],
+        [
+          -4.575,
+          -1.975
+        ],
+        [
+          -4.575,
+          -3.025
+        ],
+        [
+          -4.375,
+          -1.675
+        ],
+        [
+          -2.575,
+          -1.775
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_14",
+        "room_15",
+        "room_3",
+        "room_7"
+      ],
+      "object_ids": [
+        "obj_263",
+        "obj_265",
+        "obj_266",
+        "obj_269",
+        "obj_271",
+        "obj_288"
+      ],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 16,
+        "selective_retrieval_context_room_ids": [
+          "room_6",
+          "room_11",
+          "room_7"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_16",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 1,
+        "dominant_object_labels": [
+          "Towel",
+          "toilet",
+          "door",
+          "window-other"
+        ],
+        "object_count": 6,
+        "object_label_counts": {
+          "Towel": 2,
+          "door": 1,
+          "toilet": 2,
+          "window-other": 1
+        }
+      },
+      "stable_room_id": "room_16",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 2252,
+        "committed_at_timestamp": 2252.0,
+        "first_seen_frame_idx": 1900,
+        "last_observed_frame_idx": 2025
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_room_2"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          -7.227,
+          1.15
+        ],
+        "extent_bbox_xy": {
+          "max_x": 9.325,
+          "max_y": 1.025,
+          "min_x": 5.375,
+          "min_y": -3.475
+        },
+        "footprint_polygon_xy": [
+          [
+            5.375,
+            -3.475
+          ],
+          [
+            5.425,
+            1.025
+          ],
+          [
+            9.225,
+            1.025
+          ],
+          [
+            9.325,
+            -0.375
+          ],
+          [
+            7.675,
+            -1.175
+          ],
+          [
+            9.275,
+            -1.575
+          ],
+          [
+            9.275,
+            -3.125
+          ]
+        ],
+        "graph_node_id": "room_2",
+        "neighbor_room_ids": [
+          "room_13",
+          "room_3"
+        ],
+        "semantic_landmarks": [
+          "dining-table",
+          "potted plant",
+          "snow",
+          "Oyster",
+          "sea"
+        ]
+      },
+      "centroid_xy": [
+        -7.227,
+        1.15
+      ],
+      "connectivity": [
+        {
+          "relation_type": "adjacent",
+          "room_id": "room_13",
+          "status": "supported"
+        },
+        {
+          "relation_type": "adjacent",
+          "room_id": "room_3",
+          "status": "supported"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 9.325,
+        "max_y": 1.025,
+        "min_x": 5.375,
+        "min_y": -3.475
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 15.815,
+      "footprint_polygon_xy": [
+        [
+          5.375,
+          -3.475
+        ],
+        [
+          5.425,
+          1.025
+        ],
+        [
+          9.225,
+          1.025
+        ],
+        [
+          9.325,
+          -0.375
+        ],
+        [
+          7.675,
+          -1.175
+        ],
+        [
+          9.275,
+          -1.575
+        ],
+        [
+          9.275,
+          -3.125
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_13",
+        "room_3"
+      ],
+      "object_ids": [
+        "obj_139",
+        "obj_140",
+        "obj_142",
+        "obj_143",
+        "obj_145",
+        "obj_146",
+        "obj_151",
+        "obj_152",
+        "obj_157",
+        "obj_161"
+      ],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 72,
+        "selective_retrieval_context_room_ids": [
+          "room_16",
+          "room_14",
+          "room_7"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_2",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 1,
+        "dominant_object_labels": [
+          "dining-table",
+          "potted plant",
+          "snow",
+          "Oyster",
+          "sea"
+        ],
+        "object_count": 10,
+        "object_label_counts": {
+          "Oyster": 1,
+          "dining-table": 4,
+          "potted plant": 2,
+          "sea": 1,
+          "snow": 2
+        }
+      },
+      "stable_room_id": "room_2",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 2175,
+        "committed_at_timestamp": 2175.0,
+        "first_seen_frame_idx": 200,
+        "last_observed_frame_idx": 950
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_obj_132",
+        "anchor_obj_137",
+        "anchor_room_3"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          -3.783,
+          0.582
+        ],
+        "extent_bbox_xy": {
+          "max_x": 9.275,
+          "max_y": 3.325,
+          "min_x": -2.025,
+          "min_y": -3.425
+        },
+        "footprint_polygon_xy": [
+          [
+            9.275,
+            -3.175
+          ],
+          [
+            0.175,
+            -3.425
+          ],
+          [
+            -2.025,
+            1.625
+          ],
+          [
+            5.075,
+            3.325
+          ],
+          [
+            4.825,
+            0.975
+          ],
+          [
+            1.225,
+            0.075
+          ],
+          [
+            5.175,
+            -0.925
+          ],
+          [
+            5.475,
+            1.075
+          ],
+          [
+            9.225,
+            1.025
+          ]
+        ],
+        "graph_node_id": "room_3",
+        "neighbor_room_ids": [
+          "room_1",
+          "room_11",
+          "room_14",
+          "room_15",
+          "room_16",
+          "room_7",
+          "room_8"
+        ],
+        "semantic_landmarks": [
+          "dining-table",
+          "sky",
+          "Cabinet/shelf",
+          "door",
+          "Pillow"
+        ]
+      },
+      "centroid_xy": [
+        -3.783,
+        0.582
+      ],
+      "connectivity": [
+        {
+          "relation_type": "transition",
+          "room_id": "room_1",
+          "status": "supported"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_11",
+          "status": "weak"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_14",
+          "status": "weak"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_15",
+          "status": "weak"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_16",
+          "status": "weak"
+        },
+        {
+          "relation_type": "transition",
+          "room_id": "room_7",
+          "status": "confirmed"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_8",
+          "status": "weak"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 9.275,
+        "max_y": 3.325,
+        "min_x": -2.025,
+        "min_y": -3.425
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 49.382,
+      "footprint_polygon_xy": [
+        [
+          9.275,
+          -3.175
+        ],
+        [
+          0.175,
+          -3.425
+        ],
+        [
+          -2.025,
+          1.625
+        ],
+        [
+          5.075,
+          3.325
+        ],
+        [
+          4.825,
+          0.975
+        ],
+        [
+          1.225,
+          0.075
+        ],
+        [
+          5.175,
+          -0.925
+        ],
+        [
+          5.475,
+          1.075
+        ],
+        [
+          9.225,
+          1.025
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_1",
+        "room_11",
+        "room_14",
+        "room_15",
+        "room_16",
+        "room_7",
+        "room_8"
+      ],
+      "object_ids": [
+        "obj_0",
+        "obj_1",
+        "obj_101",
+        "obj_102",
+        "obj_105",
+        "obj_106",
+        "obj_107",
+        "obj_108",
+        "obj_110",
+        "obj_111",
+        "obj_112",
+        "obj_114",
+        "obj_115",
+        "obj_119",
+        "obj_122",
+        "obj_126",
+        "obj_127",
+        "obj_128",
+        "obj_13",
+        "obj_132",
+        "obj_134",
+        "obj_137",
+        "obj_139",
+        "obj_140",
+        "obj_142",
+        "obj_143",
+        "obj_145",
+        "obj_146",
+        "obj_15",
+        "obj_151",
+        "obj_152",
+        "obj_157",
+        "obj_159",
+        "obj_161",
+        "obj_162",
+        "obj_208",
+        "obj_212",
+        "obj_26",
+        "obj_28",
+        "obj_29",
+        "obj_31",
+        "obj_67",
+        "obj_69",
+        "obj_7",
+        "obj_70",
+        "obj_74",
+        "obj_77",
+        "obj_78",
+        "obj_79",
+        "obj_8",
+        "obj_82",
+        "obj_83",
+        "obj_84",
+        "obj_85",
+        "obj_87",
+        "obj_9",
+        "obj_90",
+        "obj_91",
+        "obj_94",
+        "obj_95",
+        "obj_96"
+      ],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 79,
+        "selective_retrieval_context_room_ids": [
+          "room_11",
+          "room_6",
+          "room_7"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_3",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 3,
+        "dominant_object_labels": [
+          "dining-table",
+          "sky",
+          "Cabinet/shelf",
+          "door",
+          "Pillow"
+        ],
+        "object_count": 61,
+        "object_label_counts": {
+          "Blackboard/Whiteboard": 1,
+          "Cabinet/shelf": 4,
+          "Flower": 1,
+          "Flute": 2,
+          "Gun": 1,
+          "Oyster": 1,
+          "Penguin": 1,
+          "Pillow": 3,
+          "Power outlet": 1,
+          "Scallop": 1,
+          "Stool": 1,
+          "Trash bin Can": 1,
+          "Watch": 1,
+          "cat": 2,
+          "couch": 3,
+          "counter": 2,
+          "dining-table": 7,
+          "door": 4,
+          "floor": 1,
+          "knife": 1,
+          "oven": 2,
+          "potted plant": 3,
+          "refrigerator": 1,
+          "sea": 2,
+          "sky": 7,
+          "snow": 2,
+          "vase": 1,
+          "window": 3,
+          "window-other": 1
+        }
+      },
+      "stable_room_id": "room_3",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 2250,
+        "committed_at_timestamp": 2250.0,
+        "first_seen_frame_idx": 300,
+        "last_observed_frame_idx": 1400
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_room_4"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          -4.571,
+          2.854
+        ],
+        "extent_bbox_xy": {
+          "max_x": 5.175,
+          "max_y": -1.625,
+          "min_x": 3.675,
+          "min_y": -3.825
+        },
+        "footprint_polygon_xy": [
+          [
+            5.125,
+            -3.825
+          ],
+          [
+            4.225,
+            -3.825
+          ],
+          [
+            4.675,
+            -3.425
+          ],
+          [
+            3.675,
+            -3.375
+          ],
+          [
+            4.625,
+            -1.625
+          ],
+          [
+            5.175,
+            -2.175
+          ],
+          [
+            4.975,
+            -2.675
+          ]
+        ],
+        "graph_node_id": "room_4",
+        "neighbor_room_ids": [
+          "room_2"
+        ],
+        "semantic_landmarks": []
+      },
+      "centroid_xy": [
+        -4.571,
+        2.854
+      ],
+      "connectivity": [
+        {
+          "relation_type": "adjacent",
+          "room_id": "room_2",
+          "status": "supported"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 5.175,
+        "max_y": -1.625,
+        "min_x": 3.675,
+        "min_y": -3.825
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 1.789,
+      "footprint_polygon_xy": [
+        [
+          5.125,
+          -3.825
+        ],
+        [
+          4.225,
+          -3.825
+        ],
+        [
+          4.675,
+          -3.425
+        ],
+        [
+          3.675,
+          -3.375
+        ],
+        [
+          4.625,
+          -1.625
+        ],
+        [
+          5.175,
+          -2.175
+        ],
+        [
+          4.975,
+          -2.675
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_2"
+      ],
+      "object_ids": [],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 8,
+        "selective_retrieval_context_room_ids": [
+          "room_5",
+          "room_1",
+          "room_2"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_4",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 1,
+        "dominant_object_labels": [],
+        "object_count": 0,
+        "object_label_counts": {}
+      },
+      "stable_room_id": "room_4",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 475,
+        "committed_at_timestamp": 475.0,
+        "first_seen_frame_idx": 300,
+        "last_observed_frame_idx": null
+      }
+    },
+    {
+      "anchor_ids": [],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          0.558,
+          0.076
+        ],
+        "extent_bbox_xy": {
+          "max_x": 0.025,
+          "max_y": 0.525,
+          "min_x": -1.075,
+          "min_y": -0.575
+        },
+        "footprint_polygon_xy": [
+          [
+            -1.075,
+            -0.525
+          ],
+          [
+            -1.075,
+            0.525
+          ],
+          [
+            -0.475,
+            0.425
+          ],
+          [
+            0.025,
+            0.125
+          ],
+          [
+            0.025,
+            -0.575
+          ]
+        ],
+        "graph_node_id": "room_5",
+        "neighbor_room_ids": [],
+        "semantic_landmarks": [
+          "Blackboard/Whiteboard"
+        ]
+      },
+      "centroid_xy": [
+        0.558,
+        0.076
+      ],
+      "connectivity": [],
+      "extent_bbox_xy": {
+        "max_x": 0.025,
+        "max_y": 0.525,
+        "min_x": -1.075,
+        "min_y": -0.575
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 1.028,
+      "footprint_polygon_xy": [
+        [
+          -1.075,
+          -0.525
+        ],
+        [
+          -1.075,
+          0.525
+        ],
+        [
+          -0.475,
+          0.425
+        ],
+        [
+          0.025,
+          0.125
+        ],
+        [
+          0.025,
+          -0.575
+        ]
+      ],
+      "neighbor_room_ids": [],
+      "object_ids": [
+        "obj_84"
+      ],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 4,
+        "selective_retrieval_context_room_ids": [
+          "room_5",
+          "room_1",
+          "room_2"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_5",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 0,
+        "dominant_object_labels": [
+          "Blackboard/Whiteboard"
+        ],
+        "object_count": 1,
+        "object_label_counts": {
+          "Blackboard/Whiteboard": 1
+        }
+      },
+      "stable_room_id": "room_5",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 475,
+        "committed_at_timestamp": 475.0,
+        "first_seen_frame_idx": 400,
+        "last_observed_frame_idx": null
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_room_6"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          -0.744,
+          4.1
+        ],
+        "extent_bbox_xy": {
+          "max_x": 1.325,
+          "max_y": -3.625,
+          "min_x": 0.175,
+          "min_y": -4.675
+        },
+        "footprint_polygon_xy": [
+          [
+            1.325,
+            -4.475
+          ],
+          [
+            1.075,
+            -4.475
+          ],
+          [
+            0.975,
+            -4.675
+          ],
+          [
+            0.175,
+            -4.525
+          ],
+          [
+            0.175,
+            -3.625
+          ],
+          [
+            1.325,
+            -3.625
+          ]
+        ],
+        "graph_node_id": "room_6",
+        "neighbor_room_ids": [
+          "room_7"
+        ],
+        "semantic_landmarks": []
+      },
+      "centroid_xy": [
+        -0.744,
+        4.1
+      ],
+      "connectivity": [
+        {
+          "relation_type": "adjacent",
+          "room_id": "room_7",
+          "status": "supported"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 1.325,
+        "max_y": -3.625,
+        "min_x": 0.175,
+        "min_y": -4.675
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 1.087,
+      "footprint_polygon_xy": [
+        [
+          1.325,
+          -4.475
+        ],
+        [
+          1.075,
+          -4.475
+        ],
+        [
+          0.975,
+          -4.675
+        ],
+        [
+          0.175,
+          -4.525
+        ],
+        [
+          0.175,
+          -3.625
+        ],
+        [
+          1.325,
+          -3.625
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_7"
+      ],
+      "object_ids": [],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 4,
+        "selective_retrieval_context_room_ids": [
+          "room_6",
+          "room_1",
+          "room_4"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_6",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 1,
+        "dominant_object_labels": [],
+        "object_count": 0,
+        "object_label_counts": {}
+      },
+      "stable_room_id": "room_6",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 575,
+        "committed_at_timestamp": 575.0,
+        "first_seen_frame_idx": 500,
+        "last_observed_frame_idx": null
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_obj_223",
+        "anchor_room_7"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          0.172,
+          5.655
+        ],
+        "extent_bbox_xy": {
+          "max_x": 1.975,
+          "max_y": -3.625,
+          "min_x": -1.775,
+          "min_y": -7.825
+        },
+        "footprint_polygon_xy": [
+          [
+            1.375,
+            -7.825
+          ],
+          [
+            0.675,
+            -7.825
+          ],
+          [
+            1.225,
+            -7.125
+          ],
+          [
+            -1.725,
+            -7.475
+          ],
+          [
+            -1.725,
+            -4.875
+          ],
+          [
+            0.475,
+            -4.725
+          ],
+          [
+            -1.775,
+            -4.375
+          ],
+          [
+            -1.725,
+            -3.725
+          ],
+          [
+            1.125,
+            -3.625
+          ],
+          [
+            1.075,
+            -6.725
+          ],
+          [
+            1.975,
+            -6.475
+          ]
+        ],
+        "graph_node_id": "room_7",
+        "neighbor_room_ids": [
+          "room_11",
+          "room_14",
+          "room_15",
+          "room_16",
+          "room_3"
+        ],
+        "semantic_landmarks": [
+          "bed",
+          "Lamp",
+          "Toilet Paper",
+          "book",
+          "cat"
+        ]
+      },
+      "centroid_xy": [
+        0.172,
+        5.655
+      ],
+      "connectivity": [
+        {
+          "relation_type": "transition",
+          "room_id": "room_11",
+          "status": "supported"
+        },
+        {
+          "relation_type": "transition",
+          "room_id": "room_14",
+          "status": "supported"
+        },
+        {
+          "relation_type": "transition",
+          "room_id": "room_15",
+          "status": "supported"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_16",
+          "status": "weak"
+        },
+        {
+          "relation_type": "transition",
+          "room_id": "room_3",
+          "status": "confirmed"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 1.975,
+        "max_y": -3.625,
+        "min_x": -1.775,
+        "min_y": -7.825
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 10.511,
+      "footprint_polygon_xy": [
+        [
+          1.375,
+          -7.825
+        ],
+        [
+          0.675,
+          -7.825
+        ],
+        [
+          1.225,
+          -7.125
+        ],
+        [
+          -1.725,
+          -7.475
+        ],
+        [
+          -1.725,
+          -4.875
+        ],
+        [
+          0.475,
+          -4.725
+        ],
+        [
+          -1.775,
+          -4.375
+        ],
+        [
+          -1.725,
+          -3.725
+        ],
+        [
+          1.125,
+          -3.625
+        ],
+        [
+          1.075,
+          -6.725
+        ],
+        [
+          1.975,
+          -6.475
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_11",
+        "room_14",
+        "room_15",
+        "room_16",
+        "room_3"
+      ],
+      "object_ids": [
+        "obj_214",
+        "obj_215",
+        "obj_217",
+        "obj_218",
+        "obj_220",
+        "obj_223",
+        "obj_225",
+        "obj_227",
+        "obj_228",
+        "obj_232",
+        "obj_248"
+      ],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 70,
+        "selective_retrieval_context_room_ids": [
+          "room_16",
+          "room_14",
+          "room_7"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_7",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 2,
+        "dominant_object_labels": [
+          "bed",
+          "Lamp",
+          "Toilet Paper",
+          "book",
+          "cat"
+        ],
+        "object_count": 11,
+        "object_label_counts": {
+          "Lamp": 1,
+          "Toilet Paper": 1,
+          "bed": 4,
+          "book": 1,
+          "cat": 1,
+          "ceiling": 1,
+          "couch": 1,
+          "window-other": 1
+        }
+      },
+      "stable_room_id": "room_7",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 2225,
+        "committed_at_timestamp": 2225.0,
+        "first_seen_frame_idx": 500,
+        "last_observed_frame_idx": 1600
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_obj_176",
+        "anchor_obj_179",
+        "anchor_obj_180",
+        "anchor_obj_181",
+        "anchor_obj_183",
+        "anchor_room_8"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          -7.287,
+          5.82
+        ],
+        "extent_bbox_xy": {
+          "max_x": 9.675,
+          "max_y": -3.775,
+          "min_x": 5.225,
+          "min_y": -7.475
+        },
+        "footprint_polygon_xy": [
+          [
+            5.275,
+            -7.475
+          ],
+          [
+            5.225,
+            -3.775
+          ],
+          [
+            9.275,
+            -4.475
+          ],
+          [
+            9.675,
+            -7.475
+          ]
+        ],
+        "graph_node_id": "room_8",
+        "neighbor_room_ids": [
+          "room_11",
+          "room_3"
+        ],
+        "semantic_landmarks": [
+          "door",
+          "chair",
+          "Coffee Table",
+          "Oyster",
+          "blanket"
+        ]
+      },
+      "centroid_xy": [
+        -7.287,
+        5.82
+      ],
+      "connectivity": [
+        {
+          "relation_type": "transition",
+          "room_id": "room_11",
+          "status": "supported"
+        },
+        {
+          "relation_type": "possible_connection",
+          "room_id": "room_3",
+          "status": "weak"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 9.675,
+        "max_y": -3.775,
+        "min_x": 5.225,
+        "min_y": -7.475
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 14.075,
+      "footprint_polygon_xy": [
+        [
+          5.275,
+          -7.475
+        ],
+        [
+          5.225,
+          -3.775
+        ],
+        [
+          9.275,
+          -4.475
+        ],
+        [
+          9.675,
+          -7.475
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_11",
+        "room_3"
+      ],
+      "object_ids": [
+        "obj_165",
+        "obj_169",
+        "obj_172",
+        "obj_173",
+        "obj_174",
+        "obj_176",
+        "obj_177",
+        "obj_179",
+        "obj_180",
+        "obj_181",
+        "obj_183"
+      ],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 59,
+        "selective_retrieval_context_room_ids": [
+          "room_11",
+          "room_6",
+          "room_7"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_8",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 6,
+        "dominant_object_labels": [
+          "door",
+          "chair",
+          "Coffee Table",
+          "Oyster",
+          "blanket"
+        ],
+        "object_count": 11,
+        "object_label_counts": {
+          "Coffee Table": 1,
+          "Oyster": 1,
+          "blanket": 1,
+          "ceiling": 1,
+          "chair": 2,
+          "door": 3,
+          "window": 1,
+          "window-other": 1
+        }
+      },
+      "stable_room_id": "room_8",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 2250,
+        "committed_at_timestamp": 2250.0,
+        "first_seen_frame_idx": 800,
+        "last_observed_frame_idx": 1150
+      }
+    },
+    {
+      "anchor_ids": [
+        "anchor_room_9"
+      ],
+      "bev_vln_hook": {
+        "centroid_xy": [
+          -8.796,
+          6.843
+        ],
+        "extent_bbox_xy": {
+          "max_x": 9.625,
+          "max_y": -6.025,
+          "min_x": 7.975,
+          "min_y": -7.625
+        },
+        "footprint_polygon_xy": [
+          [
+            8.475,
+            -7.625
+          ],
+          [
+            7.975,
+            -6.725
+          ],
+          [
+            8.575,
+            -6.175
+          ],
+          [
+            9.325,
+            -6.025
+          ],
+          [
+            9.325,
+            -6.925
+          ],
+          [
+            9.625,
+            -7.025
+          ],
+          [
+            9.625,
+            -7.225
+          ],
+          [
+            9.325,
+            -7.175
+          ],
+          [
+            9.225,
+            -7.475
+          ]
+        ],
+        "graph_node_id": "room_9",
+        "neighbor_room_ids": [
+          "room_8"
+        ],
+        "semantic_landmarks": []
+      },
+      "centroid_xy": [
+        -8.796,
+        6.843
+      ],
+      "connectivity": [
+        {
+          "relation_type": "adjacent",
+          "room_id": "room_8",
+          "status": "supported"
+        }
+      ],
+      "extent_bbox_xy": {
+        "max_x": 9.625,
+        "max_y": -6.025,
+        "min_x": 7.975,
+        "min_y": -7.625
+      },
+      "floor_id": "floor_1",
+      "footprint_area_m2": 1.605,
+      "footprint_polygon_xy": [
+        [
+          8.475,
+          -7.625
+        ],
+        [
+          7.975,
+          -6.725
+        ],
+        [
+          8.575,
+          -6.175
+        ],
+        [
+          9.325,
+          -6.025
+        ],
+        [
+          9.325,
+          -6.925
+        ],
+        [
+          9.625,
+          -7.025
+        ],
+        [
+          9.625,
+          -7.225
+        ],
+        [
+          9.325,
+          -7.175
+        ],
+        [
+          9.225,
+          -7.475
+        ]
+      ],
+      "neighbor_room_ids": [
+        "room_8"
+      ],
+      "object_ids": [],
+      "provenance": {
+        "candidate_complete_reasons": [
+          "containment_stable",
+          "floor_assignment_stable",
+          "gateway_structure_stable",
+          "left_active_room",
+          "room_signature_stable"
+        ],
+        "observation_count": 8,
+        "selective_retrieval_context_room_ids": [
+          "room_9",
+          "room_8",
+          "room_4"
+        ],
+        "source": "room_scoped_runtime_manager"
+      },
+      "room_id": "room_9",
+      "room_type": "unknown",
+      "semantic_summary": {
+        "anchor_count": 1,
+        "dominant_object_labels": [],
+        "object_count": 0,
+        "object_label_counts": {}
+      },
+      "stable_room_id": "room_9",
+      "status": "confirmed",
+      "timestamps": {
+        "committed_at_frame_idx": 975,
+        "committed_at_timestamp": 975.0,
+        "first_seen_frame_idx": 800,
+        "last_observed_frame_idx": null
+      }
+    }
+  ],
+  "runtime_contract": {
+    "committed_global_memory": "accepted room summaries only; public/default topology source",
+    "local_working_state": "active room or bounded recent room window only; non-public",
+    "selective_history_retrieval": "local fusion uses only a bounded relevant committed subset, never the entire committed history"
+  },
+  "sequence_id": "00824-Dd4bFSTQ8gi",
+  "summary": {
+    "adjacency_count": 21,
+    "committed_room_ids": [
+      "room_1",
+      "room_10",
+      "room_11",
+      "room_12",
+      "room_13",
+      "room_14",
+      "room_15",
+      "room_16",
+      "room_2",
+      "room_3",
+      "room_4",
+      "room_5",
+      "room_6",
+      "room_7",
+      "room_8",
+      "room_9"
+    ],
+    "room_count": 16
+  },
+  "version": "0.1"
+}

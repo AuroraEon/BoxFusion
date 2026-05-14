@@ -1,0 +1,14 @@
+{
+  "artifact_type": "step30p1_query_parse_result",
+  "created_utc": "2026-05-12T12:11:17.409166+00:00",
+  "failure_type": null,
+  "goal_room": "room_16",
+  "parse_success": true,
+  "query": null,
+  "start_room": "room_1",
+  "step": "Step30P1",
+  "target_object": null,
+  "target_room": null,
+  "template_parser": "deterministic",
+  "version": "v0_1"
+}

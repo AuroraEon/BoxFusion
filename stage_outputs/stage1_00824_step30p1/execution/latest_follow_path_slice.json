@@ -1,0 +1,513 @@
+{
+  "created_utc": "2026-05-12T12:11:21.623105+00:00",
+  "mode": "full",
+  "poses": [
+    {
+      "source": "segment_start",
+      "x": 5.3067,
+      "y": 2.1181
+    },
+    {
+      "source": "segment_crossing",
+      "x": 5.0948,
+      "y": 1.8396
+    },
+    {
+      "source": "segment_goal",
+      "x": 4.8829,
+      "y": 1.561
+    },
+    {
+      "source": "bridge",
+      "x": 4.775,
+      "y": 1.325
+    },
+    {
+      "source": "bridge",
+      "x": 4.675,
+      "y": 1.075
+    },
+    {
+      "source": "bridge",
+      "x": 4.325,
+      "y": 1.075
+    },
+    {
+      "source": "bridge",
+      "x": 3.975,
+      "y": 1.075
+    },
+    {
+      "source": "bridge",
+      "x": 3.675,
+      "y": 1.025
+    },
+    {
+      "source": "bridge",
+      "x": 3.525,
+      "y": 0.825
+    },
+    {
+      "source": "bridge",
+      "x": 3.175,
+      "y": 0.825
+    },
+    {
+      "source": "bridge",
+      "x": 2.825,
+      "y": 0.825
+    },
+    {
+      "source": "bridge",
+      "x": 2.475,
+      "y": 0.825
+    },
+    {
+      "source": "bridge",
+      "x": 2.125,
+      "y": 0.825
+    },
+    {
+      "source": "bridge",
+      "x": 1.775,
+      "y": 0.825
+    },
+    {
+      "source": "bridge",
+      "x": 1.425,
+      "y": 0.825
+    },
+    {
+      "source": "bridge",
+      "x": 1.125,
+      "y": 0.775
+    },
+    {
+      "source": "bridge",
+      "x": 1.125,
+      "y": 0.425
+    },
+    {
+      "source": "bridge",
+      "x": 1.125,
+      "y": 0.075
+    },
+    {
+      "source": "bridge",
+      "x": 1.125,
+      "y": -0.275
+    },
+    {
+      "source": "bridge",
+      "x": 1.125,
+      "y": -0.625
+    },
+    {
+      "source": "bridge",
+      "x": 1.125,
+      "y": -0.975
+    },
+    {
+      "source": "bridge",
+      "x": 1.125,
+      "y": -1.325
+    },
+    {
+      "source": "bridge",
+      "x": 1.125,
+      "y": -1.675
+    },
+    {
+      "source": "bridge",
+      "x": 1.125,
+      "y": -2.025
+    },
+    {
+      "source": "bridge",
+      "x": 1.125,
+      "y": -2.375
+    },
+    {
+      "source": "bridge",
+      "x": 1.375,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 1.725,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 2.075,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 2.425,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 2.775,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 3.125,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 3.475,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 3.825,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 4.175,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 4.525,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 4.875,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 5.225,
+      "y": -2.475
+    },
+    {
+      "source": "bridge",
+      "x": 5.425,
+      "y": -2.625
+    },
+    {
+      "source": "bridge",
+      "x": 5.425,
+      "y": -2.975
+    },
+    {
+      "source": "smooth_bridge",
+      "x": 5.564643,
+      "y": -3.046757
+    },
+    {
+      "source": "smooth_bridge",
+      "x": 5.704286,
+      "y": -3.118514
+    },
+    {
+      "source": "smooth_bridge",
+      "x": 5.843929,
+      "y": -3.190271
+    },
+    {
+      "source": "smooth_bridge",
+      "x": 5.983571,
+      "y": -3.262029
+    },
+    {
+      "source": "smooth_bridge",
+      "x": 6.123214,
+      "y": -3.333786
+    },
+    {
+      "source": "smooth_bridge",
+      "x": 6.262857,
+      "y": -3.405543
+    },
+    {
+      "source": "segment_start",
+      "x": 6.4025,
+      "y": -3.4773
+    },
+    {
+      "source": "segment_crossing",
+      "x": 6.5879,
+      "y": -3.7741
+    },
+    {
+      "source": "segment_goal",
+      "x": 6.7734,
+      "y": -4.071
+    },
+    {
+      "source": "smooth_bridge",
+      "x": 6.8,
+      "y": -4.18
+    },
+    {
+      "source": "smooth_bridge",
+      "x": 6.65,
+      "y": -4.3
+    },
+    {
+      "source": "smooth_bridge",
+      "x": 6.35,
+      "y": -4.35
+    },
+    {
+      "source": "smooth_bridge",
+      "x": 6.0,
+      "y": -4.32
+    },
+    {
+      "source": "smooth_bridge",
+      "x": 5.65,
+      "y": -4.27
+    },
+    {
+      "source": "segment_start",
+      "x": 5.3621,
+      "y": -4.2404
+    },
+    {
+      "source": "segment_crossing",
+      "x": 5.0125,
+      "y": -4.2229
+    },
+    {
+      "source": "segment_goal",
+      "x": 4.6629,
+      "y": -4.2054
+    },
+    {
+      "source": "bridge",
+      "x": 4.375,
+      "y": -4.175
+    },
+    {
+      "source": "bridge",
+      "x": 4.025,
+      "y": -4.175
+    },
+    {
+      "source": "bridge",
+      "x": 3.675,
+      "y": -4.175
+    },
+    {
+      "source": "bridge",
+      "x": 3.325,
+      "y": -4.175
+    },
+    {
+      "source": "bridge",
+      "x": 2.975,
+      "y": -4.175
+    },
+    {
+      "source": "bridge",
+      "x": 2.625,
+      "y": -4.175
+    },
+    {
+      "source": "segment_start",
+      "x": 2.3033,
+      "y": -4.1879
+    },
+    {
+      "source": "segment_crossing",
+      "x": 1.9533,
+      "y": -4.1917
+    },
+    {
+      "source": "segment_goal",
+      "x": 1.6034,
+      "y": -4.1954
+    },
+    {
+      "source": "bridge",
+      "x": 1.325,
+      "y": -4.125
+    },
+    {
+      "source": "bridge",
+      "x": 0.975,
+      "y": -4.125
+    },
+    {
+      "source": "bridge",
+      "x": 0.625,
+      "y": -4.125
+    },
+    {
+      "source": "bridge",
+      "x": 0.275,
+      "y": -4.125
+    },
+    {
+      "source": "bridge",
+      "x": -0.075,
+      "y": -4.125
+    },
+    {
+      "source": "bridge",
+      "x": -0.425,
+      "y": -4.125
+    },
+    {
+      "source": "bridge",
+      "x": -0.775,
+      "y": -4.125
+    },
+    {
+      "source": "bridge",
+      "x": -1.125,
+      "y": -4.125
+    },
+    {
+      "source": "bridge",
+      "x": -1.475,
+      "y": -4.125
+    },
+    {
+      "source": "segment_start",
+      "x": -1.6251,
+      "y": -4.1349
+    },
+    {
+      "source": "segment_crossing",
+      "x": -1.975,
+      "y": -4.125
+    },
+    {
+      "source": "segment_goal",
+      "x": -2.3249,
+      "y": -4.1151
+    },
+    {
+      "source": "bridge",
+      "x": -2.425,
+      "y": -3.875
+    },
+    {
+      "source": "bridge",
+      "x": -2.775,
+      "y": -3.875
+    },
+    {
+      "source": "bridge",
+      "x": -3.125,
+      "y": -3.875
+    },
+    {
+      "source": "bridge",
+      "x": -3.475,
+      "y": -3.875
+    },
+    {
+      "source": "bridge",
+      "x": -3.825,
+      "y": -3.875
+    },
+    {
+      "source": "bridge",
+      "x": -3.975,
+      "y": -3.675
+    },
+    {
+      "source": "room16_interior_terminal",
+      "x": -4.16388556867257,
+      "y": -2.3009917084080236
+    }
+  ],
+  "source": "selected_h8r2_waypoint_slice",
+  "waypoint_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83
+  ]
+}

@@ -1,0 +1,19 @@
+[INFO] [launch]: All log files can be found below /home/ws/.ros/log/2026-05-14-19-57-50-156592-DESKTOP-24F4MES-14753
+[INFO] [launch]: Default logging verbosity is set to INFO
+urdf_file_name : turtlebot3_burger.urdf
+[INFO] [robot_state_publisher-1]: process started with pid [14760]
+[robot_state_publisher-1] [WARN] [1778759870.831584801] [robot_state_publisher]: No robot_description parameter, but command-line argument available.  Assuming argument is name of URDF file.  This backwards compatibility fallback will be removed in the future.
+[robot_state_publisher-1] Parsing robot urdf xml string.
+[robot_state_publisher-1] Link base_link had 5 children
+[robot_state_publisher-1] Link caster_back_link had 0 children
+[robot_state_publisher-1] Link imu_link had 0 children
+[robot_state_publisher-1] Link base_scan had 0 children
+[robot_state_publisher-1] Link wheel_left_link had 0 children
+[robot_state_publisher-1] Link wheel_right_link had 0 children
+[robot_state_publisher-1] [INFO] [1778759870.833642185] [robot_state_publisher]: got segment base_footprint
+[robot_state_publisher-1] [INFO] [1778759870.833667011] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-1] [INFO] [1778759870.833670332] [robot_state_publisher]: got segment base_scan
+[robot_state_publisher-1] [INFO] [1778759870.833672772] [robot_state_publisher]: got segment caster_back_link
+[robot_state_publisher-1] [INFO] [1778759870.833675174] [robot_state_publisher]: got segment imu_link
+[robot_state_publisher-1] [INFO] [1778759870.833677447] [robot_state_publisher]: got segment wheel_left_link
+[robot_state_publisher-1] [INFO] [1778759870.833679825] [robot_state_publisher]: got segment wheel_right_link

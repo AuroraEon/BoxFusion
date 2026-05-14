@@ -1,0 +1,4271 @@
+{
+  "version": "0.1",
+  "sequence_id": "00824-Dd4bFSTQ8gi",
+  "floors": [
+    {
+      "floor_id": "floor_1",
+      "floor_index": 0,
+      "display_floor_id": "floor_1",
+      "display_order": 1,
+      "z_min": 0.696,
+      "z_max": 2.319,
+      "z_center": 1.569,
+      "confidence": 1.0,
+      "status": "confirmed",
+      "support_statistics": {
+        "frame_count": 2253,
+        "keyframe_count": 92,
+        "first_seen_frame": 0,
+        "last_seen_frame": 2252,
+        "raw_z_min": 1.446,
+        "raw_z_max": 1.569,
+        "sample_count": 2253
+      }
+    }
+  ],
+  "rooms": [
+    {
+      "id": "room_1",
+      "room_uuid": 1,
+      "room_type": "unknown",
+      "floor_id": "floor_1",
+      "floor_index": 0,
+      "display_floor_id": "floor_1",
+      "display_order": 1,
+      "floor_assignment_confidence": 1.0,
+      "status": "confirmed",
+      "center": [
+        7.546561092094414,
+        4.302462368638022
+      ],
+      "polygon": [
+        [
+          5.225,
+          1.525
+        ],
+        [
+          5.325,
+          7.025
+        ],
+        [
+          9.825,
+          7.075
+        ],
+        [
+          9.825,
+          1.625
+        ]
+      ],
+      "area_m2": 24.907
+    },
+    {
+      "id": "room_11",
+      "room_uuid": 11,
+      "room_type": "unknown",
+      "floor_id": "floor_1",
+      "floor_index": 0,
+      "display_floor_id": "floor_1",
+      "display_order": 1,
+      "floor_assignment_confidence": 1.0,
+      "status": "confirmed",
+      "center": [
+        3.512338489947119,
+        -5.663339156476167
+      ],
+      "polygon": [
+        [
+          2.175,
+          -7.475
+        ],
+        [
+          2.075,
+          -3.975
+        ],
+        [
+          4.875,
+          -3.775
+        ],
+        [
+          4.875,
+          -7.475
+        ]
+      ],
+      "area_m2": 9.905
+    },
+    {
+      "id": "room_14",
+      "room_uuid": 14,
+      "room_type": "unknown",
+      "floor_id": "floor_1",
+      "floor_index": 0,
+      "display_floor_id": "floor_1",
+      "display_order": 1,
+      "floor_assignment_confidence": 1.0,
+      "status": "confirmed",
+      "center": [
+        -3.5871492974544665,
+        -5.541423620224549
+      ],
+      "polygon": [
+        [
+          -5.025,
+          -7.525
+        ],
+        [
+          -5.075,
+          -3.775
+        ],
+        [
+          -4.275,
+          -3.675
+        ],
+        [
+          -4.825,
+          -3.275
+        ],
+        [
+          -2.125,
+          -3.775
+        ],
+        [
+          -2.075,
+          -7.475
+        ]
+      ],
+      "area_m2": 11.54
+    },
+    {
+      "id": "room_15",
+      "room_uuid": 15,
+      "room_type": "unknown",
+      "floor_id": "floor_1",
+      "floor_index": 0,
+      "display_floor_id": "floor_1",
+      "display_order": 1,
+      "floor_assignment_confidence": 1.0,
+      "status": "confirmed",
+      "center": [
+        -1.1928229470505807,
+        -2.537154571408101
+      ],
+      "polygon": [
+        [
+          -2.175,
+          -3.525
+        ],
+        [
+          -1.825,
+          -2.775
+        ],
+        [
+          -2.125,
+          -2.675
+        ],
+        [
+          -2.125,
+          -1.675
+        ],
+        [
+          -0.325,
+          -1.725
+        ],
+        [
+          -0.325,
+          -3.475
+        ],
+        [
+          -1.775,
+          -3.325
+        ]
+      ],
+      "area_m2": 2.955
+    },
+    {
+      "id": "room_16",
+      "room_uuid": 16,
+      "room_type": "unknown",
+      "floor_id": "floor_1",
+      "floor_index": 0,
+      "display_floor_id": "floor_1",
+      "display_order": 1,
+      "floor_assignment_confidence": 1.0,
+      "status": "confirmed",
+      "center": [
+        -3.6770737025534386,
+        -2.5550459493047852
+      ],
+      "polygon": [
+        [
+          -2.575,
+          -3.525
+        ],
+        [
+          -3.575,
+          -3.575
+        ],
+        [
+          -3.525,
+          -2.775
+        ],
+        [
+          -3.775,
+          -3.275
+        ],
+        [
+          -4.825,
+          -3.175
+        ],
+        [
+          -5.125,
+          -1.725
+        ],
+        [
+          -4.575,
+          -1.975
+        ],
+        [
+          -4.575,
+          -3.025
+        ],
+        [
+          -4.375,
+          -1.675
+        ],
+        [
+          -2.575,
+          -1.775
+        ]
+      ],
+      "area_m2": 3.676
+    },
+    {
+      "id": "room_3",
+      "room_uuid": 3,
+      "room_type": "unknown",
+      "floor_id": "floor_1",
+      "floor_index": 0,
+      "display_floor_id": "floor_1",
+      "display_order": 1,
+      "floor_assignment_confidence": 1.0,
+      "status": "confirmed",
+      "center": [
+        3.782631455811413,
+        -0.582161262940256
+      ],
+      "polygon": [
+        [
+          9.275,
+          -3.175
+        ],
+        [
+          0.175,
+          -3.425
+        ],
+        [
+          -2.025,
+          1.625
+        ],
+        [
+          5.075,
+          3.325
+        ],
+        [
+          4.825,
+          0.975
+        ],
+        [
+          1.225,
+          0.075
+        ],
+        [
+          5.175,
+          -0.925
+        ],
+        [
+          5.475,
+          1.075
+        ],
+        [
+          9.225,
+          1.025
+        ]
+      ],
+      "area_m2": 49.382
+    },
+    {
+      "id": "room_7",
+      "room_uuid": 7,
+      "room_type": "unknown",
+      "floor_id": "floor_1",
+      "floor_index": 0,
+      "display_floor_id": "floor_1",
+      "display_order": 1,
+      "floor_assignment_confidence": 1.0,
+      "status": "confirmed",
+      "center": [
+        -0.09985177664086614,
+        -5.627241204814538
+      ],
+      "polygon": [
+        [
+          1.375,
+          -7.825
+        ],
+        [
+          0.675,
+          -7.825
+        ],
+        [
+          1.225,
+          -7.125
+        ],
+        [
+          -1.725,
+          -7.475
+        ],
+        [
+          -1.725,
+          -4.875
+        ],
+        [
+          0.475,
+          -4.725
+        ],
+        [
+          -1.775,
+          -4.375
+        ],
+        [
+          -1.725,
+          -3.725
+        ],
+        [
+          1.825,
+          -3.825
+        ],
+        [
+          1.875,
+          -6.175
+        ],
+        [
+          1.675,
+          -4.525
+        ],
+        [
+          0.875,
+          -4.675
+        ],
+        [
+          1.075,
+          -6.725
+        ],
+        [
+          1.975,
+          -6.475
+        ]
+      ],
+      "area_m2": 10.685
+    },
+    {
+      "id": "room_8",
+      "room_uuid": 8,
+      "room_type": "unknown",
+      "floor_id": "floor_1",
+      "floor_index": 0,
+      "display_floor_id": "floor_1",
+      "display_order": 1,
+      "floor_assignment_confidence": 1.0,
+      "status": "confirmed",
+      "center": [
+        7.241636304975505,
+        -5.8208538186785725
+      ],
+      "polygon": [
+        [
+          5.275,
+          -7.475
+        ],
+        [
+          5.025,
+          -3.825
+        ],
+        [
+          9.275,
+          -4.475
+        ],
+        [
+          9.675,
+          -7.475
+        ]
+      ],
+      "area_m2": 14.275
+    }
+  ],
+  "edges": [
+    {
+      "source": "room_1",
+      "target": "room_3",
+      "relation_type": "adjacent",
+      "confidence": 0.975,
+      "status": "confirmed",
+      "support_count": 3,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00001",
+        "ev_00002",
+        "ev_00007"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 2,
+          "door_detection": 1
+        }
+      }
+    },
+    {
+      "source": "room_1",
+      "target": "room_3",
+      "relation_type": "transition",
+      "confidence": 0.45,
+      "status": "supported",
+      "support_count": 1,
+      "first_seen_step": 275,
+      "last_seen_step": 300,
+      "evidence_ids": [
+        "ev_00022"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "trajectory_transition": 1
+        }
+      }
+    },
+    {
+      "source": "room_11",
+      "target": "room_3",
+      "relation_type": "adjacent",
+      "confidence": 0.062,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00008"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_11",
+      "target": "room_3",
+      "relation_type": "possible_connection",
+      "confidence": 0.062,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00008"
+      ],
+      "metadata": {
+        "reason": "adjacent evidence is still weak, so expose as queryable possible_connection",
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_11",
+      "target": "room_7",
+      "relation_type": "adjacent",
+      "confidence": 0.194,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00009"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_11",
+      "target": "room_7",
+      "relation_type": "transition",
+      "confidence": 0.45,
+      "status": "supported",
+      "support_count": 1,
+      "first_seen_step": 1325,
+      "last_seen_step": 1350,
+      "evidence_ids": [
+        "ev_00024"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "trajectory_transition": 1
+        }
+      }
+    },
+    {
+      "source": "room_11",
+      "target": "room_8",
+      "relation_type": "adjacent",
+      "confidence": 0.892,
+      "status": "confirmed",
+      "support_count": 3,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00005",
+        "ev_00006",
+        "ev_00010"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 2,
+          "door_detection": 1
+        }
+      }
+    },
+    {
+      "source": "room_11",
+      "target": "room_8",
+      "relation_type": "transition",
+      "confidence": 0.45,
+      "status": "supported",
+      "support_count": 1,
+      "first_seen_step": 1150,
+      "last_seen_step": 1200,
+      "evidence_ids": [
+        "ev_00023"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "trajectory_transition": 1
+        }
+      }
+    },
+    {
+      "source": "room_14",
+      "target": "room_15",
+      "relation_type": "adjacent",
+      "confidence": 0.25,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00011"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_14",
+      "target": "room_15",
+      "relation_type": "transition",
+      "confidence": 0.45,
+      "status": "supported",
+      "support_count": 1,
+      "first_seen_step": 1800,
+      "last_seen_step": 1875,
+      "evidence_ids": [
+        "ev_00028"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "trajectory_transition": 1
+        }
+      }
+    },
+    {
+      "source": "room_14",
+      "target": "room_16",
+      "relation_type": "adjacent",
+      "confidence": 0.45,
+      "status": "supported",
+      "support_count": 3,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00003",
+        "ev_00004",
+        "ev_00012"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 2,
+          "shared_frontier": 1
+        }
+      }
+    },
+    {
+      "source": "room_14",
+      "target": "room_16",
+      "relation_type": "transition",
+      "confidence": 1.0,
+      "status": "confirmed",
+      "support_count": 3,
+      "first_seen_step": 1925,
+      "last_seen_step": 2050,
+      "evidence_ids": [
+        "ev_00029",
+        "ev_00030",
+        "ev_00033"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "repeated_crossing": 1,
+          "trajectory_transition": 2
+        }
+      }
+    },
+    {
+      "source": "room_14",
+      "target": "room_3",
+      "relation_type": "adjacent",
+      "confidence": 0.222,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00013"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_14",
+      "target": "room_3",
+      "relation_type": "possible_connection",
+      "confidence": 0.222,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00013"
+      ],
+      "metadata": {
+        "reason": "adjacent evidence is still weak, so expose as queryable possible_connection",
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_14",
+      "target": "room_7",
+      "relation_type": "adjacent",
+      "confidence": 0.083,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00014"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_14",
+      "target": "room_7",
+      "relation_type": "transition",
+      "confidence": 0.45,
+      "status": "supported",
+      "support_count": 1,
+      "first_seen_step": 2225,
+      "last_seen_step": 2250,
+      "evidence_ids": [
+        "ev_00031"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "trajectory_transition": 1
+        }
+      }
+    },
+    {
+      "source": "room_15",
+      "target": "room_16",
+      "relation_type": "adjacent",
+      "confidence": 0.062,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00015"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_15",
+      "target": "room_16",
+      "relation_type": "possible_connection",
+      "confidence": 0.062,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00015"
+      ],
+      "metadata": {
+        "reason": "adjacent evidence is still weak, so expose as queryable possible_connection",
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_15",
+      "target": "room_3",
+      "relation_type": "adjacent",
+      "confidence": 0.25,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00016"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_15",
+      "target": "room_3",
+      "relation_type": "possible_connection",
+      "confidence": 0.25,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00016"
+      ],
+      "metadata": {
+        "reason": "adjacent evidence is still weak, so expose as queryable possible_connection",
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_15",
+      "target": "room_7",
+      "relation_type": "adjacent",
+      "confidence": 0.139,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00017"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_15",
+      "target": "room_7",
+      "relation_type": "transition",
+      "confidence": 0.45,
+      "status": "supported",
+      "support_count": 1,
+      "first_seen_step": 1600,
+      "last_seen_step": 1700,
+      "evidence_ids": [
+        "ev_00027"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "trajectory_transition": 1
+        }
+      }
+    },
+    {
+      "source": "room_16",
+      "target": "room_3",
+      "relation_type": "possible_connection",
+      "confidence": 0.075,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00018"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "shared_frontier": 1
+        }
+      }
+    },
+    {
+      "source": "room_16",
+      "target": "room_7",
+      "relation_type": "possible_connection",
+      "confidence": 0.039,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00019"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "shared_frontier": 1
+        }
+      }
+    },
+    {
+      "source": "room_3",
+      "target": "room_7",
+      "relation_type": "adjacent",
+      "confidence": 0.083,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00020"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_3",
+      "target": "room_7",
+      "relation_type": "transition",
+      "confidence": 1.0,
+      "status": "confirmed",
+      "support_count": 3,
+      "first_seen_step": 1350,
+      "last_seen_step": 1425,
+      "evidence_ids": [
+        "ev_00025",
+        "ev_00026",
+        "ev_00032"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "repeated_crossing": 1,
+          "trajectory_transition": 2
+        }
+      }
+    },
+    {
+      "source": "room_3",
+      "target": "room_8",
+      "relation_type": "adjacent",
+      "confidence": 0.062,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00021"
+      ],
+      "metadata": {
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    },
+    {
+      "source": "room_3",
+      "target": "room_8",
+      "relation_type": "possible_connection",
+      "confidence": 0.062,
+      "status": "weak",
+      "support_count": 1,
+      "first_seen_step": 0,
+      "last_seen_step": 0,
+      "evidence_ids": [
+        "ev_00021"
+      ],
+      "metadata": {
+        "reason": "adjacent evidence is still weak, so expose as queryable possible_connection",
+        "evidence_type_breakdown": {
+          "boundary_contact": 1
+        }
+      }
+    }
+  ],
+  "indices": {
+    "object_to_room": {
+      "obj_0": "room_3",
+      "obj_1": "room_3",
+      "obj_101": "room_3",
+      "obj_102": "room_3",
+      "obj_105": "room_3",
+      "obj_106": "room_3",
+      "obj_107": "room_3",
+      "obj_108": "room_3",
+      "obj_110": "room_3",
+      "obj_111": "room_3",
+      "obj_112": "room_3",
+      "obj_114": "room_3",
+      "obj_115": "room_3",
+      "obj_119": "room_3",
+      "obj_122": "room_3",
+      "obj_126": "room_3",
+      "obj_127": "room_3",
+      "obj_128": "room_3",
+      "obj_13": "room_3",
+      "obj_132": "room_3",
+      "obj_134": "room_3",
+      "obj_137": "room_3",
+      "obj_139": "room_3",
+      "obj_140": "room_3",
+      "obj_142": "room_3",
+      "obj_143": "room_3",
+      "obj_145": "room_3",
+      "obj_146": "room_3",
+      "obj_15": "room_3",
+      "obj_151": "room_3",
+      "obj_152": "room_3",
+      "obj_157": "room_3",
+      "obj_159": "room_3",
+      "obj_161": "room_3",
+      "obj_162": "room_3",
+      "obj_165": "room_8",
+      "obj_169": "room_8",
+      "obj_172": "room_8",
+      "obj_173": "room_8",
+      "obj_174": "room_8",
+      "obj_176": "room_8",
+      "obj_177": "room_8",
+      "obj_179": "room_8",
+      "obj_180": "room_8",
+      "obj_181": "room_8",
+      "obj_183": "room_8",
+      "obj_185": "room_11",
+      "obj_186": "room_11",
+      "obj_188": "room_7",
+      "obj_189": "room_7",
+      "obj_191": "room_11",
+      "obj_192": "room_11",
+      "obj_199": "room_7",
+      "obj_201": "room_11",
+      "obj_202": "room_11",
+      "obj_203": "room_7",
+      "obj_204": "room_3",
+      "obj_208": "room_3",
+      "obj_212": "room_3",
+      "obj_214": "room_7",
+      "obj_215": "room_7",
+      "obj_217": "room_7",
+      "obj_218": "room_7",
+      "obj_220": "room_7",
+      "obj_223": "room_7",
+      "obj_225": "room_7",
+      "obj_227": "room_7",
+      "obj_228": "room_7",
+      "obj_232": "room_7",
+      "obj_236": "room_14",
+      "obj_240": "room_15",
+      "obj_241": "room_15",
+      "obj_243": "room_15",
+      "obj_246": "room_15",
+      "obj_248": "room_7",
+      "obj_251": "room_14",
+      "obj_252": "room_14",
+      "obj_254": "room_14",
+      "obj_256": "room_14",
+      "obj_258": "room_14",
+      "obj_259": "room_14",
+      "obj_26": "room_3",
+      "obj_261": "room_14",
+      "obj_263": "room_16",
+      "obj_264": "room_14",
+      "obj_265": "room_16",
+      "obj_266": "room_16",
+      "obj_267": "room_14",
+      "obj_269": "room_16",
+      "obj_271": "room_16",
+      "obj_277": "room_14",
+      "obj_279": "room_14",
+      "obj_28": "room_3",
+      "obj_281": "room_14",
+      "obj_284": "room_14",
+      "obj_288": "room_16",
+      "obj_29": "room_3",
+      "obj_296": "room_14",
+      "obj_302": "room_7",
+      "obj_303": "room_15",
+      "obj_304": "room_15",
+      "obj_31": "room_3",
+      "obj_34": "room_1",
+      "obj_37": "room_1",
+      "obj_38": "room_1",
+      "obj_39": "room_1",
+      "obj_40": "room_1",
+      "obj_41": "room_1",
+      "obj_42": "room_1",
+      "obj_43": "room_1",
+      "obj_44": "room_1",
+      "obj_47": "room_1",
+      "obj_52": "room_1",
+      "obj_53": "room_1",
+      "obj_54": "room_1",
+      "obj_55": "room_1",
+      "obj_56": "room_1",
+      "obj_58": "room_1",
+      "obj_61": "room_1",
+      "obj_62": "room_1",
+      "obj_63": "room_1",
+      "obj_67": "room_3",
+      "obj_69": "room_3",
+      "obj_7": "room_3",
+      "obj_70": "room_3",
+      "obj_74": "room_3",
+      "obj_77": "room_3",
+      "obj_78": "room_3",
+      "obj_79": "room_3",
+      "obj_8": "room_3",
+      "obj_82": "room_3",
+      "obj_83": "room_3",
+      "obj_84": "room_3",
+      "obj_85": "room_3",
+      "obj_87": "room_3",
+      "obj_9": "room_3",
+      "obj_90": "room_3",
+      "obj_91": "room_3",
+      "obj_94": "room_3",
+      "obj_95": "room_3",
+      "obj_96": "room_3"
+    },
+    "anchor_to_room": {
+      "anchor_obj_132": "room_3",
+      "anchor_obj_137": "room_3",
+      "anchor_obj_176": "room_8",
+      "anchor_obj_179": "room_8",
+      "anchor_obj_180": "room_8",
+      "anchor_obj_181": "room_8",
+      "anchor_obj_183": "room_8",
+      "anchor_obj_186": "room_11",
+      "anchor_obj_223": "room_7",
+      "anchor_obj_284": "room_14",
+      "anchor_obj_37": "room_1",
+      "anchor_obj_38": "room_1",
+      "anchor_obj_43": "room_1",
+      "anchor_obj_44": "room_1",
+      "anchor_obj_52": "room_1",
+      "anchor_obj_54": "room_1",
+      "anchor_obj_56": "room_1",
+      "anchor_obj_58": "room_1",
+      "anchor_room_1": "room_1",
+      "anchor_room_11": "room_11",
+      "anchor_room_14": "room_14",
+      "anchor_room_15": "room_15",
+      "anchor_room_16": "room_16",
+      "anchor_room_3": "room_3",
+      "anchor_room_7": "room_7",
+      "anchor_room_8": "room_8"
+    },
+    "room_to_objects": {
+      "room_1": [
+        "obj_34",
+        "obj_37",
+        "obj_38",
+        "obj_39",
+        "obj_40",
+        "obj_41",
+        "obj_42",
+        "obj_43",
+        "obj_44",
+        "obj_47",
+        "obj_52",
+        "obj_53",
+        "obj_54",
+        "obj_55",
+        "obj_56",
+        "obj_58",
+        "obj_61",
+        "obj_62",
+        "obj_63"
+      ],
+      "room_11": [
+        "obj_185",
+        "obj_186",
+        "obj_191",
+        "obj_192",
+        "obj_201",
+        "obj_202"
+      ],
+      "room_14": [
+        "obj_236",
+        "obj_251",
+        "obj_252",
+        "obj_254",
+        "obj_256",
+        "obj_258",
+        "obj_259",
+        "obj_261",
+        "obj_264",
+        "obj_267",
+        "obj_277",
+        "obj_279",
+        "obj_281",
+        "obj_284",
+        "obj_296"
+      ],
+      "room_15": [
+        "obj_240",
+        "obj_241",
+        "obj_243",
+        "obj_246",
+        "obj_303",
+        "obj_304"
+      ],
+      "room_16": [
+        "obj_263",
+        "obj_265",
+        "obj_266",
+        "obj_269",
+        "obj_271",
+        "obj_288"
+      ],
+      "room_3": [
+        "obj_0",
+        "obj_1",
+        "obj_101",
+        "obj_102",
+        "obj_105",
+        "obj_106",
+        "obj_107",
+        "obj_108",
+        "obj_110",
+        "obj_111",
+        "obj_112",
+        "obj_114",
+        "obj_115",
+        "obj_119",
+        "obj_122",
+        "obj_126",
+        "obj_127",
+        "obj_128",
+        "obj_13",
+        "obj_132",
+        "obj_134",
+        "obj_137",
+        "obj_139",
+        "obj_140",
+        "obj_142",
+        "obj_143",
+        "obj_145",
+        "obj_146",
+        "obj_15",
+        "obj_151",
+        "obj_152",
+        "obj_157",
+        "obj_159",
+        "obj_161",
+        "obj_162",
+        "obj_204",
+        "obj_208",
+        "obj_212",
+        "obj_26",
+        "obj_28",
+        "obj_29",
+        "obj_31",
+        "obj_67",
+        "obj_69",
+        "obj_7",
+        "obj_70",
+        "obj_74",
+        "obj_77",
+        "obj_78",
+        "obj_79",
+        "obj_8",
+        "obj_82",
+        "obj_83",
+        "obj_84",
+        "obj_85",
+        "obj_87",
+        "obj_9",
+        "obj_90",
+        "obj_91",
+        "obj_94",
+        "obj_95",
+        "obj_96"
+      ],
+      "room_7": [
+        "obj_188",
+        "obj_189",
+        "obj_199",
+        "obj_203",
+        "obj_214",
+        "obj_215",
+        "obj_217",
+        "obj_218",
+        "obj_220",
+        "obj_223",
+        "obj_225",
+        "obj_227",
+        "obj_228",
+        "obj_232",
+        "obj_248",
+        "obj_302"
+      ],
+      "room_8": [
+        "obj_165",
+        "obj_169",
+        "obj_172",
+        "obj_173",
+        "obj_174",
+        "obj_176",
+        "obj_177",
+        "obj_179",
+        "obj_180",
+        "obj_181",
+        "obj_183"
+      ]
+    },
+    "room_to_anchors": {
+      "room_1": [
+        "anchor_obj_37",
+        "anchor_obj_38",
+        "anchor_obj_43",
+        "anchor_obj_44",
+        "anchor_obj_52",
+        "anchor_obj_54",
+        "anchor_obj_56",
+        "anchor_obj_58",
+        "anchor_room_1"
+      ],
+      "room_11": [
+        "anchor_obj_186",
+        "anchor_room_11"
+      ],
+      "room_14": [
+        "anchor_obj_284",
+        "anchor_room_14"
+      ],
+      "room_15": [
+        "anchor_room_15"
+      ],
+      "room_16": [
+        "anchor_room_16"
+      ],
+      "room_3": [
+        "anchor_obj_132",
+        "anchor_obj_137",
+        "anchor_room_3"
+      ],
+      "room_7": [
+        "anchor_obj_223",
+        "anchor_room_7"
+      ],
+      "room_8": [
+        "anchor_obj_176",
+        "anchor_obj_179",
+        "anchor_obj_180",
+        "anchor_obj_181",
+        "anchor_obj_183",
+        "anchor_room_8"
+      ]
+    }
+  },
+  "entities": {
+    "objects": [
+      {
+        "id": "obj_0",
+        "label": "refrigerator",
+        "normalized_label": "refrigerator",
+        "category": "refrigerator",
+        "room_id": "room_3",
+        "score": 0.451,
+        "detection_confidence": 0.451,
+        "semantic_confidence": 0.451,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_1",
+        "label": "window",
+        "normalized_label": "window",
+        "category": "window",
+        "room_id": "room_3",
+        "score": 0.396,
+        "detection_confidence": 0.396,
+        "semantic_confidence": 0.396,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_101",
+        "label": "counter",
+        "normalized_label": "counter",
+        "category": "counter",
+        "room_id": "room_3",
+        "score": 0.529,
+        "detection_confidence": 0.529,
+        "semantic_confidence": 0.529,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_102",
+        "label": "Cabinet/shelf",
+        "normalized_label": "cabinet/shelf",
+        "category": "Cabinet/shelf",
+        "room_id": "room_3",
+        "score": 0.536,
+        "detection_confidence": 0.536,
+        "semantic_confidence": 0.536,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_105",
+        "label": "Flute",
+        "normalized_label": "flute",
+        "category": "Flute",
+        "room_id": "room_3",
+        "score": 0.532,
+        "detection_confidence": 0.532,
+        "semantic_confidence": 0.532,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_106",
+        "label": "potted plant",
+        "normalized_label": "potted_plant",
+        "category": "potted plant",
+        "room_id": "room_3",
+        "score": 0.606,
+        "detection_confidence": 0.606,
+        "semantic_confidence": 0.606,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_107",
+        "label": "floor",
+        "normalized_label": "floor",
+        "category": "floor",
+        "room_id": "room_3",
+        "score": 0.559,
+        "detection_confidence": 0.559,
+        "semantic_confidence": 0.559,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_108",
+        "label": "Pillow",
+        "normalized_label": "pillow",
+        "category": "Pillow",
+        "room_id": "room_3",
+        "score": 0.513,
+        "detection_confidence": 0.513,
+        "semantic_confidence": 0.513,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_110",
+        "label": "window",
+        "normalized_label": "window",
+        "category": "window",
+        "room_id": "room_3",
+        "score": 0.563,
+        "detection_confidence": 0.563,
+        "semantic_confidence": 0.563,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_111",
+        "label": "Cabinet/shelf",
+        "normalized_label": "cabinet/shelf",
+        "category": "Cabinet/shelf",
+        "room_id": "room_3",
+        "score": 0.752,
+        "detection_confidence": 0.752,
+        "semantic_confidence": 0.752,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_112",
+        "label": "Flower",
+        "normalized_label": "flower",
+        "category": "Flower",
+        "room_id": "room_3",
+        "score": 0.737,
+        "detection_confidence": 0.737,
+        "semantic_confidence": 0.737,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_114",
+        "label": "Cabinet/shelf",
+        "normalized_label": "cabinet/shelf",
+        "category": "Cabinet/shelf",
+        "room_id": "room_3",
+        "score": 0.503,
+        "detection_confidence": 0.503,
+        "semantic_confidence": 0.503,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_115",
+        "label": "couch",
+        "normalized_label": "sofa",
+        "category": "couch",
+        "room_id": "room_3",
+        "score": 0.925,
+        "detection_confidence": 0.925,
+        "semantic_confidence": 0.925,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_119",
+        "label": "Stool",
+        "normalized_label": "stool",
+        "category": "Stool",
+        "room_id": "room_3",
+        "score": 0.772,
+        "detection_confidence": 0.772,
+        "semantic_confidence": 0.772,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_122",
+        "label": "Penguin",
+        "normalized_label": "penguin",
+        "category": "Penguin",
+        "room_id": "room_3",
+        "score": 0.585,
+        "detection_confidence": 0.585,
+        "semantic_confidence": 0.585,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_126",
+        "label": "vase",
+        "normalized_label": "vase",
+        "category": "vase",
+        "room_id": "room_3",
+        "score": 0.641,
+        "detection_confidence": 0.641,
+        "semantic_confidence": 0.641,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_127",
+        "label": "dining-table",
+        "normalized_label": "dining-table",
+        "category": "dining-table",
+        "room_id": "room_3",
+        "score": 0.725,
+        "detection_confidence": 0.725,
+        "semantic_confidence": 0.725,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_128",
+        "label": "dining-table",
+        "normalized_label": "dining-table",
+        "category": "dining-table",
+        "room_id": "room_3",
+        "score": 0.724,
+        "detection_confidence": 0.724,
+        "semantic_confidence": 0.724,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_13",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_3",
+        "score": 0.172,
+        "detection_confidence": 0.172,
+        "semantic_confidence": 0.172,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_132",
+        "label": "couch",
+        "normalized_label": "sofa",
+        "category": "couch",
+        "room_id": "room_3",
+        "score": 0.918,
+        "detection_confidence": 0.918,
+        "semantic_confidence": 0.918,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_134",
+        "label": "Pillow",
+        "normalized_label": "pillow",
+        "category": "Pillow",
+        "room_id": "room_3",
+        "score": 0.856,
+        "detection_confidence": 0.856,
+        "semantic_confidence": 0.856,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_137",
+        "label": "couch",
+        "normalized_label": "sofa",
+        "category": "couch",
+        "room_id": "room_3",
+        "score": 0.596,
+        "detection_confidence": 0.596,
+        "semantic_confidence": 0.596,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_139",
+        "label": "dining-table",
+        "normalized_label": "dining-table",
+        "category": "dining-table",
+        "room_id": "room_3",
+        "score": 0.689,
+        "detection_confidence": 0.689,
+        "semantic_confidence": 0.689,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_140",
+        "label": "dining-table",
+        "normalized_label": "dining-table",
+        "category": "dining-table",
+        "room_id": "room_3",
+        "score": 0.636,
+        "detection_confidence": 0.636,
+        "semantic_confidence": 0.636,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_142",
+        "label": "potted plant",
+        "normalized_label": "potted_plant",
+        "category": "potted plant",
+        "room_id": "room_3",
+        "score": 0.696,
+        "detection_confidence": 0.696,
+        "semantic_confidence": 0.696,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_143",
+        "label": "sea",
+        "normalized_label": "sea",
+        "category": "sea",
+        "room_id": "room_3",
+        "score": 0.671,
+        "detection_confidence": 0.671,
+        "semantic_confidence": 0.671,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_145",
+        "label": "Oyster",
+        "normalized_label": "oyster",
+        "category": "Oyster",
+        "room_id": "room_3",
+        "score": 0.731,
+        "detection_confidence": 0.731,
+        "semantic_confidence": 0.731,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_146",
+        "label": "dining-table",
+        "normalized_label": "dining-table",
+        "category": "dining-table",
+        "room_id": "room_3",
+        "score": 0.719,
+        "detection_confidence": 0.719,
+        "semantic_confidence": 0.719,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_15",
+        "label": "window",
+        "normalized_label": "window",
+        "category": "window",
+        "room_id": "room_3",
+        "score": 0.157,
+        "detection_confidence": 0.157,
+        "semantic_confidence": 0.157,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_151",
+        "label": "dining-table",
+        "normalized_label": "dining-table",
+        "category": "dining-table",
+        "room_id": "room_3",
+        "score": 0.823,
+        "detection_confidence": 0.823,
+        "semantic_confidence": 0.823,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_152",
+        "label": "potted plant",
+        "normalized_label": "potted_plant",
+        "category": "potted plant",
+        "room_id": "room_3",
+        "score": 0.678,
+        "detection_confidence": 0.678,
+        "semantic_confidence": 0.678,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_157",
+        "label": "snow",
+        "normalized_label": "snow",
+        "category": "snow",
+        "room_id": "room_3",
+        "score": 0.622,
+        "detection_confidence": 0.622,
+        "semantic_confidence": 0.622,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_159",
+        "label": "Scallop",
+        "normalized_label": "scallop",
+        "category": "Scallop",
+        "room_id": "room_3",
+        "score": 0.653,
+        "detection_confidence": 0.653,
+        "semantic_confidence": 0.653,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_161",
+        "label": "snow",
+        "normalized_label": "snow",
+        "category": "snow",
+        "room_id": "room_3",
+        "score": 0.613,
+        "detection_confidence": 0.613,
+        "semantic_confidence": 0.613,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_162",
+        "label": "dining-table",
+        "normalized_label": "dining-table",
+        "category": "dining-table",
+        "room_id": "room_3",
+        "score": 0.56,
+        "detection_confidence": 0.56,
+        "semantic_confidence": 0.56,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_165",
+        "label": "window",
+        "normalized_label": "window",
+        "category": "window",
+        "room_id": "room_8",
+        "score": 0.829,
+        "detection_confidence": 0.829,
+        "semantic_confidence": 0.829,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_169",
+        "label": "blanket",
+        "normalized_label": "blanket",
+        "category": "blanket",
+        "room_id": "room_8",
+        "score": 0.632,
+        "detection_confidence": 0.632,
+        "semantic_confidence": 0.632,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_172",
+        "label": "ceiling",
+        "normalized_label": "ceiling",
+        "category": "ceiling",
+        "room_id": "room_8",
+        "score": 0.645,
+        "detection_confidence": 0.645,
+        "semantic_confidence": 0.645,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_173",
+        "label": "window-other",
+        "normalized_label": "window-other",
+        "category": "window-other",
+        "room_id": "room_8",
+        "score": 0.565,
+        "detection_confidence": 0.565,
+        "semantic_confidence": 0.565,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_174",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_8",
+        "score": 0.53,
+        "detection_confidence": 0.53,
+        "semantic_confidence": 0.53,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_176",
+        "label": "Coffee Table",
+        "normalized_label": "table",
+        "category": "Coffee Table",
+        "room_id": "room_8",
+        "score": 0.655,
+        "detection_confidence": 0.655,
+        "semantic_confidence": 0.655,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_177",
+        "label": "Oyster",
+        "normalized_label": "oyster",
+        "category": "Oyster",
+        "room_id": "room_8",
+        "score": 0.641,
+        "detection_confidence": 0.641,
+        "semantic_confidence": 0.641,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_179",
+        "label": "chair",
+        "normalized_label": "chair",
+        "category": "chair",
+        "room_id": "room_8",
+        "score": 0.857,
+        "detection_confidence": 0.857,
+        "semantic_confidence": 0.857,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_180",
+        "label": "chair",
+        "normalized_label": "chair",
+        "category": "chair",
+        "room_id": "room_8",
+        "score": 0.834,
+        "detection_confidence": 0.834,
+        "semantic_confidence": 0.834,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_181",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_8",
+        "score": 0.562,
+        "detection_confidence": 0.562,
+        "semantic_confidence": 0.562,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_183",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_8",
+        "score": 0.599,
+        "detection_confidence": 0.599,
+        "semantic_confidence": 0.599,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_185",
+        "label": "toilet",
+        "normalized_label": "toilet",
+        "category": "toilet",
+        "room_id": "room_11",
+        "score": 0.793,
+        "detection_confidence": 0.793,
+        "semantic_confidence": 0.793,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_186",
+        "label": "bed",
+        "normalized_label": "bed",
+        "category": "bed",
+        "room_id": "room_11",
+        "score": 0.582,
+        "detection_confidence": 0.582,
+        "semantic_confidence": 0.582,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_188",
+        "label": "floor",
+        "normalized_label": "floor",
+        "category": "floor",
+        "room_id": "room_7",
+        "score": 0.556,
+        "detection_confidence": 0.556,
+        "semantic_confidence": 0.556,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_189",
+        "label": "Cell Phone",
+        "normalized_label": "cell_phone",
+        "category": "Cell Phone",
+        "room_id": "room_7",
+        "score": 0.547,
+        "detection_confidence": 0.547,
+        "semantic_confidence": 0.547,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_191",
+        "label": "ceiling",
+        "normalized_label": "ceiling",
+        "category": "ceiling",
+        "room_id": "room_11",
+        "score": 0.701,
+        "detection_confidence": 0.701,
+        "semantic_confidence": 0.701,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_192",
+        "label": "Pillow",
+        "normalized_label": "pillow",
+        "category": "Pillow",
+        "room_id": "room_11",
+        "score": 0.683,
+        "detection_confidence": 0.683,
+        "semantic_confidence": 0.683,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_199",
+        "label": "Cabinet/shelf",
+        "normalized_label": "cabinet/shelf",
+        "category": "Cabinet/shelf",
+        "room_id": "room_7",
+        "score": 0.63,
+        "detection_confidence": 0.63,
+        "semantic_confidence": 0.63,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_201",
+        "label": "bed",
+        "normalized_label": "bed",
+        "category": "bed",
+        "room_id": "room_11",
+        "score": 0.563,
+        "detection_confidence": 0.563,
+        "semantic_confidence": 0.563,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_202",
+        "label": "Pie",
+        "normalized_label": "pie",
+        "category": "Pie",
+        "room_id": "room_11",
+        "score": 0.532,
+        "detection_confidence": 0.532,
+        "semantic_confidence": 0.532,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_203",
+        "label": "Tissue",
+        "normalized_label": "tissue",
+        "category": "Tissue",
+        "room_id": "room_7",
+        "score": 0.507,
+        "detection_confidence": 0.507,
+        "semantic_confidence": 0.507,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_204",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_3",
+        "score": 0.563,
+        "detection_confidence": 0.563,
+        "semantic_confidence": 0.563,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_208",
+        "label": "Trash bin Can",
+        "normalized_label": "trash_bin_can",
+        "category": "Trash bin Can",
+        "room_id": "room_3",
+        "score": 0.603,
+        "detection_confidence": 0.603,
+        "semantic_confidence": 0.603,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_212",
+        "label": "sky",
+        "normalized_label": "sky",
+        "category": "sky",
+        "room_id": "room_3",
+        "score": 0.565,
+        "detection_confidence": 0.565,
+        "semantic_confidence": 0.565,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_214",
+        "label": "window-other",
+        "normalized_label": "window-other",
+        "category": "window-other",
+        "room_id": "room_7",
+        "score": 0.542,
+        "detection_confidence": 0.542,
+        "semantic_confidence": 0.542,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_215",
+        "label": "book",
+        "normalized_label": "book",
+        "category": "book",
+        "room_id": "room_7",
+        "score": 0.59,
+        "detection_confidence": 0.59,
+        "semantic_confidence": 0.59,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_217",
+        "label": "Toilet Paper",
+        "normalized_label": "toilet_paper",
+        "category": "Toilet Paper",
+        "room_id": "room_7",
+        "score": 0.885,
+        "detection_confidence": 0.885,
+        "semantic_confidence": 0.885,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_218",
+        "label": "couch",
+        "normalized_label": "sofa",
+        "category": "couch",
+        "room_id": "room_7",
+        "score": 0.874,
+        "detection_confidence": 0.874,
+        "semantic_confidence": 0.874,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_220",
+        "label": "Lamp",
+        "normalized_label": "lamp",
+        "category": "Lamp",
+        "room_id": "room_7",
+        "score": 0.783,
+        "detection_confidence": 0.783,
+        "semantic_confidence": 0.783,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_223",
+        "label": "bed",
+        "normalized_label": "bed",
+        "category": "bed",
+        "room_id": "room_7",
+        "score": 0.541,
+        "detection_confidence": 0.541,
+        "semantic_confidence": 0.541,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_225",
+        "label": "bed",
+        "normalized_label": "bed",
+        "category": "bed",
+        "room_id": "room_7",
+        "score": 0.87,
+        "detection_confidence": 0.87,
+        "semantic_confidence": 0.87,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_227",
+        "label": "bed",
+        "normalized_label": "bed",
+        "category": "bed",
+        "room_id": "room_7",
+        "score": 0.836,
+        "detection_confidence": 0.836,
+        "semantic_confidence": 0.836,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_228",
+        "label": "bed",
+        "normalized_label": "bed",
+        "category": "bed",
+        "room_id": "room_7",
+        "score": 0.813,
+        "detection_confidence": 0.813,
+        "semantic_confidence": 0.813,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_232",
+        "label": "ceiling",
+        "normalized_label": "ceiling",
+        "category": "ceiling",
+        "room_id": "room_7",
+        "score": 0.763,
+        "detection_confidence": 0.763,
+        "semantic_confidence": 0.763,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_236",
+        "label": "window",
+        "normalized_label": "window",
+        "category": "window",
+        "room_id": "room_14",
+        "score": 0.591,
+        "detection_confidence": 0.591,
+        "semantic_confidence": 0.591,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_240",
+        "label": "window-other",
+        "normalized_label": "window-other",
+        "category": "window-other",
+        "room_id": "room_15",
+        "score": 0.584,
+        "detection_confidence": 0.584,
+        "semantic_confidence": 0.584,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_241",
+        "label": "Mirror",
+        "normalized_label": "mirror",
+        "category": "Mirror",
+        "room_id": "room_15",
+        "score": 0.527,
+        "detection_confidence": 0.527,
+        "semantic_confidence": 0.527,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_243",
+        "label": "Bathtub",
+        "normalized_label": "bathtub",
+        "category": "Bathtub",
+        "room_id": "room_15",
+        "score": 0.683,
+        "detection_confidence": 0.683,
+        "semantic_confidence": 0.683,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_246",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_15",
+        "score": 0.595,
+        "detection_confidence": 0.595,
+        "semantic_confidence": 0.595,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_248",
+        "label": "cat",
+        "normalized_label": "cat",
+        "category": "cat",
+        "room_id": "room_7",
+        "score": 0.55,
+        "detection_confidence": 0.55,
+        "semantic_confidence": 0.55,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_251",
+        "label": "window",
+        "normalized_label": "window",
+        "category": "window",
+        "room_id": "room_14",
+        "score": 0.585,
+        "detection_confidence": 0.585,
+        "semantic_confidence": 0.585,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_252",
+        "label": "Pillow",
+        "normalized_label": "pillow",
+        "category": "Pillow",
+        "room_id": "room_14",
+        "score": 0.915,
+        "detection_confidence": 0.915,
+        "semantic_confidence": 0.915,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_254",
+        "label": "Pillow",
+        "normalized_label": "pillow",
+        "category": "Pillow",
+        "room_id": "room_14",
+        "score": 0.866,
+        "detection_confidence": 0.866,
+        "semantic_confidence": 0.866,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_256",
+        "label": "window-other",
+        "normalized_label": "window-other",
+        "category": "window-other",
+        "room_id": "room_14",
+        "score": 0.746,
+        "detection_confidence": 0.746,
+        "semantic_confidence": 0.746,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_258",
+        "label": "sea",
+        "normalized_label": "sea",
+        "category": "sea",
+        "room_id": "room_14",
+        "score": 0.657,
+        "detection_confidence": 0.657,
+        "semantic_confidence": 0.657,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_259",
+        "label": "Pillow",
+        "normalized_label": "pillow",
+        "category": "Pillow",
+        "room_id": "room_14",
+        "score": 0.608,
+        "detection_confidence": 0.608,
+        "semantic_confidence": 0.608,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_26",
+        "label": "Watch",
+        "normalized_label": "watch",
+        "category": "Watch",
+        "room_id": "room_3",
+        "score": 0.126,
+        "detection_confidence": 0.126,
+        "semantic_confidence": 0.126,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_261",
+        "label": "wall",
+        "normalized_label": "wall",
+        "category": "wall",
+        "room_id": "room_14",
+        "score": 0.639,
+        "detection_confidence": 0.639,
+        "semantic_confidence": 0.639,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_263",
+        "label": "toilet",
+        "normalized_label": "toilet",
+        "category": "toilet",
+        "room_id": "room_16",
+        "score": 0.555,
+        "detection_confidence": 0.555,
+        "semantic_confidence": 0.555,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_264",
+        "label": "Mirror",
+        "normalized_label": "mirror",
+        "category": "Mirror",
+        "room_id": "room_14",
+        "score": 0.53,
+        "detection_confidence": 0.53,
+        "semantic_confidence": 0.53,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_265",
+        "label": "Towel",
+        "normalized_label": "towel",
+        "category": "Towel",
+        "room_id": "room_16",
+        "score": 0.787,
+        "detection_confidence": 0.787,
+        "semantic_confidence": 0.787,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_266",
+        "label": "window-other",
+        "normalized_label": "window-other",
+        "category": "window-other",
+        "room_id": "room_16",
+        "score": 0.586,
+        "detection_confidence": 0.586,
+        "semantic_confidence": 0.586,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_267",
+        "label": "toilet",
+        "normalized_label": "toilet",
+        "category": "toilet",
+        "room_id": "room_14",
+        "score": 0.583,
+        "detection_confidence": 0.583,
+        "semantic_confidence": 0.583,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_269",
+        "label": "Towel",
+        "normalized_label": "towel",
+        "category": "Towel",
+        "room_id": "room_16",
+        "score": 0.695,
+        "detection_confidence": 0.695,
+        "semantic_confidence": 0.695,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_271",
+        "label": "toilet",
+        "normalized_label": "toilet",
+        "category": "toilet",
+        "room_id": "room_16",
+        "score": 0.501,
+        "detection_confidence": 0.501,
+        "semantic_confidence": 0.501,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_277",
+        "label": "Lamp",
+        "normalized_label": "lamp",
+        "category": "Lamp",
+        "room_id": "room_14",
+        "score": 0.837,
+        "detection_confidence": 0.837,
+        "semantic_confidence": 0.837,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_279",
+        "label": "Nightstand",
+        "normalized_label": "nightstand",
+        "category": "Nightstand",
+        "room_id": "room_14",
+        "score": 0.772,
+        "detection_confidence": 0.772,
+        "semantic_confidence": 0.772,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_28",
+        "label": "sky",
+        "normalized_label": "sky",
+        "category": "sky",
+        "room_id": "room_3",
+        "score": 0.713,
+        "detection_confidence": 0.713,
+        "semantic_confidence": 0.713,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_281",
+        "label": "snow",
+        "normalized_label": "snow",
+        "category": "snow",
+        "room_id": "room_14",
+        "score": 0.511,
+        "detection_confidence": 0.511,
+        "semantic_confidence": 0.511,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_284",
+        "label": "bed",
+        "normalized_label": "bed",
+        "category": "bed",
+        "room_id": "room_14",
+        "score": 0.61,
+        "detection_confidence": 0.61,
+        "semantic_confidence": 0.61,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_288",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_16",
+        "score": 0.508,
+        "detection_confidence": 0.508,
+        "semantic_confidence": 0.508,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_29",
+        "label": "sky",
+        "normalized_label": "sky",
+        "category": "sky",
+        "room_id": "room_3",
+        "score": 0.697,
+        "detection_confidence": 0.697,
+        "semantic_confidence": 0.697,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_296",
+        "label": "ceiling",
+        "normalized_label": "ceiling",
+        "category": "ceiling",
+        "room_id": "room_14",
+        "score": 0.652,
+        "detection_confidence": 0.652,
+        "semantic_confidence": 0.652,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_302",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_7",
+        "score": 0.507,
+        "detection_confidence": 0.507,
+        "semantic_confidence": 0.507,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_303",
+        "label": "Bathtub",
+        "normalized_label": "bathtub",
+        "category": "Bathtub",
+        "room_id": "room_15",
+        "score": 0.525,
+        "detection_confidence": 0.525,
+        "semantic_confidence": 0.525,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_304",
+        "label": "Bathtub",
+        "normalized_label": "bathtub",
+        "category": "Bathtub",
+        "room_id": "room_15",
+        "score": 0.587,
+        "detection_confidence": 0.587,
+        "semantic_confidence": 0.587,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_31",
+        "label": "Flute",
+        "normalized_label": "flute",
+        "category": "Flute",
+        "room_id": "room_3",
+        "score": 0.598,
+        "detection_confidence": 0.598,
+        "semantic_confidence": 0.598,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_34",
+        "label": "cat",
+        "normalized_label": "cat",
+        "category": "cat",
+        "room_id": "room_1",
+        "score": 0.525,
+        "detection_confidence": 0.525,
+        "semantic_confidence": 0.525,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_37",
+        "label": "couch",
+        "normalized_label": "sofa",
+        "category": "couch",
+        "room_id": "room_1",
+        "score": 0.887,
+        "detection_confidence": 0.887,
+        "semantic_confidence": 0.887,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_38",
+        "label": "couch",
+        "normalized_label": "sofa",
+        "category": "couch",
+        "room_id": "room_1",
+        "score": 0.835,
+        "detection_confidence": 0.835,
+        "semantic_confidence": 0.835,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_39",
+        "label": "potted plant",
+        "normalized_label": "potted_plant",
+        "category": "potted plant",
+        "room_id": "room_1",
+        "score": 0.812,
+        "detection_confidence": 0.812,
+        "semantic_confidence": 0.812,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_40",
+        "label": "Mop",
+        "normalized_label": "mop",
+        "category": "Mop",
+        "room_id": "room_1",
+        "score": 0.78,
+        "detection_confidence": 0.78,
+        "semantic_confidence": 0.78,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_41",
+        "label": "potted plant",
+        "normalized_label": "potted_plant",
+        "category": "potted plant",
+        "room_id": "room_1",
+        "score": 0.698,
+        "detection_confidence": 0.698,
+        "semantic_confidence": 0.698,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_42",
+        "label": "sky",
+        "normalized_label": "sky",
+        "category": "sky",
+        "room_id": "room_1",
+        "score": 0.604,
+        "detection_confidence": 0.604,
+        "semantic_confidence": 0.604,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_43",
+        "label": "couch",
+        "normalized_label": "sofa",
+        "category": "couch",
+        "room_id": "room_1",
+        "score": 0.579,
+        "detection_confidence": 0.579,
+        "semantic_confidence": 0.579,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_44",
+        "label": "couch",
+        "normalized_label": "sofa",
+        "category": "couch",
+        "room_id": "room_1",
+        "score": 0.551,
+        "detection_confidence": 0.551,
+        "semantic_confidence": 0.551,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_47",
+        "label": "Gas stove",
+        "normalized_label": "gas_stove",
+        "category": "Gas stove",
+        "room_id": "room_1",
+        "score": 0.54,
+        "detection_confidence": 0.54,
+        "semantic_confidence": 0.54,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_52",
+        "label": "chair",
+        "normalized_label": "chair",
+        "category": "chair",
+        "room_id": "room_1",
+        "score": 0.842,
+        "detection_confidence": 0.842,
+        "semantic_confidence": 0.842,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_53",
+        "label": "Horse",
+        "normalized_label": "horse",
+        "category": "Horse",
+        "room_id": "room_1",
+        "score": 0.608,
+        "detection_confidence": 0.608,
+        "semantic_confidence": 0.608,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_54",
+        "label": "couch",
+        "normalized_label": "sofa",
+        "category": "couch",
+        "room_id": "room_1",
+        "score": 0.555,
+        "detection_confidence": 0.555,
+        "semantic_confidence": 0.555,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_55",
+        "label": "bird",
+        "normalized_label": "bird",
+        "category": "bird",
+        "room_id": "room_1",
+        "score": 0.89,
+        "detection_confidence": 0.89,
+        "semantic_confidence": 0.89,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_56",
+        "label": "chair",
+        "normalized_label": "chair",
+        "category": "chair",
+        "room_id": "room_1",
+        "score": 0.759,
+        "detection_confidence": 0.759,
+        "semantic_confidence": 0.759,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_58",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_1",
+        "score": 0.602,
+        "detection_confidence": 0.602,
+        "semantic_confidence": 0.602,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_61",
+        "label": "Projector",
+        "normalized_label": "projector",
+        "category": "Projector",
+        "room_id": "room_1",
+        "score": 0.663,
+        "detection_confidence": 0.663,
+        "semantic_confidence": 0.663,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_62",
+        "label": "wall",
+        "normalized_label": "wall",
+        "category": "wall",
+        "room_id": "room_1",
+        "score": 0.596,
+        "detection_confidence": 0.596,
+        "semantic_confidence": 0.596,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_63",
+        "label": "Dog",
+        "normalized_label": "dog",
+        "category": "Dog",
+        "room_id": "room_1",
+        "score": 0.837,
+        "detection_confidence": 0.837,
+        "semantic_confidence": 0.837,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_67",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_3",
+        "score": 0.612,
+        "detection_confidence": 0.612,
+        "semantic_confidence": 0.612,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_69",
+        "label": "oven",
+        "normalized_label": "oven",
+        "category": "oven",
+        "room_id": "room_3",
+        "score": 0.623,
+        "detection_confidence": 0.623,
+        "semantic_confidence": 0.623,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_7",
+        "label": "cat",
+        "normalized_label": "cat",
+        "category": "cat",
+        "room_id": "room_3",
+        "score": 0.201,
+        "detection_confidence": 0.201,
+        "semantic_confidence": 0.201,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_70",
+        "label": "oven",
+        "normalized_label": "oven",
+        "category": "oven",
+        "room_id": "room_3",
+        "score": 0.759,
+        "detection_confidence": 0.759,
+        "semantic_confidence": 0.759,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_74",
+        "label": "counter",
+        "normalized_label": "counter",
+        "category": "counter",
+        "room_id": "room_3",
+        "score": 0.63,
+        "detection_confidence": 0.63,
+        "semantic_confidence": 0.63,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_77",
+        "label": "cat",
+        "normalized_label": "cat",
+        "category": "cat",
+        "room_id": "room_3",
+        "score": 0.693,
+        "detection_confidence": 0.693,
+        "semantic_confidence": 0.693,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_78",
+        "label": "Power outlet",
+        "normalized_label": "power_outlet",
+        "category": "Power outlet",
+        "room_id": "room_3",
+        "score": 0.616,
+        "detection_confidence": 0.616,
+        "semantic_confidence": 0.616,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_79",
+        "label": "Gun",
+        "normalized_label": "gun",
+        "category": "Gun",
+        "room_id": "room_3",
+        "score": 0.601,
+        "detection_confidence": 0.601,
+        "semantic_confidence": 0.601,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_8",
+        "label": "window-other",
+        "normalized_label": "window-other",
+        "category": "window-other",
+        "room_id": "room_3",
+        "score": 0.196,
+        "detection_confidence": 0.196,
+        "semantic_confidence": 0.196,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_82",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_3",
+        "score": 0.532,
+        "detection_confidence": 0.532,
+        "semantic_confidence": 0.532,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_83",
+        "label": "Pillow",
+        "normalized_label": "pillow",
+        "category": "Pillow",
+        "room_id": "room_3",
+        "score": 0.829,
+        "detection_confidence": 0.829,
+        "semantic_confidence": 0.829,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_84",
+        "label": "Blackboard/Whiteboard",
+        "normalized_label": "blackboard/whiteboard",
+        "category": "Blackboard/Whiteboard",
+        "room_id": "room_3",
+        "score": 0.728,
+        "detection_confidence": 0.728,
+        "semantic_confidence": 0.728,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_85",
+        "label": "sky",
+        "normalized_label": "sky",
+        "category": "sky",
+        "room_id": "room_3",
+        "score": 0.717,
+        "detection_confidence": 0.717,
+        "semantic_confidence": 0.717,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_87",
+        "label": "sea",
+        "normalized_label": "sea",
+        "category": "sea",
+        "room_id": "room_3",
+        "score": 0.552,
+        "detection_confidence": 0.552,
+        "semantic_confidence": 0.552,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_9",
+        "label": "knife",
+        "normalized_label": "knife",
+        "category": "knife",
+        "room_id": "room_3",
+        "score": 0.183,
+        "detection_confidence": 0.183,
+        "semantic_confidence": 0.183,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_90",
+        "label": "sky",
+        "normalized_label": "sky",
+        "category": "sky",
+        "room_id": "room_3",
+        "score": 0.743,
+        "detection_confidence": 0.743,
+        "semantic_confidence": 0.743,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_91",
+        "label": "sky",
+        "normalized_label": "sky",
+        "category": "sky",
+        "room_id": "room_3",
+        "score": 0.737,
+        "detection_confidence": 0.737,
+        "semantic_confidence": 0.737,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_94",
+        "label": "sky",
+        "normalized_label": "sky",
+        "category": "sky",
+        "room_id": "room_3",
+        "score": 0.628,
+        "detection_confidence": 0.628,
+        "semantic_confidence": 0.628,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_95",
+        "label": "door",
+        "normalized_label": "door",
+        "category": "door",
+        "room_id": "room_3",
+        "score": 0.601,
+        "detection_confidence": 0.601,
+        "semantic_confidence": 0.601,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "obj_96",
+        "label": "Cabinet/shelf",
+        "normalized_label": "cabinet/shelf",
+        "category": "Cabinet/shelf",
+        "room_id": "room_3",
+        "score": 0.528,
+        "detection_confidence": 0.528,
+        "semantic_confidence": 0.528,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      }
+    ],
+    "anchors": [
+      {
+        "id": "anchor_obj_132",
+        "anchor_type": "object",
+        "room_id": "room_3",
+        "target_id": "obj_132",
+        "valid": true,
+        "score": 0.592,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_137",
+        "anchor_type": "object",
+        "room_id": "room_3",
+        "target_id": "obj_137",
+        "valid": true,
+        "score": 0.295,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_176",
+        "anchor_type": "object",
+        "room_id": "room_8",
+        "target_id": "obj_176",
+        "valid": true,
+        "score": 0.565,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_179",
+        "anchor_type": "object",
+        "room_id": "room_8",
+        "target_id": "obj_179",
+        "valid": true,
+        "score": 0.688,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_180",
+        "anchor_type": "object",
+        "room_id": "room_8",
+        "target_id": "obj_180",
+        "valid": true,
+        "score": 0.658,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_181",
+        "anchor_type": "object",
+        "room_id": "room_8",
+        "target_id": "obj_181",
+        "valid": true,
+        "score": 0.633,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_183",
+        "anchor_type": "object",
+        "room_id": "room_8",
+        "target_id": "obj_183",
+        "valid": true,
+        "score": 0.659,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_186",
+        "anchor_type": "object",
+        "room_id": "room_11",
+        "target_id": "obj_186",
+        "valid": true,
+        "score": 0.624,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_223",
+        "anchor_type": "object",
+        "room_id": "room_7",
+        "target_id": "obj_223",
+        "valid": true,
+        "score": 0.452,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_284",
+        "anchor_type": "object",
+        "room_id": "room_14",
+        "target_id": "obj_284",
+        "valid": true,
+        "score": 0.522,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_37",
+        "anchor_type": "object",
+        "room_id": "room_1",
+        "target_id": "obj_37",
+        "valid": true,
+        "score": 0.608,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_38",
+        "anchor_type": "object",
+        "room_id": "room_1",
+        "target_id": "obj_38",
+        "valid": true,
+        "score": 0.65,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_43",
+        "anchor_type": "object",
+        "room_id": "room_1",
+        "target_id": "obj_43",
+        "valid": true,
+        "score": 0.628,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_44",
+        "anchor_type": "object",
+        "room_id": "room_1",
+        "target_id": "obj_44",
+        "valid": true,
+        "score": 0.557,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_52",
+        "anchor_type": "object",
+        "room_id": "room_1",
+        "target_id": "obj_52",
+        "valid": true,
+        "score": 0.617,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_54",
+        "anchor_type": "object",
+        "room_id": "room_1",
+        "target_id": "obj_54",
+        "valid": true,
+        "score": 0.618,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_56",
+        "anchor_type": "object",
+        "room_id": "room_1",
+        "target_id": "obj_56",
+        "valid": true,
+        "score": 0.694,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_obj_58",
+        "anchor_type": "object",
+        "room_id": "room_1",
+        "target_id": "obj_58",
+        "valid": true,
+        "score": 0.63,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_room_1",
+        "anchor_type": "room",
+        "room_id": "room_1",
+        "target_id": "room_1",
+        "valid": true,
+        "score": 1.485,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_room_11",
+        "anchor_type": "room",
+        "room_id": "room_11",
+        "target_id": "room_11",
+        "valid": true,
+        "score": 0.847,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_room_14",
+        "anchor_type": "room",
+        "room_id": "room_14",
+        "target_id": "room_14",
+        "valid": true,
+        "score": 0.938,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_room_15",
+        "anchor_type": "room",
+        "room_id": "room_15",
+        "target_id": "room_15",
+        "valid": true,
+        "score": 0.423,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_room_16",
+        "anchor_type": "room",
+        "room_id": "room_16",
+        "target_id": "room_16",
+        "valid": true,
+        "score": 0.55,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_room_3",
+        "anchor_type": "room",
+        "room_id": "room_3",
+        "target_id": "room_3",
+        "valid": true,
+        "score": 0.725,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_room_7",
+        "anchor_type": "room",
+        "room_id": "room_7",
+        "target_id": "room_7",
+        "valid": true,
+        "score": 0.606,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      },
+      {
+        "id": "anchor_room_8",
+        "anchor_type": "room",
+        "room_id": "room_8",
+        "target_id": "room_8",
+        "valid": true,
+        "score": 1.133,
+        "floor_id": "floor_1",
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "floor_index": 0
+      }
+    ]
+  },
+  "evidences": [
+    {
+      "evidence_id": "ev_00001",
+      "evidence_type": "boundary_contact",
+      "score": 0.5,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "gateways:0",
+      "notes": "gateway-linked room boundary contact",
+      "metadata": {
+        "gateway_count": 1,
+        "positions": [
+          [
+            5.063,
+            1.851
+          ]
+        ]
+      }
+    },
+    {
+      "evidence_id": "ev_00002",
+      "evidence_type": "door_detection",
+      "score": 1.0,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "gateways:0",
+      "notes": "door gateway detected between room polygons",
+      "metadata": {
+        "door_count": 1
+      }
+    },
+    {
+      "evidence_id": "ev_00003",
+      "evidence_type": "boundary_contact",
+      "score": 0.5,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "gateways:1",
+      "notes": "gateway-linked room boundary contact",
+      "metadata": {
+        "gateway_count": 1,
+        "positions": [
+          [
+            -4.301,
+            -3.313
+          ]
+        ]
+      }
+    },
+    {
+      "evidence_id": "ev_00004",
+      "evidence_type": "shared_frontier",
+      "score": 0.5,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "gateways:1",
+      "notes": "open-passage gateway suggests shared frontier",
+      "metadata": {
+        "open_passage_count": 1
+      }
+    },
+    {
+      "evidence_id": "ev_00005",
+      "evidence_type": "boundary_contact",
+      "score": 0.5,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "gateways:2",
+      "notes": "gateway-linked room boundary contact",
+      "metadata": {
+        "gateway_count": 1,
+        "positions": [
+          [
+            5.042,
+            -3.875
+          ]
+        ]
+      }
+    },
+    {
+      "evidence_id": "ev_00006",
+      "evidence_type": "door_detection",
+      "score": 1.0,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "gateways:2",
+      "notes": "door gateway detected between room polygons",
+      "metadata": {
+        "door_count": 1
+      }
+    },
+    {
+      "evidence_id": "ev_00007",
+      "evidence_type": "boundary_contact",
+      "score": 1.0,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.000m)",
+      "metadata": {
+        "gap_m": 0.0,
+        "center_distance_m": 6.167
+      }
+    },
+    {
+      "evidence_id": "ev_00008",
+      "evidence_type": "boundary_contact",
+      "score": 0.25,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.350m)",
+      "metadata": {
+        "gap_m": 0.35,
+        "center_distance_m": 5.088
+      }
+    },
+    {
+      "evidence_id": "ev_00009",
+      "evidence_type": "boundary_contact",
+      "score": 0.778,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.100m)",
+      "metadata": {
+        "gap_m": 0.1,
+        "center_distance_m": 3.612
+      }
+    },
+    {
+      "evidence_id": "ev_00010",
+      "evidence_type": "boundary_contact",
+      "score": 0.667,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.150m)",
+      "metadata": {
+        "gap_m": 0.15,
+        "center_distance_m": 3.733
+      }
+    },
+    {
+      "evidence_id": "ev_00011",
+      "evidence_type": "boundary_contact",
+      "score": 1.0,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.000m)",
+      "metadata": {
+        "gap_m": 0.0,
+        "center_distance_m": 3.842
+      }
+    },
+    {
+      "evidence_id": "ev_00012",
+      "evidence_type": "boundary_contact",
+      "score": 1.0,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.000m)",
+      "metadata": {
+        "gap_m": 0.0,
+        "center_distance_m": 2.988
+      }
+    },
+    {
+      "evidence_id": "ev_00013",
+      "evidence_type": "boundary_contact",
+      "score": 0.889,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.050m)",
+      "metadata": {
+        "gap_m": 0.05,
+        "center_distance_m": 8.883
+      }
+    },
+    {
+      "evidence_id": "ev_00014",
+      "evidence_type": "boundary_contact",
+      "score": 0.333,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.300m)",
+      "metadata": {
+        "gap_m": 0.3,
+        "center_distance_m": 3.488
+      }
+    },
+    {
+      "evidence_id": "ev_00015",
+      "evidence_type": "boundary_contact",
+      "score": 0.25,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.400m)",
+      "metadata": {
+        "gap_m": 0.4,
+        "center_distance_m": 2.484
+      }
+    },
+    {
+      "evidence_id": "ev_00016",
+      "evidence_type": "boundary_contact",
+      "score": 1.0,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.000m)",
+      "metadata": {
+        "gap_m": 0.0,
+        "center_distance_m": 5.346
+      }
+    },
+    {
+      "evidence_id": "ev_00017",
+      "evidence_type": "boundary_contact",
+      "score": 0.556,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.200m)",
+      "metadata": {
+        "gap_m": 0.2,
+        "center_distance_m": 3.278
+      }
+    },
+    {
+      "evidence_id": "ev_00018",
+      "evidence_type": "shared_frontier",
+      "score": 0.5,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are nearby but not in strong contact (gap=0.550m)",
+      "metadata": {
+        "gap_m": 0.55,
+        "center_distance_m": 7.716
+      }
+    },
+    {
+      "evidence_id": "ev_00019",
+      "evidence_type": "shared_frontier",
+      "score": 0.26,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are nearby but not in strong contact (gap=0.814m)",
+      "metadata": {
+        "gap_m": 0.814,
+        "center_distance_m": 4.715
+      }
+    },
+    {
+      "evidence_id": "ev_00020",
+      "evidence_type": "boundary_contact",
+      "score": 0.333,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.300m)",
+      "metadata": {
+        "gap_m": 0.3,
+        "center_distance_m": 6.366
+      }
+    },
+    {
+      "evidence_id": "ev_00021",
+      "evidence_type": "boundary_contact",
+      "score": 0.25,
+      "step_start": 0,
+      "step_end": 0,
+      "source_ref": "polygon_proximity",
+      "notes": "room polygons are boundary-near (gap=0.400m)",
+      "metadata": {
+        "gap_m": 0.4,
+        "center_distance_m": 6.278
+      }
+    },
+    {
+      "evidence_id": "ev_00022",
+      "evidence_type": "trajectory_transition",
+      "score": 1.0,
+      "step_start": 275,
+      "step_end": 300,
+      "source_ref": "frames:275->300",
+      "notes": "stable room-to-room switch observed in trajectory history",
+      "metadata": {
+        "from_room": "room_1",
+        "to_room": "room_3",
+        "from_obs_count": 8,
+        "to_obs_count": 19
+      }
+    },
+    {
+      "evidence_id": "ev_00023",
+      "evidence_type": "trajectory_transition",
+      "score": 1.0,
+      "step_start": 1150,
+      "step_end": 1200,
+      "source_ref": "frames:1150->1200",
+      "notes": "stable room-to-room switch observed in trajectory history",
+      "metadata": {
+        "from_room": "room_8",
+        "to_room": "room_11",
+        "from_obs_count": 8,
+        "to_obs_count": 6
+      }
+    },
+    {
+      "evidence_id": "ev_00024",
+      "evidence_type": "trajectory_transition",
+      "score": 1.0,
+      "step_start": 1325,
+      "step_end": 1350,
+      "source_ref": "frames:1325->1350",
+      "notes": "stable room-to-room switch observed in trajectory history",
+      "metadata": {
+        "from_room": "room_11",
+        "to_room": "room_7",
+        "from_obs_count": 6,
+        "to_obs_count": 1
+      }
+    },
+    {
+      "evidence_id": "ev_00025",
+      "evidence_type": "trajectory_transition",
+      "score": 1.0,
+      "step_start": 1350,
+      "step_end": 1375,
+      "source_ref": "frames:1350->1375",
+      "notes": "stable room-to-room switch observed in trajectory history",
+      "metadata": {
+        "from_room": "room_7",
+        "to_room": "room_3",
+        "from_obs_count": 1,
+        "to_obs_count": 2
+      }
+    },
+    {
+      "evidence_id": "ev_00026",
+      "evidence_type": "trajectory_transition",
+      "score": 1.0,
+      "step_start": 1400,
+      "step_end": 1425,
+      "source_ref": "frames:1400->1425",
+      "notes": "stable room-to-room switch observed in trajectory history",
+      "metadata": {
+        "from_room": "room_3",
+        "to_room": "room_7",
+        "from_obs_count": 2,
+        "to_obs_count": 8
+      }
+    },
+    {
+      "evidence_id": "ev_00027",
+      "evidence_type": "trajectory_transition",
+      "score": 1.0,
+      "step_start": 1600,
+      "step_end": 1700,
+      "source_ref": "frames:1600->1700",
+      "notes": "stable room-to-room switch observed in trajectory history",
+      "metadata": {
+        "from_room": "room_7",
+        "to_room": "room_15",
+        "from_obs_count": 8,
+        "to_obs_count": 5
+      }
+    },
+    {
+      "evidence_id": "ev_00028",
+      "evidence_type": "trajectory_transition",
+      "score": 1.0,
+      "step_start": 1800,
+      "step_end": 1875,
+      "source_ref": "frames:1800->1875",
+      "notes": "stable room-to-room switch observed in trajectory history",
+      "metadata": {
+        "from_room": "room_15",
+        "to_room": "room_14",
+        "from_obs_count": 5,
+        "to_obs_count": 3
+      }
+    },
+    {
+      "evidence_id": "ev_00029",
+      "evidence_type": "trajectory_transition",
+      "score": 1.0,
+      "step_start": 1925,
+      "step_end": 1950,
+      "source_ref": "frames:1925->1950",
+      "notes": "stable room-to-room switch observed in trajectory history",
+      "metadata": {
+        "from_room": "room_14",
+        "to_room": "room_16",
+        "from_obs_count": 3,
+        "to_obs_count": 4
+      }
+    },
+    {
+      "evidence_id": "ev_00030",
+      "evidence_type": "trajectory_transition",
+      "score": 1.0,
+      "step_start": 2025,
+      "step_end": 2050,
+      "source_ref": "frames:2025->2050",
+      "notes": "stable room-to-room switch observed in trajectory history",
+      "metadata": {
+        "from_room": "room_16",
+        "to_room": "room_14",
+        "from_obs_count": 4,
+        "to_obs_count": 8
+      }
+    },
+    {
+      "evidence_id": "ev_00031",
+      "evidence_type": "trajectory_transition",
+      "score": 1.0,
+      "step_start": 2225,
+      "step_end": 2250,
+      "source_ref": "frames:2225->2250",
+      "notes": "stable room-to-room switch observed in trajectory history",
+      "metadata": {
+        "from_room": "room_14",
+        "to_room": "room_7",
+        "from_obs_count": 8,
+        "to_obs_count": 2
+      }
+    },
+    {
+      "evidence_id": "ev_00032",
+      "evidence_type": "repeated_crossing",
+      "score": 0.5,
+      "step_start": 1350,
+      "step_end": 1425,
+      "source_ref": "stable_room_segments",
+      "notes": "same room pair crossed repeatedly in debounced trajectory history",
+      "metadata": {
+        "crossing_count": 2
+      }
+    },
+    {
+      "evidence_id": "ev_00033",
+      "evidence_type": "repeated_crossing",
+      "score": 0.5,
+      "step_start": 1925,
+      "step_end": 2050,
+      "source_ref": "stable_room_segments",
+      "notes": "same room pair crossed repeatedly in debounced trajectory history",
+      "metadata": {
+        "crossing_count": 2
+      }
+    }
+  ],
+  "metadata": {
+    "sequence_id": "00824-Dd4bFSTQ8gi",
+    "artifact_profile": "full_artifact",
+    "snapshot_count": 92,
+    "timeline_frame_count": 92,
+    "snapshot_frame_count": 92,
+    "dense_replay_frame_count": 0,
+    "replay_frame_count": 0,
+    "replay_mode": "snapshot_only",
+    "timeline_contract": {
+      "schema_name": "timeline_v1",
+      "storage_format": "json_array_rows",
+      "timeline_path": "stage_outputs/stage1_00824_step30p1/manifest/provenance_manifest_v0_2.json",
+      "row_kind_field": "row_kind",
+      "legacy_row_type_field": "row_type",
+      "row_kinds_present": [
+        "snapshot_frame"
+      ],
+      "timeline_frame_count": 92,
+      "snapshot_frame_count": 92,
+      "dense_replay_frame_count": 0,
+      "replay_mode": "snapshot_only",
+      "checkpoint_replay_supported": true,
+      "dense_replay_supported": false
+    },
+    "room_seg_interval": 100,
+    "builder_version": "0.1",
+    "max_route_confidence_penalty": 0.75,
+    "artifact_kind": "committed_topology_public",
+    "debug_only": false,
+    "public_default": true,
+    "projection_rule": "public topology payload filtered to lifecycle committed room ids",
+    "artifact_surface": "public",
+    "artifact_semantics": "committed_topology",
+    "public_topology_meaning": "committed/published only",
+    "non_public": false,
+    "room_scope_runtime_contract": {
+      "local_state": "bounded active-room working state only",
+      "committed_memory": "accepted room summaries only",
+      "fusion_policy": "current observations fuse with local state and selectively retrieved committed subset"
+    },
+    "committed_room_ids": [
+      "room_1",
+      "room_10",
+      "room_11",
+      "room_12",
+      "room_13",
+      "room_14",
+      "room_15",
+      "room_16",
+      "room_2",
+      "room_3",
+      "room_4",
+      "room_5",
+      "room_6",
+      "room_7",
+      "room_8",
+      "room_9"
+    ]
+  },
+  "query_examples": {
+    "floor_count": 1,
+    "room_count": 8,
+    "edge_count": 28,
+    "anchor_count": 26,
+    "object_count": 141,
+    "object_label_count": 52,
+    "sample_room_ids": [
+      "room_1",
+      "room_11",
+      "room_14",
+      "room_15",
+      "room_16"
+    ],
+    "sample_anchor_ids": [
+      "anchor_obj_132",
+      "anchor_obj_137",
+      "anchor_obj_176",
+      "anchor_obj_179",
+      "anchor_obj_180"
+    ],
+    "sample_object_ids": [
+      "obj_0",
+      "obj_1",
+      "obj_101",
+      "obj_102",
+      "obj_105"
+    ],
+    "sample_object_labels": [
+      "Bathtub",
+      "bed",
+      "bird",
+      "Blackboard/Whiteboard",
+      "blanket"
+    ],
+    "display_floor_order": [
+      {
+        "floor_id": "floor_1",
+        "floor_index": 0,
+        "display_floor_id": "floor_1",
+        "display_order": 1,
+        "z_min": 0.696,
+        "z_max": 2.319,
+        "z_center": 1.569,
+        "confidence": 1.0,
+        "status": "confirmed",
+        "support_statistics": {
+          "frame_count": 2253,
+          "keyframe_count": 92,
+          "first_seen_frame": 0,
+          "last_seen_frame": 2252,
+          "raw_z_min": 1.446,
+          "raw_z_max": 1.569,
+          "sample_count": 2253
+        }
+      }
+    ],
+    "capabilities": {
+      "anchor_lookup_available": true,
+      "object_id_lookup_available": true,
+      "object_label_lookup_available": true,
+      "anchor_metadata_present": true,
+      "object_metadata_present": true
+    },
+    "first_room_summary": {
+      "room_id": "room_1",
+      "exists": true,
+      "room_type": "unknown",
+      "room_uuid": 1,
+      "floor_id": "floor_1",
+      "floor_index": 0,
+      "display_floor_id": "floor_1",
+      "display_order": 1,
+      "area_m2": 24.907,
+      "center": [
+        7.546561092094414,
+        4.302462368638022
+      ],
+      "object_count": 19,
+      "anchor_count": 9,
+      "neighbors": [
+        {
+          "relation_type": "adjacent",
+          "confidence": 0.975,
+          "status": "confirmed",
+          "support_count": 3,
+          "first_seen_step": 0,
+          "last_seen_step": 0,
+          "evidence_ids": [
+            "ev_00001",
+            "ev_00002",
+            "ev_00007"
+          ],
+          "metadata": {
+            "evidence_type_breakdown": {
+              "boundary_contact": 2,
+              "door_detection": 1
+            }
+          },
+          "source_room_id": "room_1",
+          "target_room_id": "room_3",
+          "room_id": "room_3"
+        },
+        {
+          "relation_type": "transition",
+          "confidence": 0.45,
+          "status": "supported",
+          "support_count": 1,
+          "first_seen_step": 275,
+          "last_seen_step": 300,
+          "evidence_ids": [
+            "ev_00022"
+          ],
+          "metadata": {
+            "evidence_type_breakdown": {
+              "trajectory_transition": 1
+            }
+          },
+          "source_room_id": "room_1",
+          "target_room_id": "room_3",
+          "room_id": "room_3"
+        }
+      ]
+    },
+    "first_anchor_lookup": {
+      "anchor_id": "anchor_obj_132",
+      "room_id": "room_3"
+    },
+    "first_connection_explanation": {
+      "room_a": "room_1",
+      "room_b": "room_11",
+      "exists": false,
+      "relations": []
+    },
+    "first_route": {
+      "room_sequence": [
+        "room_1",
+        "room_3",
+        "room_8"
+      ],
+      "used_relation_types": [
+        "transition",
+        "adjacent"
+      ],
+      "edge_confidences": [
+        0.45,
+        0.062
+      ],
+      "total_cost": 3.716,
+      "route_confidence": 0.062
+    }
+  }
+}

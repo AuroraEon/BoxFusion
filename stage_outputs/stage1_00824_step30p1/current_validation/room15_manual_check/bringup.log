@@ -1,0 +1,10 @@
+[stage1_step30p1] starting Gazebo world: /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/worlds/00824_step30p1_large_continuous_floor_world.sdf
+[stage1_step30p1] starting robot_state_publisher
+[stage1_step30p1] spawning TurtleBot3 burger
+[stage1_step30p1] starting static map->odom TF
+[stage1_step30p1] starting Nav2 staticloc stack
+[stage1_step30p1] launched. Logs: /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_manual_check/bringup_logs
+gazebo: running pid=23792
+robot_state_publisher: running pid=24045
+static_tf: running pid=24089
+nav2: running pid=24091

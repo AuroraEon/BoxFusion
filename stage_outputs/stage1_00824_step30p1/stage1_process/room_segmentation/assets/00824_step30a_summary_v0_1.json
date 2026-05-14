@@ -1,0 +1,76 @@
+{
+  "scene_id": "00824-Dd4bFSTQ8gi",
+  "step": "step30a",
+  "output_directory": "RESTORED_SOURCE_PATH_REDACTED_SEE_STAGE1_PROCESS_PROVENANCE",
+  "stage_a_rerun_completed": true,
+  "dual_wall_layers_generated": [
+    "segmentation_wall_processed",
+    "gateway_wall_preclose"
+  ],
+  "gateway_wall_preclose": {
+    "threshold_factor": 0.25,
+    "morphological_close_applied": false,
+    "calibrated_from_user_labels": false
+  },
+  "gateway_extraction_candidate_count": 63,
+  "gateway_extraction_candidate_counts_by_pair": {
+    "r1_r3": 8,
+    "r3_r7": 3,
+    "r3_r8": 5,
+    "r3_r11": 4,
+    "r3_r15": 5,
+    "r7_r11": 6,
+    "r7_r14": 6,
+    "r7_r15": 4,
+    "r7_r16": 1,
+    "r8_r11": 6,
+    "r14_r15": 4,
+    "r14_r16": 6,
+    "r15_r16": 5
+  },
+  "hypothesis_role_counts": {
+    "primary_route_gateway": 4,
+    "rejected": 7,
+    "annex_or_closet_gateway": 2,
+    "needs_review": 6
+  },
+  "public_path_042_gateway_readiness": {
+    "route_name": "public_path_042",
+    "route": [
+      1,
+      3,
+      7,
+      11,
+      8
+    ],
+    "transitions": [
+      {
+        "room_a": 1,
+        "room_b": 3,
+        "primary_gateway": "hyp_00824_r1_r3_01",
+        "ready": true
+      },
+      {
+        "room_a": 3,
+        "room_b": 7,
+        "primary_gateway": "hyp_00824_r3_r7_01",
+        "ready": true
+      },
+      {
+        "room_a": 7,
+        "room_b": 11,
+        "primary_gateway": "hyp_00824_r7_r11_01",
+        "ready": true
+      },
+      {
+        "room_a": 11,
+        "room_b": 8,
+        "primary_gateway": "hyp_00824_r8_r11_01",
+        "ready": true
+      }
+    ],
+    "gateway_ready": true
+  },
+  "topology_generated": false,
+  "ros_nav2_gazebo_run": false
+}

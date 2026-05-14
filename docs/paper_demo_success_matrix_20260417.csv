@@ -1,5 +1,0 @@
-sequence_id,role,explicit_room_goal_demo,semantic_room_summary_demo,explicit_next_hop,semantic_next_hop,vertical_transition_evidence
-00843-DYehNKdT76V,primary paper/demo sequence,yes,yes,Go next to room_7.,Go next to room_7.,yes
-00824-Dd4bFSTQ8gi,supporting paper/demo sequence,yes,yes,Go next to room_11.,Go next to room_11.,no
-00862-LT9Jq6dN3Ea,reserve high-complexity sequence,yes,yes,Go next to room_33.,Go next to room_33.,yes
-00829-QaLdnwvtxbs,sanity cross-check sequence,yes,yes,Go next to room_7.,Go next to room_7.,no

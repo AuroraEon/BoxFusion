@@ -1,0 +1,7 @@
+[INFO] [1778747346.929856560] [rviz2]: Stereo is NOT SUPPORTED
+[INFO] [1778747346.930070137] [rviz2]: OpenGl version: 3.1 (GLSL 1.4)
+[INFO] [1778747346.994934179] [rviz2]: Stereo is NOT SUPPORTED
+Parsing robot urdf xml string.
+[INFO] [1778747349.592220812] [rviz2]: Trying to create a map of size 1227 x 1167 using 1 swatches
+[ERROR] [1778747349.619168025] [rviz2]: Vertex Program:rviz/glsl120/indexed_8bit_image.vert Fragment Program:rviz/glsl120/indexed_8bit_image.frag GLSL link result : 
+active samplers with a different type refer to the same texture image unit
