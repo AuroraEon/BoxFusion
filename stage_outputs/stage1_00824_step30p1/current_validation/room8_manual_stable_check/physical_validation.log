@@ -1,7 +1,7 @@
 {
   "spin": {
     "artifact_type": "stage1_local_looping_spin_validation",
-    "created_utc": "2026-05-14T11:46:22.310933+00:00",
+    "created_utc": "2026-05-14T13:00:02.745586+00:00",
     "gateway_xy": {
       "x": 6.5,
       "y": -2.95
@@ -17,7 +17,7 @@
   },
   "terminal": {
     "artifact_type": "stage1_room16_terminal_quality_validation",
-    "created_utc": "2026-05-14T11:46:22.162542+00:00",
+    "created_utc": "2026-05-14T13:00:02.610988+00:00",
     "final_arrival_action_success": true,
     "final_pose": {
       "frame_id": "map",
@@ -51,7 +51,7 @@
   "through": {
     "all_through_rooms_success": true,
     "artifact_type": "through_room_physical_visit_validation",
-    "created_utc": "2026-05-14T11:46:22.162501+00:00",
+    "created_utc": "2026-05-14T13:00:02.610949+00:00",
     "gateway_only_failure_guard_passed": true,
     "room15_inside_dwell_sec": 0.0,
     "room15_inside_sample_count": 0,
@@ -100,7 +100,7 @@
     "boundary_tolerance_point_violations_step30s7": 0,
     "boundary_tolerance_segment_violations_h8r2": 0,
     "boundary_tolerance_segment_violations_step30s7": 0,
-    "created_utc": "2026-05-14T11:46:22.310656+00:00",
+    "created_utc": "2026-05-14T13:00:02.745354+00:00",
     "final_wall_validation_passed": true,
     "h8r2_map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/h8r2_gateway_preserving_nav_map.yaml",
     "max_wall_penetration_or_occupied_crossing": 0,

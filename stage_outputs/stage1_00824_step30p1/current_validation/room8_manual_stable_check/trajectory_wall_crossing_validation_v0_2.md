@@ -2,7 +2,7 @@
 
 - `artifact_type`: `step30s7_trajectory_wall_crossing_validation`
 - `version`: `v0_2`
-- `created_utc`: `2026-05-14T11:46:22.310656+00:00`
+- `created_utc`: `2026-05-14T13:00:02.745354+00:00`
 - `active_map_yaml`: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/stage1_full_scene_occupancy_map.yaml`
 - `h8r2_map_yaml`: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/h8r2_gateway_preserving_nav_map.yaml`
 - `step30s7_map_yaml`: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/stage1_full_scene_occupancy_map.yaml`

@@ -1,0 +1,44 @@
+{
+  "all_through_rooms_success": true,
+  "artifact_type": "through_room_physical_visit_validation",
+  "created_utc": "2026-05-15T01:42:19.151586+00:00",
+  "gateway_only_failure_guard_passed": true,
+  "room15_inside_dwell_sec": 23.525,
+  "room15_inside_sample_count": 53,
+  "route_topology_includes_room15": true,
+  "through_room_results": {
+    "room_15": {
+      "gateway_crossed": true,
+      "gateway_only_failure_guard_passed": true,
+      "inside_dwell_sec": 23.525,
+      "inside_sample_count": 53,
+      "interior_target": {
+        "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
+        "distance_to_nearest_gateway_m": 0.8,
+        "distance_to_occupied_or_unknown_m": 0.389844,
+        "meets_preferred_gateway_distance": true,
+        "meets_wall_distance_threshold": true,
+        "room_id": "room_15",
+        "x": -1.2,
+        "y": -2.1,
+        "yaw": 0.0
+      },
+      "max_distance_from_gateway_while_inside_m": 1.822839,
+      "min_distance_to_gateway_m": 0.239533,
+      "min_distance_to_interior_target_m": 0.137487,
+      "required_dwell_sec": 3.0,
+      "required_inside_sample_count": 8,
+      "room_id": "room_15",
+      "route_topology_includes_room": true,
+      "trajectory_entered_room_mask": true,
+      "visual_through_room_success": true
+    }
+  },
+  "through_rooms_requested": [
+    "room_15"
+  ],
+  "trajectory_entered_room15_mask": true,
+  "trajectory_sample_count": 255,
+  "version": "v0_2",
+  "visual_through_room15_success": true
+}

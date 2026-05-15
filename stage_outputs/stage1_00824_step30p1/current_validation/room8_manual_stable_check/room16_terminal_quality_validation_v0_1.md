@@ -2,7 +2,7 @@
 
 - `artifact_type`: `stage1_room16_terminal_quality_validation`
 - `version`: `v0_1`
-- `created_utc`: `2026-05-14T11:46:22.162542+00:00`
+- `created_utc`: `2026-05-14T13:00:02.610988+00:00`
 - `route_execution_success`: `True`
 - `final_arrival_action_success`: `True`
 - `final_pose_inside_room16_mask`: `True`

@@ -1,0 +1,14 @@
+{
+  "artifact_type": "step30s7_gazebo_process_check",
+  "gui_requested": true,
+  "matching_lines": [
+    "29679    16 Ssl  ros2            /usr/bin/python3 /opt/ros/foxy/bin/ros2 launch gazebo_ros gazebo.launch.py world:=/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/worlds/00824_step30p1_large_continuous_floor_world.sdf gui:=true",
+    "29686 29679 S    sh              /bin/sh -c gzserver /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/worlds/00824_step30p1_large_continuous_floor_world.sdf                                                                      -s libgazebo_ros_init.so   -s libgazebo_ros_factory.so   -s libgazebo_ros_force_system.so       ",
+    "29688 29679 S    sh              /bin/sh -c gzclient   ",
+    "29689 29686 SLl  gzserver        gzserver /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/worlds/00824_step30p1_large_continuous_floor_world.sdf -s libgazebo_ros_init.so -s libgazebo_ros_factory.so -s libgazebo_ros_force_system.so",
+    "29691 29688 SLl  gzclient        gzclient",
+    "29906    16 Ssl  ros2            /usr/bin/python3 /opt/ros/foxy/bin/ros2 launch /opt/ros/foxy/share/turtlebot3_gazebo/launch/robot_state_publisher.launch.py use_sim_time:=true",
+    "30372 29144 R+   python3         /usr/bin/python3 - /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check_20260514_210328/gazebo_process_check_v0_1.json gazebo 1 /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/rviz/00824_stage1_step30p1_bev_semantic_route_demo.rviz /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check_20260514_210328/00824_stage1_step30p1_bev_semantic_route_demo.rviz"
+  ],
+  "process_present": true
+}

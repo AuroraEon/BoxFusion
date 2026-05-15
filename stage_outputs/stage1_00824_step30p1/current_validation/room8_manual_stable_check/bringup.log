@@ -1,10 +1,2 @@
 [stage1_step30p1] starting Gazebo world: /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/worlds/00824_step30p1_large_continuous_floor_world.sdf
-[stage1_step30p1] starting robot_state_publisher
-[stage1_step30p1] spawning TurtleBot3 burger
-[stage1_step30p1] starting static map->odom TF
-[stage1_step30p1] starting Nav2 staticloc stack
-[stage1_step30p1] launched. Logs: /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/bringup_logs
-gazebo: running pid=10447
-robot_state_publisher: running pid=10695
-static_tf: running pid=10744
-nav2: running pid=10746
+[stage1_step30p1][ERROR] /clock did not publish. See /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/bringup_logs/gazebo.log

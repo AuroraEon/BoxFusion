@@ -1,0 +1,122 @@
+{
+  "action_server_roles": {
+    "/compute_path_to_pose": "non_blocking_diagnostic_unless_planning_gate_requested",
+    "/follow_path": "hard_blocker_for_current_route_execution",
+    "/navigate_to_pose": "non_blocking_diagnostic_for_follow_path_runtime"
+  },
+  "action_servers": {
+    "/compute_path_to_pose": true,
+    "/follow_path": true,
+    "/navigate_to_pose": true
+  },
+  "artifact_type": "stage1_nav2_lifecycle_readiness_report",
+  "created_utc": "2026-05-14T13:26:54.670073+00:00",
+  "diagnostic_lifecycle_nodes": [
+    "/recoveries_server",
+    "/waypoint_follower"
+  ],
+  "failure_reason": "Nav2 lifecycle bringup failed or required dataplane readiness was not reached",
+  "follow_path_only_runtime": true,
+  "lifecycle_states": {
+    "/bt_navigator": {
+      "available": false,
+      "last_checked_utc": "2026-05-14T13:26:52.048766+00:00",
+      "query_duration_sec": 2.008,
+      "returncode": null,
+      "state": null,
+      "stderr": "",
+      "stdout": "",
+      "timed_out": true
+    },
+    "/controller_server": {
+      "available": false,
+      "last_checked_utc": "2026-05-14T13:26:48.034693+00:00",
+      "query_duration_sec": 2.007,
+      "returncode": null,
+      "state": null,
+      "stderr": "",
+      "stdout": "",
+      "timed_out": true
+    },
+    "/map_server": {
+      "available": false,
+      "last_checked_utc": "2026-05-14T13:26:46.027724+00:00",
+      "query_duration_sec": 2.008,
+      "returncode": null,
+      "state": null,
+      "stderr": "",
+      "stdout": "",
+      "timed_out": true
+    },
+    "/planner_server": {
+      "available": false,
+      "last_checked_utc": "2026-05-14T13:26:50.040633+00:00",
+      "query_duration_sec": 2.006,
+      "returncode": null,
+      "state": null,
+      "stderr": "",
+      "stdout": "",
+      "timed_out": true
+    },
+    "/recoveries_server": {
+      "available": false,
+      "last_checked_utc": "2026-05-14T13:26:54.057528+00:00",
+      "query_duration_sec": 2.009,
+      "returncode": null,
+      "state": null,
+      "stderr": "",
+      "stdout": "",
+      "timed_out": true
+    },
+    "/waypoint_follower": {
+      "available": false,
+      "last_checked_utc": "2026-05-14T13:26:54.668603+00:00",
+      "query_duration_sec": 0.611,
+      "returncode": 1,
+      "state": null,
+      "stderr": "Node not found",
+      "stdout": "",
+      "timed_out": false
+    }
+  },
+  "map_qos": {
+    "depth": 1,
+    "durability": "TRANSIENT_LOCAL",
+    "reliability": "RELIABLE"
+  },
+  "map_received": true,
+  "map_sample": {
+    "frame_id": "map",
+    "height": 1167,
+    "origin": {
+      "x": -50.0,
+      "y": -50.0
+    },
+    "resolution": 0.05000000074505806,
+    "width": 1227
+  },
+  "missing_conditions": [
+    "/map_server not active (query_timeout)",
+    "/controller_server not active (query_timeout)",
+    "/planner_server not active (query_timeout)",
+    "/bt_navigator not active (query_timeout)"
+  ],
+  "require_compute_path_to_pose": false,
+  "require_navigate_to_pose": false,
+  "required_lifecycle_nodes": [
+    "/map_server",
+    "/controller_server",
+    "/planner_server",
+    "/bt_navigator"
+  ],
+  "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+  "stuck_nodes": [
+    "/map_server: query_timeout",
+    "/controller_server: query_timeout",
+    "/planner_server: query_timeout",
+    "/bt_navigator: query_timeout"
+  ],
+  "succeeded": false,
+  "timeout_sec": 120.0,
+  "version": "v0_1"
+}

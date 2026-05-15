@@ -1,0 +1,12 @@
+[INFO] [launch]: All log files can be found below /home/ws/.ros/log/2026-05-15-09-39-24-403097-DESKTOP-24F4MES-8465
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [gzserver-1]: process started with pid [8473]
+[INFO] [gzclient   -2]: process started with pid [8476]
+[gzserver-1] [INFO] [1778809173.497898369] [turtlebot3_imu]: <initial_orientation_as_reference> is unset, using default value of false to comply with REP 145 (world as orientation reference)
+[gzserver-1] [INFO] [1778809173.693496157] [turtlebot3_diff_drive]: Wheel pair 1 separation set to [0.160000m]
+[gzserver-1] [INFO] [1778809173.693614339] [turtlebot3_diff_drive]: Wheel pair 1 diameter set to [0.066000m]
+[gzserver-1] [INFO] [1778809173.694650680] [turtlebot3_diff_drive]: Subscribed to [/cmd_vel]
+[gzserver-1] [INFO] [1778809173.695687757] [turtlebot3_diff_drive]: Advertise odometry on [/odom]
+[gzserver-1] [INFO] [1778809173.697071608] [turtlebot3_diff_drive]: Publishing odom transforms between [odom] and [base_footprint]
+[gzserver-1] [INFO] [1778809173.705621386] [turtlebot3_joint_state]: Going to publish joint [wheel_left_joint]
+[gzserver-1] [INFO] [1778809173.705700685] [turtlebot3_joint_state]: Going to publish joint [wheel_right_joint]

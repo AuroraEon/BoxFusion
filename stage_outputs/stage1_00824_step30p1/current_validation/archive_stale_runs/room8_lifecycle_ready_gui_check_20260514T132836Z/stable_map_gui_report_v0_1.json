@@ -1,0 +1,235 @@
+{
+  "answers": {
+    "bev_semantic_overlay_route_gateway_trajectory_visible_or_published": true,
+    "changed_cells_or_regions": null,
+    "compute_path_to_pose_action_server_ready_non_blocking": true,
+    "compute_path_to_pose_hard_blocker": false,
+    "did_gazebo_gui_launch": true,
+    "did_robot_reach_room16": "blocked_not_attempted",
+    "did_robot_start_from_room_1_route_start": "blocked_not_attempted",
+    "did_rviz_launch": false,
+    "did_sparse_fallback_occur": "blocked_not_attempted",
+    "final_pose_inside_room16_mask": "blocked_not_attempted",
+    "final_pose_too_close_to_r14_r16_gateway": "blocked_not_attempted",
+    "follow_path_action_server_ready": true,
+    "map_occupancy_grid_received_transient_local": true,
+    "nav2_lifecycle_readiness_passed": false,
+    "nav2_lifecycle_states": {
+      "/bt_navigator": null,
+      "/controller_server": null,
+      "/map_server": null,
+      "/planner_server": null
+    },
+    "nav2_lifecycle_stuck_nodes": [
+      "/map_server: query_timeout",
+      "/controller_server: query_timeout",
+      "/planner_server: query_timeout",
+      "/bt_navigator: query_timeout"
+    ],
+    "navigate_to_pose_action_server_ready_non_blocking": true,
+    "navigate_to_pose_hard_blocker": false,
+    "planned_route": [
+      "room_1",
+      "room_3",
+      "room_8",
+      "room_11",
+      "room_7",
+      "room_14",
+      "room_16"
+    ],
+    "previous_wall_crossing_visualization_artifact_or_real_issue": "blocked_not_attempted",
+    "room15_gateway_only_or_interior": "blocked_not_attempted",
+    "room15_inside_dwell_sec": "blocked_not_attempted",
+    "room15_inside_sample_count": "blocked_not_attempted",
+    "room15_interior_target_selected": null,
+    "room15_original_h8r2_free_fraction": null,
+    "room15_semantic_mask_area_cells": null,
+    "room15_target_distance_from_r7_r15_gateway_m": null,
+    "room15_target_distance_from_walls_m": null,
+    "room16_terminal_visual_quality_passed": "blocked_not_attempted",
+    "route_topology_includes_room15": "blocked_not_attempted",
+    "rviz_config_used": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/00824_stage1_step30p1_bev_semantic_route_demo.rviz",
+    "semantic_room_mask_overlay_displayed_separately_from_nav2_free_space": true,
+    "spinning_or_looping_near_room15_detected": "blocked_not_attempted",
+    "spinning_or_looping_reduced_or_eliminated": "blocked_not_attempted",
+    "stable_full_scene_map_used": true,
+    "trajectory_physically_entered_room15_mask": "blocked_not_attempted",
+    "trajectory_wall_point_violation_count": "blocked_not_attempted",
+    "trajectory_wall_segment_violation_count": "blocked_not_attempted",
+    "was_bev_floorplan_visible_in_rviz": false,
+    "was_nav2_map_issue_semantic_display_issue_or_both": "primary Nav2/RViz base map source issue; semantic overlay remains a separate marker layer",
+    "were_bridge_smooth_bridge_waypoints_used_as_navigate_to_pose_goals": "blocked_not_attempted",
+    "were_robot_tf_map_route_and_trajectory_visible_or_available": false,
+    "were_route_gateway_room_topology_overlay_markers_published": true,
+    "why_room15_appeared_only_partially_white_free": "The old request-aware/H8R2-derived primary /map could omit room15 free space when room15 was not in the request. The repaired primary /map is the stable full-scene occupancy map."
+  },
+  "artifact_type": "stage1_stable_map_gui_report",
+  "created_utc": "2026-05-14T13:26:54.999034+00:00",
+  "evidence_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check",
+  "evidence_files": {
+    "command_transcript": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/command_transcript_v0_1.md",
+    "dataplane_probe_result_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/dataplane_probe_result_v0_1.json",
+    "dataplane_probe_result_md": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/dataplane_probe_result_v0_1.md",
+    "gazebo_process_check_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/gazebo_process_check_v0_1.json",
+    "latest_follow_path_slice_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/latest_follow_path_slice_v0_1.json",
+    "lifecycle_readiness_report_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/lifecycle_readiness_report_v0_1.json",
+    "lifecycle_readiness_report_md": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/lifecycle_readiness_report_v0_1.md",
+    "local_looping_spin_validation_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/local_looping_spin_validation_v0_2.json",
+    "local_looping_spin_validation_md": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/local_looping_spin_validation_v0_2.md",
+    "process_list_after_bringup": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/process_list_after_bringup_v0_1.txt",
+    "process_list_after_route": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/process_list_after_route_v0_1.txt",
+    "report_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/stable_map_gui_report_v0_1.json",
+    "report_md": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/stable_map_gui_report_v0_1.md",
+    "room15_map_coverage_audit_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/bev_visual_regression_report_v0_1.json",
+    "room15_target_selection_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/room15_target_selection_v0_1.json",
+    "room16_terminal_validation_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/room16_terminal_quality_validation_v0_1.json",
+    "room16_terminal_validation_md": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/room16_terminal_quality_validation_v0_1.md",
+    "route_execution_result_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/route_execution_result_v0_1.json",
+    "route_execution_result_md": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/route_execution_result_v0_1.md",
+    "route_query_result_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/route_query_result_v0_1.json",
+    "route_query_result_md": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/route_query_result_v0_1.md",
+    "rviz_config_used": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/00824_stage1_step30p1_bev_semantic_route_demo.rviz",
+    "rviz_overlay_manifest_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/rviz_overlay_manifest_v0_3.json",
+    "rviz_process_check_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/rviz_process_check_v0_1.json",
+    "through_room15_validation_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/through_room15_physical_visit_validation_v0_1.json",
+    "through_room15_validation_md": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/through_room15_physical_visit_validation_v0_1.md",
+    "trajectory_sample_result_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/trajectory_sample_result_v0_1.json",
+    "trajectory_wall_crossing_validation_json": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/trajectory_wall_crossing_validation_v0_2.json",
+    "trajectory_wall_crossing_validation_md": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/trajectory_wall_crossing_validation_v0_2.md"
+  },
+  "failure_reason": "Nav2 lifecycle bringup failed",
+  "historical_milestone_wording": "Step30P1 repaired execution succeeded with clean forward-only fallback.",
+  "lifecycle_readiness": {
+    "action_server_roles": {
+      "/compute_path_to_pose": "non_blocking_diagnostic_unless_planning_gate_requested",
+      "/follow_path": "hard_blocker_for_current_route_execution",
+      "/navigate_to_pose": "non_blocking_diagnostic_for_follow_path_runtime"
+    },
+    "action_servers": {
+      "/compute_path_to_pose": true,
+      "/follow_path": true,
+      "/navigate_to_pose": true
+    },
+    "artifact_type": "stage1_nav2_lifecycle_readiness_report",
+    "created_utc": "2026-05-14T13:26:54.670073+00:00",
+    "diagnostic_lifecycle_nodes": [
+      "/recoveries_server",
+      "/waypoint_follower"
+    ],
+    "failure_reason": "Nav2 lifecycle bringup failed or required dataplane readiness was not reached",
+    "follow_path_only_runtime": true,
+    "lifecycle_states": {
+      "/bt_navigator": {
+        "available": false,
+        "last_checked_utc": "2026-05-14T13:26:52.048766+00:00",
+        "query_duration_sec": 2.008,
+        "returncode": null,
+        "state": null,
+        "stderr": "",
+        "stdout": "",
+        "timed_out": true
+      },
+      "/controller_server": {
+        "available": false,
+        "last_checked_utc": "2026-05-14T13:26:48.034693+00:00",
+        "query_duration_sec": 2.007,
+        "returncode": null,
+        "state": null,
+        "stderr": "",
+        "stdout": "",
+        "timed_out": true
+      },
+      "/map_server": {
+        "available": false,
+        "last_checked_utc": "2026-05-14T13:26:46.027724+00:00",
+        "query_duration_sec": 2.008,
+        "returncode": null,
+        "state": null,
+        "stderr": "",
+        "stdout": "",
+        "timed_out": true
+      },
+      "/planner_server": {
+        "available": false,
+        "last_checked_utc": "2026-05-14T13:26:50.040633+00:00",
+        "query_duration_sec": 2.006,
+        "returncode": null,
+        "state": null,
+        "stderr": "",
+        "stdout": "",
+        "timed_out": true
+      },
+      "/recoveries_server": {
+        "available": false,
+        "last_checked_utc": "2026-05-14T13:26:54.057528+00:00",
+        "query_duration_sec": 2.009,
+        "returncode": null,
+        "state": null,
+        "stderr": "",
+        "stdout": "",
+        "timed_out": true
+      },
+      "/waypoint_follower": {
+        "available": false,
+        "last_checked_utc": "2026-05-14T13:26:54.668603+00:00",
+        "query_duration_sec": 0.611,
+        "returncode": 1,
+        "state": null,
+        "stderr": "Node not found",
+        "stdout": "",
+        "timed_out": false
+      }
+    },
+    "map_qos": {
+      "depth": 1,
+      "durability": "TRANSIENT_LOCAL",
+      "reliability": "RELIABLE"
+    },
+    "map_received": true,
+    "map_sample": {
+      "frame_id": "map",
+      "height": 1167,
+      "origin": {
+        "x": -50.0,
+        "y": -50.0
+      },
+      "resolution": 0.05000000074505806,
+      "width": 1227
+    },
+    "missing_conditions": [
+      "/map_server not active (query_timeout)",
+      "/controller_server not active (query_timeout)",
+      "/planner_server not active (query_timeout)",
+      "/bt_navigator not active (query_timeout)"
+    ],
+    "require_compute_path_to_pose": false,
+    "require_navigate_to_pose": false,
+    "required_lifecycle_nodes": [
+      "/map_server",
+      "/controller_server",
+      "/planner_server",
+      "/bt_navigator"
+    ],
+    "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+    "stuck_nodes": [
+      "/map_server: query_timeout",
+      "/controller_server: query_timeout",
+      "/planner_server: query_timeout",
+      "/bt_navigator: query_timeout"
+    ],
+    "succeeded": false,
+    "timeout_sec": 120.0,
+    "version": "v0_1"
+  },
+  "reproduce_command": "tools/stage1_nav/run_gui_demo.sh --stage-output-dir stage_outputs/stage1_00824_step30p1 --start-room room_1 --goal-room room_16 --through-rooms room_15 --terminal-room room_16 --from-start --gui --map-profile stable --through-room-dwell-sec 3.0 --through-room-min-inside-samples 8 --keep-gui-open-sec 20",
+  "return_codes": {
+    "bringup": 24,
+    "dataplane_probe": 999,
+    "physical_validation": 999,
+    "route_execution": 999,
+    "route_query": 0
+  },
+  "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+  "succeeded": false,
+  "version": "v0_1"
+}

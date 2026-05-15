@@ -1,7 +1,7 @@
 {
   "active_user_facing_runtime": "tools/stage1_nav",
   "artifact_type": "current_stage1_nav_status_report",
-  "created_utc": "2026-05-14T08:40:44.805907+00:00",
+  "created_utc": "2026-05-14T13:39:00.003346+00:00",
   "current_validation_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation",
   "evidence_files": {
     "command_transcript_or_run_log": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/command_transcript_or_run_log.md",
@@ -9,16 +9,28 @@
     "marker_lifecycle_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/marker_lifecycle_report.json",
     "occupancy_map_generation_audit": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/occupancy_map_generation_audit.md",
     "room15_cross_request_floorplan_consistency": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_cross_request_floorplan_consistency.json",
-    "room15_run_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_stable_map_gui_check",
+    "room15_lifecycle_readiness_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_lifecycle_ready_gui_check/lifecycle_readiness_report_v0_1.json",
+    "room15_run_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_lifecycle_ready_gui_check",
+    "room8_lifecycle_readiness_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/lifecycle_readiness_report_v0_1.json",
     "room8_local_wall_spinning_diagnostic_evidence": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_local_wall_spinning_diagnostic_evidence.json",
-    "room8_run_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_stable_map_gui_check",
+    "room8_run_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check",
     "route_topology_integrity_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/route_topology_integrity_report.json",
     "rviz_floorplan_source_audit": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/rviz_floorplan_source_audit.md",
     "stable_full_scene_occupancy_map_provenance": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/stable_full_scene_occupancy_map_provenance.json"
   },
   "evidence_root": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation",
+  "follow_path_runtime_action_gates": {
+    "hard_blockers": [
+      "/follow_path"
+    ],
+    "non_blocking_diagnostics": [
+      "/compute_path_to_pose",
+      "/navigate_to_pose"
+    ]
+  },
   "gui_performance_status": "passed",
   "marker_lifecycle_status": "passed",
+  "nav2_lifecycle_readiness_status": "passed",
   "notes": {
     "accepted_step30p1_wording": "Step30P1 repaired execution succeeded with clean forward-only fallback.",
     "amcl_used": false,
@@ -32,8 +44,8 @@
   "room8_behavior_status": "passed",
   "route_topology_integrity_status": "passed",
   "run_ids": [
-    "room8_stable_map_gui_check",
-    "room15_stable_map_gui_check"
+    "room8_lifecycle_ready_gui_check",
+    "room15_lifecycle_ready_gui_check"
   ],
   "rviz_floorplan_consistency_status": "passed",
   "stable_map_provenance": {

@@ -1,0 +1,4 @@
+gazebo: not running
+robot_state_publisher: not running
+static_tf: not running
+nav2: not running

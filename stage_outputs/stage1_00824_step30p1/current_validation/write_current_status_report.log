@@ -1,32 +1,267 @@
 {
+  "active_user_facing_runtime": "tools/stage1_nav",
   "artifact_type": "current_stage1_nav_status_report",
-  "created_utc": "2026-05-14T03:50:56.831935+00:00",
+  "created_utc": "2026-05-14T13:39:00.003346+00:00",
+  "current_validation_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation",
   "evidence_files": {
+    "command_transcript_or_run_log": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/command_transcript_or_run_log.md",
     "gui_performance_process_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/gui_performance_process_report.json",
-    "map_projection_provenance": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/map_projection_provenance.json",
     "marker_lifecycle_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/marker_lifecycle_report.json",
-    "room15_display_consistency_evidence": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_display_consistency_evidence.json",
-    "room15_run_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_through",
+    "occupancy_map_generation_audit": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/occupancy_map_generation_audit.md",
+    "room15_cross_request_floorplan_consistency": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_cross_request_floorplan_consistency.json",
+    "room15_lifecycle_readiness_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_lifecycle_ready_gui_check/lifecycle_readiness_report_v0_1.json",
+    "room15_run_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room15_lifecycle_ready_gui_check",
+    "room8_lifecycle_readiness_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check/lifecycle_readiness_report_v0_1.json",
     "room8_local_wall_spinning_diagnostic_evidence": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_local_wall_spinning_diagnostic_evidence.json",
-    "room8_run_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_canonical",
-    "route_topology_integrity_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/route_topology_integrity_report.json"
+    "room8_run_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_lifecycle_ready_gui_check",
+    "route_topology_integrity_report": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/route_topology_integrity_report.json",
+    "rviz_floorplan_source_audit": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/rviz_floorplan_source_audit.md",
+    "stable_full_scene_occupancy_map_provenance": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/stable_full_scene_occupancy_map_provenance.json"
   },
   "evidence_root": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation",
+  "follow_path_runtime_action_gates": {
+    "hard_blockers": [
+      "/follow_path"
+    ],
+    "non_blocking_diagnostics": [
+      "/compute_path_to_pose",
+      "/navigate_to_pose"
+    ]
+  },
   "gui_performance_status": "passed",
   "marker_lifecycle_status": "passed",
+  "nav2_lifecycle_readiness_status": "passed",
   "notes": {
     "accepted_step30p1_wording": "Step30P1 repaired execution succeeded with clean forward-only fallback.",
     "amcl_used": false,
     "manual_cmd_vel_used": false,
-    "object_level_navigation_complete": false
+    "object_level_navigation_complete": false,
+    "real_physical_robot_deployment_claim": false
   },
   "overall_status": "passed",
-  "room15_display_consistency_status": "passed",
+  "room15_cross_request_display_status": "passed",
   "room15_physical_visit_status": "passed",
   "room8_behavior_status": "passed",
   "route_topology_integrity_status": "passed",
   "run_ids": [
-    "room8_canonical",
-    "room15_through"
-  ]
+    "room8_lifecycle_ready_gui_check",
+    "room15_lifecycle_ready_gui_check"
+  ],
+  "rviz_floorplan_consistency_status": "passed",
+  "stable_map_provenance": {
+    "artifact_type": "stable_full_scene_occupancy_map_provenance",
+    "cell_counts": {
+      "changed_vs_h8r2": 1286,
+      "free": 53336,
+      "gateway_carve_cells": 1870,
+      "occupied": 14412,
+      "outside_boundary_cells": 70277,
+      "stage1_free_space_cells": 56040,
+      "unknown": 1364161,
+      "unknown_to_free_vs_h8r2": 1206,
+      "wall_evidence_cells": 10630
+    },
+    "created_utc": "2026-05-14T08:26:56.210601+00:00",
+    "gateway_checks": {
+      "allowed_gateway_pairs_configured": [
+        "r14_r16",
+        "r1_r3",
+        "r3_r7",
+        "r3_r8",
+        "r7_r11",
+        "r7_r14",
+        "r7_r15",
+        "r8_r11"
+      ],
+      "allowed_gateway_pairs_missing": [],
+      "forbidden_gateway_pairs_configured": [],
+      "gateway_carve_cells": 1870,
+      "passed": true
+    },
+    "map_generation": {
+      "all_room_ids_included": [
+        1,
+        3,
+        7,
+        8,
+        11,
+        14,
+        15,
+        16
+      ],
+      "free_rule": "all Stage1 room-mask cells that are in free_space and not wall evidence become free; no non-room outside cells are introduced as free",
+      "gateway_rule": "H8R2 selected gateway_carve_mask is restored as free after wall occupancy, preserving selected gateway openings",
+      "initial_grid": "h8r2 map geometry and metadata",
+      "wall_rule": "structural_wall, segmentation_wall_processed, and gateway_wall_preclose remain occupied; existing H8R2 outside occupancy is preserved as the baseline"
+    },
+    "map_policy": "stable_full_scene_from_stage1_global_geometry",
+    "outputs": {
+      "full_scene_preview": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/stable_full_scene_map_visual_diagnostics/stage1_full_scene_occupancy_map_preview.png",
+      "map_npz": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/stage1_full_scene_occupancy_map.npz",
+      "map_pgm": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/stage1_full_scene_occupancy_map.pgm",
+      "map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/stage1_full_scene_occupancy_map.yaml",
+      "room15_stable_base_floorplan": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/stable_full_scene_map_visual_diagnostics/room15_stable_base_floorplan.png"
+    },
+    "request_dependent": false,
+    "room_metrics": {
+      "room_1": {
+        "component_sizes_desc": [
+          10254
+        ],
+        "connected_component_count": 1,
+        "gateway_carve_cells": 98,
+        "largest_component_cells": 10254,
+        "semantic_mask_area_cells": 10286,
+        "stable_free_cells": 10254,
+        "stable_free_fraction": 0.996889,
+        "stable_occupied_cells": 32,
+        "stable_unknown_cells": 0,
+        "stage1_free_space_cells": 10286,
+        "wall_evidence_cells": 32
+      },
+      "room_11": {
+        "component_sizes_desc": [
+          4233
+        ],
+        "connected_component_count": 1,
+        "gateway_carve_cells": 210,
+        "largest_component_cells": 4233,
+        "semantic_mask_area_cells": 4233,
+        "stable_free_cells": 4233,
+        "stable_free_fraction": 1.0,
+        "stable_occupied_cells": 0,
+        "stable_unknown_cells": 0,
+        "stage1_free_space_cells": 4233,
+        "wall_evidence_cells": 0
+      },
+      "room_14": {
+        "component_sizes_desc": [
+          4676,
+          35
+        ],
+        "connected_component_count": 2,
+        "gateway_carve_cells": 219,
+        "largest_component_cells": 4676,
+        "semantic_mask_area_cells": 4723,
+        "stable_free_cells": 4711,
+        "stable_free_fraction": 0.997459,
+        "stable_occupied_cells": 12,
+        "stable_unknown_cells": 0,
+        "stage1_free_space_cells": 4723,
+        "wall_evidence_cells": 12
+      },
+      "room_15": {
+        "component_sizes_desc": [
+          1295
+        ],
+        "connected_component_count": 1,
+        "gateway_carve_cells": 89,
+        "largest_component_cells": 1295,
+        "semantic_mask_area_cells": 1324,
+        "stable_free_cells": 1295,
+        "stable_free_fraction": 0.978097,
+        "stable_occupied_cells": 29,
+        "stable_unknown_cells": 0,
+        "stage1_free_space_cells": 1324,
+        "wall_evidence_cells": 37
+      },
+      "room_16": {
+        "component_sizes_desc": [
+          1325,
+          231
+        ],
+        "connected_component_count": 2,
+        "gateway_carve_cells": 101,
+        "largest_component_cells": 1325,
+        "semantic_mask_area_cells": 1584,
+        "stable_free_cells": 1556,
+        "stable_free_fraction": 0.982323,
+        "stable_occupied_cells": 28,
+        "stable_unknown_cells": 0,
+        "stage1_free_space_cells": 1584,
+        "wall_evidence_cells": 28
+      },
+      "room_3": {
+        "component_sizes_desc": [
+          19873,
+          224,
+          222,
+          7
+        ],
+        "connected_component_count": 4,
+        "gateway_carve_cells": 247,
+        "largest_component_cells": 19873,
+        "semantic_mask_area_cells": 20442,
+        "stable_free_cells": 20326,
+        "stable_free_fraction": 0.994325,
+        "stable_occupied_cells": 116,
+        "stable_unknown_cells": 0,
+        "stage1_free_space_cells": 20442,
+        "wall_evidence_cells": 116
+      },
+      "room_7": {
+        "component_sizes_desc": [
+          4684,
+          316
+        ],
+        "connected_component_count": 2,
+        "gateway_carve_cells": 378,
+        "largest_component_cells": 4684,
+        "semantic_mask_area_cells": 5015,
+        "stable_free_cells": 5000,
+        "stable_free_fraction": 0.997009,
+        "stable_occupied_cells": 15,
+        "stable_unknown_cells": 0,
+        "stage1_free_space_cells": 5015,
+        "wall_evidence_cells": 16
+      },
+      "room_8": {
+        "component_sizes_desc": [
+          5574,
+          38,
+          24
+        ],
+        "connected_component_count": 3,
+        "gateway_carve_cells": 203,
+        "largest_component_cells": 5574,
+        "semantic_mask_area_cells": 5716,
+        "stable_free_cells": 5636,
+        "stable_free_fraction": 0.986004,
+        "stable_occupied_cells": 80,
+        "stable_unknown_cells": 0,
+        "stage1_free_space_cells": 5716,
+        "wall_evidence_cells": 85
+      }
+    },
+    "route_room_ids_whitelist_used": false,
+    "source_inputs": {
+      "final_gateway_wall_preclose_thr_0p25_png": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/final_gateway_wall_preclose_thr_0p25.png",
+      "free_space_png": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/free_space.png",
+      "gateway_projection_config": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/config/step30s7_gateway_projection_config_v0_1.json",
+      "gateway_registry": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/gateway/gateway_registry_v0_1.json",
+      "h8r2_masks_npz_for_gateway_carves_only": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/h8r2_gateway_preserving_masks.npz",
+      "h8r2_reference_map_yaml_for_metadata_and_baseline": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/h8r2_gateway_preserving_nav_map.yaml",
+      "outside_boundary_png": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/visualizations/outside_boundary.png",
+      "stage1_layered_bev_npz": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/assets/00824_step30a_layered_bev_v0_1.npz",
+      "stage1_room_mask": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/stage1_process/room_segmentation/assets/00824_step30a_global_room_mask_v0_1.npy"
+    },
+    "source_inputs_exist": {
+      "final_gateway_wall_preclose_thr_0p25_png": true,
+      "free_space_png": true,
+      "gateway_projection_config": true,
+      "gateway_registry": true,
+      "h8r2_masks_npz_for_gateway_carves_only": true,
+      "h8r2_reference_map_yaml_for_metadata_and_baseline": true,
+      "outside_boundary_png": true,
+      "stage1_layered_bev_npz": true,
+      "stage1_room_mask": true
+    },
+    "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+    "step30s5_room15_patch_used": false,
+    "through_rooms_used": false,
+    "validation_passed": true,
+    "version": "v0_1"
+  },
+  "stable_map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/stage1_full_scene_occupancy_map.yaml",
+  "stable_occupancy_map_status": "passed"
 }

@@ -72,6 +72,7 @@ def read_run(validation_dir: Path, run_id: str) -> dict[str, Any]:
         "wall": load(run_dir / "trajectory_wall_crossing_validation_v0_2.json"),
         "spin": load(run_dir / "local_looping_spin_validation_v0_2.json"),
         "overlay": load(run_dir / "rviz_overlay_manifest_v0_3.json"),
+        "lifecycle": load(run_dir / "lifecycle_readiness_report_v0_1.json"),
         "rviz_proc": load(run_dir / "rviz_process_check_v0_1.json"),
         "gazebo_proc": load(run_dir / "gazebo_process_check_v0_1.json"),
         "overlay_log": read_text(run_dir / "rviz_overlay_publisher.log") + read_text(run_dir / "rviz_overlay_publisher_after_validation.log"),
@@ -150,8 +151,8 @@ def worst_status(values: list[str]) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stage-output-dir", type=Path, default=Path("stage_outputs/stage1_00824_step30p1"))
-    parser.add_argument("--room8-run-id", default="room8_stable_map_gui_check")
-    parser.add_argument("--room15-run-id", default="room15_stable_map_gui_check")
+    parser.add_argument("--room8-run-id", default="room8_lifecycle_ready_gui_check")
+    parser.add_argument("--room15-run-id", default="room15_lifecycle_ready_gui_check")
     args = parser.parse_args()
 
     stage = args.stage_output_dir.resolve()
@@ -204,6 +205,14 @@ def main() -> int:
         room15["gazebo_proc"].get("process_present") and room15["rviz_proc"].get("process_present"),
     ])
     gui_status = "blocked" if gui_blocked else ("passed" if gui_seen else "partial")
+    lifecycle_status = "passed" if all([
+        room8["lifecycle"].get("succeeded"),
+        room15["lifecycle"].get("succeeded"),
+        room8["lifecycle"].get("map_received"),
+        room15["lifecycle"].get("map_received"),
+        (room8["lifecycle"].get("action_servers") or {}).get("/follow_path"),
+        (room15["lifecycle"].get("action_servers") or {}).get("/follow_path"),
+    ]) else ("blocked" if not room8["lifecycle"] or not room15["lifecycle"] else "failed")
     perf = {
         "artifact_type": "gui_performance_process_report",
         "created_utc": now_iso(),
@@ -251,6 +260,7 @@ def main() -> int:
         "room15_cross_request_display_status": display_status,
         "marker_lifecycle_status": lifecycle["status"],
         "gui_performance_status": gui_status,
+        "nav2_lifecycle_readiness_status": lifecycle_status,
         "route_topology_integrity_status": topology_status,
     }
     statuses["overall_status"] = worst_status(list(statuses.values()))
@@ -264,6 +274,10 @@ def main() -> int:
         "active_user_facing_runtime": "tools/stage1_nav",
         "current_validation_dir": validation.as_posix(),
         "stable_map_yaml": (stage / "maps/stage1_full_scene_occupancy_map.yaml").as_posix(),
+        "follow_path_runtime_action_gates": {
+            "hard_blockers": ["/follow_path"],
+            "non_blocking_diagnostics": ["/compute_path_to_pose", "/navigate_to_pose"],
+        },
         "stable_map_provenance": provenance,
         "evidence_files": {
             "stable_full_scene_occupancy_map_provenance": (validation / "stable_full_scene_occupancy_map_provenance.json").as_posix(),
@@ -272,6 +286,8 @@ def main() -> int:
             "room8_run_dir": room8["dir"],
             "room15_run_dir": room15["dir"],
             "room15_cross_request_floorplan_consistency": (validation / "room15_cross_request_floorplan_consistency.json").as_posix(),
+            "room8_lifecycle_readiness_report": (validation / args.room8_run_id / "lifecycle_readiness_report_v0_1.json").as_posix(),
+            "room15_lifecycle_readiness_report": (validation / args.room15_run_id / "lifecycle_readiness_report_v0_1.json").as_posix(),
             "room8_local_wall_spinning_diagnostic_evidence": (validation / "room8_local_wall_spinning_diagnostic_evidence.json").as_posix(),
             "marker_lifecycle_report": (validation / "marker_lifecycle_report.json").as_posix(),
             "gui_performance_process_report": (validation / "gui_performance_process_report.json").as_posix(),
@@ -297,6 +313,7 @@ def main() -> int:
         "room15_cross_request_display_status",
         "marker_lifecycle_status",
         "gui_performance_status",
+        "nav2_lifecycle_readiness_status",
         "route_topology_integrity_status",
         "overall_status",
     ]:

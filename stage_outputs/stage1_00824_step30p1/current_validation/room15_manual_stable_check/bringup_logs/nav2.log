@@ -161,3 +161,11 @@
 [controller_server-2] [INFO] [1778759993.789544137] [controller_server]: Reached the goal!
 [controller_server-2] [INFO] [1778759996.793825298] [controller_server]: Received a goal, begin computing control effort.
 [controller_server-2] [INFO] [1778760034.496403343] [controller_server]: Reached the goal!
+[map_server-1] Magick: quitting due to signal 51 (SIGTERM) "Terminated"...
+[ERROR] [map_server-1]: process has died [pid 14868, exit code 15, cmd '/opt/ros/foxy/lib/nav2_map_server/map_server --ros-args -r __node:=map_server --params-file /tmp/tmpma9qo3ss -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [controller_server-2]: process has died [pid 14870, exit code -15, cmd '/opt/ros/foxy/lib/nav2_controller/controller_server --ros-args -r __node:=controller_server --params-file /tmp/tmphobsqh8m -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [planner_server-3]: process has died [pid 14872, exit code -15, cmd '/opt/ros/foxy/lib/nav2_planner/planner_server --ros-args -r __node:=planner_server --params-file /tmp/tmp86nn765e -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [recoveries_server-4]: process has died [pid 14874, exit code -15, cmd '/opt/ros/foxy/lib/nav2_recoveries/recoveries_server --ros-args -r __node:=recoveries_server --params-file /tmp/tmplurhd72c -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [bt_navigator-5]: process has died [pid 14876, exit code -15, cmd '/opt/ros/foxy/lib/nav2_bt_navigator/bt_navigator --ros-args -r __node:=bt_navigator --params-file /tmp/tmphf6ky1ad -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [waypoint_follower-6]: process has died [pid 14878, exit code -15, cmd '/opt/ros/foxy/lib/nav2_waypoint_follower/waypoint_follower --ros-args -r __node:=waypoint_follower --params-file /tmp/tmpnadgy7q3 -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [lifecycle_manager-7]: process has died [pid 14880, exit code -15, cmd '/opt/ros/foxy/lib/nav2_lifecycle_manager/lifecycle_manager --ros-args -r __node:=lifecycle_manager_navigation --params-file /tmp/launch_params_bet_wz9e --params-file /tmp/launch_params_t10jvo3h --params-file /tmp/launch_params_hxuzhnsj'].

@@ -74,6 +74,8 @@ REPORT_MD="$EVIDENCE_DIR/stable_map_gui_report_v0_1.md"
 TRANSCRIPT="$EVIDENCE_DIR/command_transcript_v0_1.md"
 DATAPLANE_JSON="$EVIDENCE_DIR/dataplane_probe_result_v0_1.json"
 DATAPLANE_MD="$EVIDENCE_DIR/dataplane_probe_result_v0_1.md"
+LIFECYCLE_JSON="$EVIDENCE_DIR/lifecycle_readiness_report_v0_1.json"
+LIFECYCLE_MD="$EVIDENCE_DIR/lifecycle_readiness_report_v0_1.md"
 ROUTE_QUERY_JSON="$EVIDENCE_DIR/route_query_result_v0_1.json"
 ROUTE_QUERY_MD="$EVIDENCE_DIR/route_query_result_v0_1.md"
 ROUTE_WAYPOINTS_JSON="$EVIDENCE_DIR/semantic_route_waypoints_v0_1.json"
@@ -110,6 +112,13 @@ PROCESS_LIST_AFTER_BRINGUP="$EVIDENCE_DIR/process_list_after_bringup_v0_1.txt"
 PROCESS_LIST_AFTER_ROUTE="$EVIDENCE_DIR/process_list_after_route_v0_1.txt"
 RVIZ_CONFIG_USED_COPY="$EVIDENCE_DIR/00824_stage1_step30p1_bev_semantic_route_demo.rviz"
 
+if [ -d "$EVIDENCE_DIR" ] && [ -n "$(find "$EVIDENCE_DIR" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; then
+  STALE_PARENT="$STAGE_OUTPUT_DIR/current_validation/archive_stale_runs"
+  STALE_DIR="$STALE_PARENT/${RUN_ID}_$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$STALE_PARENT"
+  mv "$EVIDENCE_DIR" "$STALE_DIR"
+  echo "[step30s7] Existing evidence directory moved aside to avoid stale-run mixing: $STALE_DIR"
+fi
 mkdir -p "$EVIDENCE_DIR" "$BRINGUP_LOG_DIR" "$RVIZ_DIR" "$VISUAL_DIAG_DIR"
 : > "$TRANSCRIPT"
 
@@ -224,12 +233,12 @@ PY
 }
 
 write_final_report() {
-  /usr/bin/python3 - "$REPORT_JSON" "$REPORT_MD" "$EVIDENCE_DIR" "$STAGE_OUTPUT_DIR" "$START_ROOM" "$GOAL_ROOM" "$TERMINAL_ROOM" "$RVIZ_CONFIG_USED_COPY" "$DATAPLANE_JSON" "$ROUTE_QUERY_JSON" "$ROUTE_EXEC_JSON" "$THROUGH_JSON" "$TERMINAL_JSON" "$WALL_JSON" "$SPIN_JSON" "$AUDIT_JSON" "$TARGET_SELECTION_JSON" "$RVIZ_PROCESS_JSON" "$GAZEBO_PROCESS_JSON" "$RVIZ_MANIFEST_JSON" "$TRANSCRIPT" "$GUI" "$BRINGUP_RC" "$DATAPLANE_RC" "$ROUTE_QUERY_RC" "$ROUTE_RC" "$VALIDATION_RC" "$FINAL_FAILURE_REASON" "$ROOM15_MIN_INSIDE_SAMPLES" "$THROUGH_ROOM_DWELL_SEC" <<'PY'
+  /usr/bin/python3 - "$REPORT_JSON" "$REPORT_MD" "$EVIDENCE_DIR" "$STAGE_OUTPUT_DIR" "$START_ROOM" "$GOAL_ROOM" "$TERMINAL_ROOM" "$RVIZ_CONFIG_USED_COPY" "$DATAPLANE_JSON" "$LIFECYCLE_JSON" "$ROUTE_QUERY_JSON" "$ROUTE_EXEC_JSON" "$THROUGH_JSON" "$TERMINAL_JSON" "$WALL_JSON" "$SPIN_JSON" "$AUDIT_JSON" "$TARGET_SELECTION_JSON" "$RVIZ_PROCESS_JSON" "$GAZEBO_PROCESS_JSON" "$RVIZ_MANIFEST_JSON" "$TRANSCRIPT" "$GUI" "$BRINGUP_RC" "$DATAPLANE_RC" "$ROUTE_QUERY_RC" "$ROUTE_RC" "$VALIDATION_RC" "$FINAL_FAILURE_REASON" "$ROOM15_MIN_INSIDE_SAMPLES" "$THROUGH_ROOM_DWELL_SEC" <<'PY'
 import json, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-report_json, report_md, evidence_dir, stage_output, start_room, goal_room, terminal_room, rviz_config, dataplane_p, route_query_p, route_exec_p, through_p, terminal_p, wall_p, spin_p, audit_p, target_p, rviz_proc_p, gazebo_proc_p, rviz_manifest_p, transcript, gui, bringup_rc, dataplane_rc, route_query_rc, route_rc, validation_rc, failure, required_samples, required_dwell = sys.argv[1:]
+report_json, report_md, evidence_dir, stage_output, start_room, goal_room, terminal_room, rviz_config, dataplane_p, lifecycle_p, route_query_p, route_exec_p, through_p, terminal_p, wall_p, spin_p, audit_p, target_p, rviz_proc_p, gazebo_proc_p, rviz_manifest_p, transcript, gui, bringup_rc, dataplane_rc, route_query_rc, route_rc, validation_rc, failure, required_samples, required_dwell = sys.argv[1:]
 def load(path):
     p = Path(path)
     if not p.exists():
@@ -238,10 +247,23 @@ def load(path):
         return json.loads(p.read_text(encoding="utf-8"))
     except Exception as exc:
         return {"_read_error": f"{type(exc).__name__}: {exc}"}
-dataplane, route_query, route_exec = load(dataplane_p), load(route_query_p), load(route_exec_p)
+dataplane, lifecycle, route_query, route_exec = load(dataplane_p), load(lifecycle_p), load(route_query_p), load(route_exec_p)
 through, terminal, wall, spin, audit, target = load(through_p), load(terminal_p), load(wall_p), load(spin_p), load(audit_p), load(target_p)
 rviz_proc, gazebo_proc, rviz_manifest = load(rviz_proc_p), load(gazebo_proc_p), load(rviz_manifest_p)
 topics = dataplane.get("topics", {})
+route_attempted = bool(route_exec) and bool(route_exec.get("execute_attempted", True)) and int(route_rc) not in (999,)
+route_finished = bool(route_exec.get("succeeded") or route_exec.get("final_arrival_success"))
+wall_attempted = bool(wall)
+spin_attempted = bool(spin)
+terminal_attempted = bool(terminal)
+through_attempted = bool(through)
+map_server_state = (lifecycle.get("lifecycle_states") or {}).get("/map_server", {}).get("state")
+controller_state = (lifecycle.get("lifecycle_states") or {}).get("/controller_server", {}).get("state")
+planner_state = (lifecycle.get("lifecycle_states") or {}).get("/planner_server", {}).get("state")
+bt_state = (lifecycle.get("lifecycle_states") or {}).get("/bt_navigator", {}).get("state")
+if failure and lifecycle and not lifecycle.get("succeeded") and "lifecycle" not in failure:
+    stuck = ", ".join(lifecycle.get("stuck_nodes") or lifecycle.get("missing_conditions") or [])
+    failure = f"Nav2 lifecycle bringup failed: {stuck}" if stuck else "Nav2 lifecycle bringup failed"
 answers = {
     "why_room15_appeared_only_partially_white_free": "The old request-aware/H8R2-derived primary /map could omit room15 free space when room15 was not in the request. The repaired primary /map is the stable full-scene occupancy map.",
     "was_nav2_map_issue_semantic_display_issue_or_both": "primary Nav2/RViz base map source issue; semantic overlay remains a separate marker layer",
@@ -255,34 +277,50 @@ answers = {
     "room15_target_distance_from_walls_m": (target.get("room15_target") or audit.get("selected_room15_interior_target") or {}).get("distance_to_occupied_or_unknown_m"),
     "did_gazebo_gui_launch": bool(gazebo_proc.get("process_present")) if bool(int(gui)) else False,
     "did_rviz_launch": bool(rviz_proc.get("process_present")) if bool(int(gui)) else False,
+    "nav2_lifecycle_readiness_passed": bool(lifecycle.get("succeeded")),
+    "nav2_lifecycle_states": {
+        "/map_server": map_server_state,
+        "/controller_server": controller_state,
+        "/planner_server": planner_state,
+        "/bt_navigator": bt_state,
+    },
+    "nav2_lifecycle_stuck_nodes": lifecycle.get("stuck_nodes") or [],
+    "map_occupancy_grid_received_transient_local": bool(lifecycle.get("map_received") or (topics.get("/map") or {}).get("message_received")),
+    "follow_path_action_server_ready": bool((lifecycle.get("action_servers") or {}).get("/follow_path") or (dataplane.get("action_servers") or {}).get("/follow_path")),
+    "compute_path_to_pose_action_server_ready_non_blocking": bool((lifecycle.get("action_servers") or {}).get("/compute_path_to_pose") or (dataplane.get("action_servers") or {}).get("/compute_path_to_pose")),
+    "navigate_to_pose_action_server_ready_non_blocking": bool((lifecycle.get("action_servers") or {}).get("/navigate_to_pose") or (dataplane.get("action_servers") or {}).get("/navigate_to_pose")),
+    "compute_path_to_pose_hard_blocker": bool(lifecycle.get("require_compute_path_to_pose") or dataplane.get("require_compute_path_to_pose")),
+    "navigate_to_pose_hard_blocker": bool(lifecycle.get("require_navigate_to_pose") or dataplane.get("require_navigate_to_pose")),
     "rviz_config_used": rviz_config,
     "was_bev_floorplan_visible_in_rviz": Path(rviz_config).exists() and bool((topics.get("/map") or {}).get("message_received")),
     "were_route_gateway_room_topology_overlay_markers_published": bool(rviz_manifest.get("marker_topic")),
     "were_robot_tf_map_route_and_trajectory_visible_or_available": bool((topics.get("/map") or {}).get("message_received")) and bool((topics.get("/tf") or {}).get("message_received")) and bool(rviz_manifest.get("marker_topic")),
-    "did_robot_start_from_room_1_route_start": bool(route_exec.get("from_start_reset_verified")),
+    "did_robot_start_from_room_1_route_start": bool(route_exec.get("from_start_reset_verified")) if route_attempted else "blocked_not_attempted",
     "planned_route": route_query.get("room_sequence"),
-    "route_topology_includes_room15": bool(through.get("route_topology_includes_room15")),
-    "trajectory_physically_entered_room15_mask": bool(through.get("trajectory_entered_room15_mask")),
-    "room15_inside_sample_count": through.get("room15_inside_sample_count"),
-    "room15_inside_dwell_sec": through.get("room15_inside_dwell_sec"),
-    "room15_gateway_only_or_interior": "entered_room15_interior" if through.get("visual_through_room15_success") else "gateway_only_or_not_entered",
-    "spinning_or_looping_near_room15_detected": bool(spin.get("spinning_detected")),
-    "spinning_or_looping_reduced_or_eliminated": bool(spin.get("local_looping_validation_passed")),
-    "trajectory_wall_point_violation_count": wall.get("trajectory_wall_point_violation_count"),
-    "trajectory_wall_segment_violation_count": wall.get("trajectory_wall_segment_violation_count"),
-    "previous_wall_crossing_visualization_artifact_or_real_issue": "visualization_artifact_possible" if wall.get("visualization_interpolation_artifact_possible") else ("no_wall_crossing_detected" if wall.get("wall_crossing_validation_passed") else "real_map_or_trajectory_issue"),
-    "did_robot_reach_room16": bool(route_exec.get("final_arrival_success")),
-    "final_pose_inside_room16_mask": bool(terminal.get("final_pose_inside_room16_mask")),
-    "final_pose_too_close_to_r14_r16_gateway": bool(terminal.get("final_pose_near_r14_r16_gateway")),
-    "room16_terminal_visual_quality_passed": bool(terminal.get("terminal_visual_quality_passed")),
-    "did_sparse_fallback_occur": bool(route_exec.get("sparse_fallback_used")),
-    "were_bridge_smooth_bridge_waypoints_used_as_navigate_to_pose_goals": bool(route_exec.get("bridge_waypoints_used_as_goals")),
+    "route_topology_includes_room15": bool(through.get("route_topology_includes_room15")) if through_attempted else "blocked_not_attempted",
+    "trajectory_physically_entered_room15_mask": bool(through.get("trajectory_entered_room15_mask")) if through_attempted else "blocked_not_attempted",
+    "room15_inside_sample_count": through.get("room15_inside_sample_count") if through_attempted else "blocked_not_attempted",
+    "room15_inside_dwell_sec": through.get("room15_inside_dwell_sec") if through_attempted else "blocked_not_attempted",
+    "room15_gateway_only_or_interior": ("entered_room15_interior" if through.get("visual_through_room15_success") else "gateway_only_or_not_entered") if through_attempted else "blocked_not_attempted",
+    "spinning_or_looping_near_room15_detected": bool(spin.get("spinning_detected")) if spin_attempted else "blocked_not_attempted",
+    "spinning_or_looping_reduced_or_eliminated": bool(spin.get("local_looping_validation_passed")) if spin_attempted else "blocked_not_attempted",
+    "trajectory_wall_point_violation_count": wall.get("trajectory_wall_point_violation_count") if wall_attempted else "blocked_not_attempted",
+    "trajectory_wall_segment_violation_count": wall.get("trajectory_wall_segment_violation_count") if wall_attempted else "blocked_not_attempted",
+    "previous_wall_crossing_visualization_artifact_or_real_issue": ("visualization_artifact_possible" if wall.get("visualization_interpolation_artifact_possible") else ("no_wall_crossing_detected" if wall.get("wall_crossing_validation_passed") else "real_map_or_trajectory_issue")) if wall_attempted else "blocked_not_attempted",
+    "did_robot_reach_room16": bool(route_exec.get("final_arrival_success")) if route_attempted else "blocked_not_attempted",
+    "final_pose_inside_room16_mask": bool(terminal.get("final_pose_inside_room16_mask")) if terminal_attempted else "blocked_not_attempted",
+    "final_pose_too_close_to_r14_r16_gateway": bool(terminal.get("final_pose_near_r14_r16_gateway")) if terminal_attempted else "blocked_not_attempted",
+    "room16_terminal_visual_quality_passed": bool(terminal.get("terminal_visual_quality_passed")) if terminal_attempted else "blocked_not_attempted",
+    "did_sparse_fallback_occur": bool(route_exec.get("sparse_fallback_used")) if route_attempted else "blocked_not_attempted",
+    "were_bridge_smooth_bridge_waypoints_used_as_navigate_to_pose_goals": bool(route_exec.get("bridge_waypoints_used_as_goals")) if route_attempted else "blocked_not_attempted",
     "bev_semantic_overlay_route_gateway_trajectory_visible_or_published": bool(rviz_manifest.get("marker_topic")),
 }
 evidence_files = {
     "report_json": report_json,
     "report_md": report_md,
     "command_transcript": transcript,
+    "lifecycle_readiness_report_json": lifecycle_p,
+    "lifecycle_readiness_report_md": str(Path(lifecycle_p).with_suffix(".md")),
     "dataplane_probe_result_json": dataplane_p,
     "dataplane_probe_result_md": str(Path(dataplane_p).with_suffix(".md")),
     "route_query_result_json": route_query_p,
@@ -311,15 +349,20 @@ evidence_files = {
 success = all([
     (not bool(int(gui))) or answers["did_gazebo_gui_launch"],
     (not bool(int(gui))) or answers["did_rviz_launch"],
+    answers["nav2_lifecycle_readiness_passed"],
+    answers["map_occupancy_grid_received_transient_local"],
+    answers["follow_path_action_server_ready"],
     answers["was_bev_floorplan_visible_in_rviz"],
     answers["were_route_gateway_room_topology_overlay_markers_published"],
-    answers["did_robot_start_from_room_1_route_start"],
+    route_attempted,
+    route_finished,
+    answers["did_robot_start_from_room_1_route_start"] is True,
     through.get("all_through_rooms_success"),
     through.get("gateway_only_failure_guard_passed"),
     wall.get("wall_crossing_validation_passed"),
     spin.get("local_looping_validation_passed"),
     terminal.get("terminal_visual_quality_passed"),
-    not answers["were_bridge_smooth_bridge_waypoints_used_as_navigate_to_pose_goals"],
+    answers["were_bridge_smooth_bridge_waypoints_used_as_navigate_to_pose_goals"] is False,
 ])
 if failure:
     success = False
@@ -333,6 +376,7 @@ payload = {
     "succeeded": success,
     "failure_reason": None if success else (failure or "one or more stable-map Stage1 acceptance checks failed"),
     "return_codes": {"bringup": int(bringup_rc), "dataplane_probe": int(dataplane_rc), "route_query": int(route_query_rc), "route_execution": int(route_rc), "physical_validation": int(validation_rc)},
+    "lifecycle_readiness": lifecycle,
     "answers": answers,
     "evidence_files": evidence_files,
     "reproduce_command": "tools/stage1_nav/run_gui_demo.sh --stage-output-dir stage_outputs/stage1_00824_step30p1 --start-room room_1 --goal-room room_16 --through-rooms room_15 --terminal-room room_16 --from-start --gui --map-profile stable --through-room-dwell-sec 3.0 --through-room-min-inside-samples 8 --keep-gui-open-sec 20",
@@ -351,6 +395,12 @@ question_labels = [
     ("How far is it from walls/occupied cells?", "room15_target_distance_from_walls_m"),
     ("Did Gazebo GUI launch?", "did_gazebo_gui_launch"),
     ("Did RViz launch?", "did_rviz_launch"),
+    ("Did Nav2 lifecycle readiness pass?", "nav2_lifecycle_readiness_passed"),
+    ("What lifecycle states were observed?", "nav2_lifecycle_states"),
+    ("Was a TRANSIENT_LOCAL /map OccupancyGrid received?", "map_occupancy_grid_received_transient_local"),
+    ("Was /follow_path ready?", "follow_path_action_server_ready"),
+    ("Is /compute_path_to_pose a hard blocker?", "compute_path_to_pose_hard_blocker"),
+    ("Is /navigate_to_pose a hard blocker?", "navigate_to_pose_hard_blocker"),
     ("Which RViz config was used?", "rviz_config_used"),
     ("Was a BEV/floorplan visible in RViz?", "was_bev_floorplan_visible_in_rviz"),
     ("Were route/gateway/room/topology overlay markers published?", "were_route_gateway_room_topology_overlay_markers_published"),
@@ -516,11 +566,21 @@ run_logged bringup "$SCRIPT_DIR/launch_stage1_step30p1_gazebo_nav2.sh" \
   "$MODE_ARG" \
   --map-profile "$ACTIVE_MAP_PROFILE" \
   --log-dir "$BRINGUP_LOG_DIR" \
+  --readiness-output-json "$LIFECYCLE_JSON" \
+  --readiness-output-md "$LIFECYCLE_MD" \
+  --readiness-timeout-sec 120 \
   --spawn-x "$SPAWN_X" \
   --spawn-y "$SPAWN_Y" \
   --spawn-yaw "$SPAWN_YAW"
 BRINGUP_RC=$?
-if [ "$BRINGUP_RC" -ne 0 ] && [ -z "$FINAL_FAILURE_REASON" ]; then FINAL_FAILURE_REASON="bringup failed"; fi
+cp "$BRINGUP_LOG_DIR/bringup_result.json" "$EVIDENCE_DIR/bringup_result.json" 2>/dev/null || true
+if [ "$BRINGUP_RC" -ne 0 ] && [ -z "$FINAL_FAILURE_REASON" ]; then
+  if [ -f "$LIFECYCLE_JSON" ]; then
+    FINAL_FAILURE_REASON="Nav2 lifecycle bringup failed"
+  else
+    FINAL_FAILURE_REASON="bringup failed"
+  fi
+fi
 
 if [ "$BRINGUP_RC" -eq 0 ]; then
   if [ "$GUI" = "1" ]; then

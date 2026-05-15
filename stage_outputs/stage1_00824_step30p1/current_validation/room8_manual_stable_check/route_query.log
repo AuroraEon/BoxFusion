@@ -1,7 +1,7 @@
 {
   "artifact_type": "step30s7_route_query_result",
   "bridge_planner_avoids_structural_walls_except_selected_gateway_carves": true,
-  "created_utc": "2026-05-14T11:42:32.874164+00:00",
+  "created_utc": "2026-05-14T12:59:13.007582+00:00",
   "forbidden_shortcuts_not_used": [
     "r14_r15",
     "r15_r16",

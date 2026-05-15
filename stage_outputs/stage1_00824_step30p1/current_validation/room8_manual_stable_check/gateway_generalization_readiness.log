@@ -2,7 +2,7 @@
   "active_route_projection_code_hard_codes_room15": false,
   "active_route_projection_code_hard_codes_route_room_ids": false,
   "artifact_type": "step30s7_gateway_generalization_readiness_report",
-  "created_utc": "2026-05-14T11:42:31.710689+00:00",
+  "created_utc": "2026-05-14T12:59:11.936183+00:00",
   "externalized": {
     "forbidden_gateway_pairs": [
       "r14_r15",

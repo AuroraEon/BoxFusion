@@ -1,0 +1,20 @@
+[INFO] [launch]: All log files can be found below /home/ws/.ros/log/2026-05-15-09-32-31-657915-DESKTOP-24F4MES-5822
+[INFO] [launch]: Default logging verbosity is set to INFO
+urdf_file_name : turtlebot3_burger.urdf
+[INFO] [robot_state_publisher-1]: process started with pid [5832]
+[robot_state_publisher-1] [WARN] [1778808752.011127876] [robot_state_publisher]: No robot_description parameter, but command-line argument available.  Assuming argument is name of URDF file.  This backwards compatibility fallback will be removed in the future.
+[robot_state_publisher-1] Parsing robot urdf xml string.
+[robot_state_publisher-1] Link base_link had 5 children
+[robot_state_publisher-1] Link caster_back_link had 0 children
+[robot_state_publisher-1] Link imu_link had 0 children
+[robot_state_publisher-1] Link base_scan had 0 children
+[robot_state_publisher-1] Link wheel_left_link had 0 children
+[robot_state_publisher-1] Link wheel_right_link had 0 children
+[robot_state_publisher-1] [INFO] [1778808752.028179232] [robot_state_publisher]: got segment base_footprint
+[robot_state_publisher-1] [INFO] [1778808752.028205116] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-1] [INFO] [1778808752.028208614] [robot_state_publisher]: got segment base_scan
+[robot_state_publisher-1] [INFO] [1778808752.028211235] [robot_state_publisher]: got segment caster_back_link
+[robot_state_publisher-1] [INFO] [1778808752.028213726] [robot_state_publisher]: got segment imu_link
+[robot_state_publisher-1] [INFO] [1778808752.028216074] [robot_state_publisher]: got segment wheel_left_link
+[robot_state_publisher-1] [INFO] [1778808752.028218572] [robot_state_publisher]: got segment wheel_right_link
+[ERROR] [robot_state_publisher-1]: process has died [pid 5832, exit code -15, cmd '/opt/ros/foxy/lib/robot_state_publisher/robot_state_publisher /opt/ros/foxy/share/turtlebot3_description/urdf/turtlebot3_burger.urdf --ros-args -r __node:=robot_state_publisher --params-file /tmp/launch_params_dp6hg2si'].

@@ -15,6 +15,9 @@ SPAWN_YAW="-2.221151"
 LOG_DIR_OVERRIDE=""
 MAP_PROFILE="stable"
 MAP_YAML_OVERRIDE=""
+READINESS_TIMEOUT_SEC=90
+READINESS_OUTPUT_JSON=""
+READINESS_OUTPUT_MD=""
 
 usage() {
   cat <<'EOF'
@@ -42,6 +45,9 @@ while [ "$#" -gt 0 ]; do
     --map-profile) MAP_PROFILE="$2"; shift 2 ;;
     --map-yaml) MAP_YAML_OVERRIDE="$2"; shift 2 ;;
     --log-dir) LOG_DIR_OVERRIDE="$2"; shift 2 ;;
+    --readiness-timeout-sec) READINESS_TIMEOUT_SEC="$2"; shift 2 ;;
+    --readiness-output-json) READINESS_OUTPUT_JSON="$2"; shift 2 ;;
+    --readiness-output-md) READINESS_OUTPUT_MD="$2"; shift 2 ;;
     --help|-h) usage; exit 0 ;;
     *) echo "[stage1_step30p1][ERROR] unknown argument: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -86,6 +92,18 @@ if [ -n "$LOG_DIR_OVERRIDE" ]; then
 fi
 PID_DIR="$LOG_DIR/pids"
 mkdir -p "$LOG_DIR" "$PID_DIR"
+if [ -z "$READINESS_OUTPUT_JSON" ]; then
+  READINESS_OUTPUT_JSON="$LOG_DIR/lifecycle_readiness_report_v0_1.json"
+fi
+if [ -z "$READINESS_OUTPUT_MD" ]; then
+  READINESS_OUTPUT_MD="$LOG_DIR/lifecycle_readiness_report_v0_1.md"
+fi
+if [[ "$READINESS_OUTPUT_JSON" != /* ]]; then
+  READINESS_OUTPUT_JSON="$REPO_ROOT/$READINESS_OUTPUT_JSON"
+fi
+if [[ "$READINESS_OUTPUT_MD" != /* ]]; then
+  READINESS_OUTPUT_MD="$REPO_ROOT/$READINESS_OUTPUT_MD"
+fi
 
 source_ros_setup() {
   local had_nounset=0
@@ -315,7 +333,43 @@ cat > "$LOG_DIR/bringup_result.json" <<EOF
   "ros_domain_id": "$ROS_DOMAIN_ID",
   "gui": $GUI,
   "spawn_pose": {"x": $SPAWN_X, "y": $SPAWN_Y, "z": $SPAWN_Z, "yaw": $SPAWN_YAW},
-  "log_dir": "$LOG_DIR"
+  "log_dir": "$LOG_DIR",
+  "readiness_report_json": "$READINESS_OUTPUT_JSON",
+  "readiness_report_md": "$READINESS_OUTPUT_MD",
+  "readiness_timeout_sec": $READINESS_TIMEOUT_SEC,
+  "readiness_succeeded": false
+}
+EOF
+
+echo "[stage1_step30p1] waiting for Nav2 lifecycle/map/FollowPath readiness"
+/usr/bin/python3 "$REPO_ROOT/tools/stage1_step30p1/wait_stage1_step30p1_nav2_readiness.py" \
+  --stage-output-dir "$STAGE_OUTPUT_DIR" \
+  --timeout-sec "$READINESS_TIMEOUT_SEC" \
+  --output-json "$READINESS_OUTPUT_JSON" \
+  --output-md "$READINESS_OUTPUT_MD" \
+  > "$LOG_DIR/lifecycle_readiness_wait.log" 2>&1 || {
+    echo "[stage1_step30p1][ERROR] Nav2 lifecycle readiness failed. See $READINESS_OUTPUT_JSON and $LOG_DIR/nav2.log" >&2
+    exit 24
+  }
+
+cat > "$LOG_DIR/bringup_result.json" <<EOF
+{
+  "artifact_type": "step30s2_bringup_launch_result",
+  "stage_output_dir": "$STAGE_OUTPUT_DIR",
+  "world": "$WORLD",
+  "map": "$MAP_YAML",
+  "map_profile": "$MAP_PROFILE",
+  "nav2_params": "$NAV2_PARAMS",
+  "nav2_launch": "$NAV2_LAUNCH",
+  "turtlebot3_model_sdf": "$TB3_SDF_MODEL",
+  "ros_domain_id": "$ROS_DOMAIN_ID",
+  "gui": $GUI,
+  "spawn_pose": {"x": $SPAWN_X, "y": $SPAWN_Y, "z": $SPAWN_Z, "yaw": $SPAWN_YAW},
+  "log_dir": "$LOG_DIR",
+  "readiness_report_json": "$READINESS_OUTPUT_JSON",
+  "readiness_report_md": "$READINESS_OUTPUT_MD",
+  "readiness_timeout_sec": $READINESS_TIMEOUT_SEC,
+  "readiness_succeeded": true
 }
 EOF
 

@@ -1,7 +1,7 @@
 {
   "artifact_type": "step30s7_semantic_route_waypoints",
   "bridge_planner_avoids_structural_walls_except_selected_gateway_carves": true,
-  "created_utc": "2026-05-14T11:42:32.874224+00:00",
+  "created_utc": "2026-05-14T12:59:13.007630+00:00",
   "gateway_sequence": [
     "gw_00824_r1_r3_01",
     "gw_00824_r3_r8_01",

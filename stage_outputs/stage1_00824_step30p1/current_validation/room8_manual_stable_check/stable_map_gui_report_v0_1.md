@@ -1,7 +1,7 @@
 # Stage1 Stable Map GUI Report
 
-Succeeded: `True`
-Failure reason: `None`
+Succeeded: `False`
+Failure reason: `bringup failed`
 
 Accepted historical wording remains: `Step30P1 repaired execution succeeded with clean forward-only fallback.`
 
@@ -17,7 +17,7 @@ Accepted historical wording remains: `Step30P1 repaired execution succeeded with
 - How far is the room15 interior target from r7-r15 gateway? `None`
 - How far is it from walls/occupied cells? `None`
 - Did Gazebo GUI launch? `True`
-- Did RViz launch? `True`
+- Did RViz launch? `False`
 - Which RViz config was used? `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/00824_stage1_step30p1_bev_semantic_route_demo.rviz`
 - Was a BEV/floorplan visible in RViz? `True`
 - Were route/gateway/room/topology overlay markers published? `True`

@@ -1,0 +1,41 @@
+{
+  "active_route_projection_code_hard_codes_room15": false,
+  "active_route_projection_code_hard_codes_route_room_ids": false,
+  "artifact_type": "step30s7_gateway_generalization_readiness_report",
+  "created_utc": "2026-05-14T13:33:55.268242+00:00",
+  "externalized": {
+    "forbidden_gateway_pairs": [
+      "r14_r15",
+      "r15_r16",
+      "r3_r11",
+      "r3_r15",
+      "r8_r14",
+      "r7_r16"
+    ],
+    "gateway_hypotheses_path": "stage1_process/gateway_extraction/assets/00824_step30b_gateway_hypotheses_with_roles_v0_1.json",
+    "projection_inputs": [
+      "stage1_process/room_segmentation/assets/00824_step30a_global_room_mask_v0_1.npy",
+      "stage1_process/room_segmentation/assets/00824_step30a_layered_bev_v0_1.npz",
+      "maps/h8r2_gateway_preserving_masks.npz"
+    ],
+    "selected_gateway_pairs": {
+      "r14_r16": "gw_00824_r14_r16_01",
+      "r1_r3": "gw_00824_r1_r3_01",
+      "r3_r7": "gw_00824_r3_r7_01",
+      "r3_r8": "gw_00824_r3_r8_01",
+      "r7_r11": "gw_00824_r7_r11_02",
+      "r7_r14": "gw_00824_r7_r14_01",
+      "r7_r15": "gw_00824_r7_r15_01",
+      "r8_r11": "gw_00824_r8_r11_01"
+    }
+  },
+  "full_multi_scene_gateway_generalization_claimed": false,
+  "readiness_summary": "Step30S7 externalizes obvious route/projection constants and uses request-aware inclusion, but does not claim full multi-scene gateway extraction generalization.",
+  "scene_specific_remaining": [
+    "The config is still for scene 00824 and depends on scene-local gateway artifacts.",
+    "Gateway extraction itself is not re-run as a multi-scene truth-blind package in Step30S7.",
+    "Topology quality still depends on the selected gateway artifact produced for this scene."
+  ],
+  "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
+  "version": "v0_1"
+}

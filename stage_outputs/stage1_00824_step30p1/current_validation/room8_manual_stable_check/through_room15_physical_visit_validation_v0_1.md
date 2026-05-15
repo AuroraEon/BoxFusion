@@ -2,7 +2,7 @@
 
 - `artifact_type`: `through_room_physical_visit_validation`
 - `version`: `v0_2`
-- `created_utc`: `2026-05-14T11:46:22.162501+00:00`
+- `created_utc`: `2026-05-14T13:00:02.610949+00:00`
 - `all_through_rooms_success`: `True`
 - `gateway_only_failure_guard_passed`: `True`
 - `route_topology_includes_room15`: `False`

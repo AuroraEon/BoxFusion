@@ -1,6 +1,6 @@
 # Stage1 Stable Full-Scene Map GUI Command Transcript
 
-Started: `2026-05-14T11:42:30Z`
+Started: `2026-05-14T12:59:11Z`
 Run id: `room8_manual_stable_check`
 Stage output: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1`
 Evidence: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check`
@@ -156,7 +156,7 @@ Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_v
   "active_route_projection_code_hard_codes_room15": false,
   "active_route_projection_code_hard_codes_route_room_ids": false,
   "artifact_type": "step30s7_gateway_generalization_readiness_report",
-  "created_utc": "2026-05-14T11:42:31.710689+00:00",
+  "created_utc": "2026-05-14T12:59:11.936183+00:00",
   "externalized": {
     "forbidden_gateway_pairs": [
       "r14_r15",
@@ -356,292 +356,14 @@ nav2: not running
 /home/ws/workspace/BoxFusion/tools/stage1_step30p1/launch_stage1_step30p1_gazebo_nav2.sh --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --ros-domain-id 84 --gui --map-profile stage1_full_scene_occupancy --log-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/bringup_logs --spawn-x 5.85 --spawn-y 2.1 --spawn-yaw 3.141593 
 ```
 
-Exit code: `0`
+Exit code: `21`
 Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/bringup.log`
 
 <details><summary>tail</summary>
 
 ```text
 [stage1_step30p1] starting Gazebo world: /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/nav2/worlds/00824_step30p1_large_continuous_floor_world.sdf
-[stage1_step30p1] starting robot_state_publisher
-[stage1_step30p1] spawning TurtleBot3 burger
-[stage1_step30p1] starting static map->odom TF
-[stage1_step30p1] starting Nav2 staticloc stack
-[stage1_step30p1] launched. Logs: /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/bringup_logs
-gazebo: running pid=10447
-robot_state_publisher: running pid=10695
-static_tf: running pid=10744
-nav2: running pid=10746
-```
-</details>
-
-## dataplane_probe
-
-```bash
-/usr/bin/python3 /home/ws/workspace/BoxFusion/tools/stage1_step30p1/probe_stage1_step30p1_dataplane.py --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --timeout-sec 25 --output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/dataplane_probe_result_v0_1.json --output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/dataplane_probe_result_v0_1.md 
-```
-
-Exit code: `0`
-Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/dataplane_probe.log`
-
-<details><summary>tail</summary>
-
-```text
-    "odom_nonzero_rate": true,
-    "scan_nonzero_rate": true,
-    "staticloc_dataplane_ready": true,
-    "tf_base_footprint_to_base_link_exists_or_recoverable": true,
-    "tf_base_link_to_base_scan_exists": true,
-    "tf_has_frames": true,
-    "tf_map_to_odom_exists": true,
-    "tf_odom_to_robot_exists": true,
-    "tf_static_has_frames": true
-  },
-  "samples": {
-    "map": {
-      "frame_id": "map",
-      "height": 1167,
-      "origin": {
-        "x": -50.0,
-        "y": -50.0
-      },
-      "resolution": 0.05000000074505806,
-      "width": 1227
-    },
-    "odom": {
-      "child_frame_id": "base_footprint",
-      "frame_id": "odom",
-      "x": 5.849963,
-      "y": 2.099998,
-      "yaw": -3.141586
-    },
-    "scan": {
-      "finite_count": 0,
-      "finite_max": null,
-      "finite_min": null,
-      "frame_id": "base_scan",
-      "range_count": 360
-    }
-  },
-  "stage_output_dir": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1",
-  "tf_edges_observed": {
-    "/tf": [
-      "base_link->wheel_left_link",
-      "base_link->wheel_right_link",
-      "odom->base_footprint"
-    ],
-    "/tf_static": [
-      "base_footprint->base_link",
-      "base_link->base_scan",
-      "base_link->caster_back_link",
-      "base_link->imu_link",
-      "map->odom"
-    ]
-  },
-  "tf_frames": {
-    "base_footprint_to_base_link": true,
-    "base_link_to_base_scan": true,
-    "map_to_base_footprint": true,
-    "map_to_base_link": true,
-    "map_to_odom": true,
-    "odom_to_base_footprint": true,
-    "odom_to_base_link": true
-  },
-  "topics": {
-    "/clock": {
-      "message_count_observed": 250,
-      "message_received": true,
-      "observed_rate_hz": 9.97,
-      "probe_window_sec": 25.0,
-      "publisher_count": 1,
-      "subscription_count": 21
-    },
-    "/cmd_vel": {
-      "message_count_observed": 0,
-      "message_received": false,
-      "observed_rate_hz": 0.0,
-      "probe_window_sec": 25.0,
-      "publisher_count": 4,
-      "subscription_count": 2
-    },
-    "/map": {
-      "message_count_observed": 1,
-      "message_received": true,
-      "observed_rate_hz": 0.0,
-      "probe_window_sec": 25.0,
-      "publisher_count": 1,
-      "subscription_count": 3
-    },
-    "/odom": {
-      "message_count_observed": 735,
-      "message_received": true,
-      "observed_rate_hz": 29.379,
-      "probe_window_sec": 25.0,
-      "publisher_count": 1,
-      "subscription_count": 2
-    },
-    "/scan": {
-      "message_count_observed": 125,
-      "message_received": true,
-      "observed_rate_hz": 4.993,
-      "probe_window_sec": 25.0,
-      "publisher_count": 1,
-      "subscription_count": 4
-    },
-    "/tf": {
-      "message_count_observed": 1221,
-      "message_received": true,
-      "observed_rate_hz": 48.833,
-      "probe_window_sec": 25.0,
-      "publisher_count": 2,
-      "subscription_count": 7
-    },
-    "/tf_static": {
-      "message_count_observed": 503,
-      "message_received": true,
-      "observed_rate_hz": 20.075,
-      "probe_window_sec": 25.0,
-      "publisher_count": 2,
-      "subscription_count": 7
-    }
-  },
-  "version": "v0_1"
-}
-```
-</details>
-
-## route_execution
-
-```bash
-/usr/bin/python3 /home/ws/workspace/BoxFusion/tools/stage1_step30p1/run_stage1_step30p1_route.py --stage-output-dir /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1 --waypoints-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/semantic_route_waypoints_v0_1.json --expected-room-chain room_1\,room_3\,room_8\,room_11\,room_7\,room_14\,room_16 --expected-gateway-sequence gw_00824_r1_r3_01\,gw_00824_r3_r8_01\,gw_00824_r8_r11_01\,gw_00824_r7_r11_02\,gw_00824_r7_r14_01\,gw_00824_r14_r16_01 --allow-non-step30p1-truth --from-start --reset-to-route-start --follow-path-timeout-sec 480 --goal-timeout-sec 180 --split-dwell-source room8_interior_terminal --split-dwell-sec 3.0 --output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/route_execution_result_v0_1.json --output-md /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/route_execution_result_v0_1.md --trajectory-output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/trajectory_sample_result_v0_1.json --latest-slice-output-json /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/latest_follow_path_slice_v0_1.json 
-```
-
-Exit code: `0`
-Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/route_execution.log`
-
-<details><summary>tail</summary>
-
-```text
-      "x": -4.05007923422477,
-      "y": -3.1172399140626053,
-      "yaw": 1.3262450123647689,
-      "z": 0.008731069906242698
-    },
-    {
-      "frame_id": "map",
-      "sample_index": 347,
-      "source": "/tf map->base_footprint",
-      "time_wall_sec": 1778759176.3609564,
-      "x": -4.030331805378739,
-      "y": -3.036123460184378,
-      "yaw": 1.3531416479833278,
-      "z": 0.008730186151798785
-    },
-    {
-      "frame_id": "map",
-      "sample_index": 348,
-      "source": "/tf map->base_footprint",
-      "time_wall_sec": 1778759176.8811066,
-      "x": -4.0066887187762585,
-      "y": -2.945943508966543,
-      "yaw": 1.2930380790284792,
-      "z": 0.008730994066348675
-    },
-    {
-      "frame_id": "map",
-      "sample_index": 349,
-      "source": "/tf map->base_footprint",
-      "time_wall_sec": 1778759177.384319,
-      "x": -3.973017011902213,
-      "y": -2.8694810788760066,
-      "yaw": 0.9954921279864242,
-      "z": 0.008731092999967398
-    },
-    {
-      "frame_id": "map",
-      "sample_index": 350,
-      "source": "/tf map->base_footprint",
-      "time_wall_sec": 1778759177.9012024,
-      "x": -3.914535931403454,
-      "y": -2.8065228852750854,
-      "yaw": 0.6517002375747938,
-      "z": 0.008722524221752641
-    },
-    {
-      "frame_id": "map",
-      "sample_index": 351,
-      "source": "/tf map->base_footprint",
-      "time_wall_sec": 1778759178.4108293,
-      "x": -3.8437442296050173,
-      "y": -2.7672906366529326,
-      "yaw": 0.38732577766516246,
-      "z": 0.008715376737913064
-    },
-    {
-      "frame_id": "map",
-      "sample_index": 352,
-      "source": "/tf map->base_footprint",
-      "time_wall_sec": 1778759178.9221437,
-      "x": -3.7603887907480265,
-      "y": -2.742867397098598,
-      "yaw": 0.20178943752179426,
-      "z": 0.008729130372559409
-    },
-    {
-      "frame_id": "map",
-      "sample_index": 353,
-      "source": "/tf map->base_footprint",
-      "time_wall_sec": 1778759179.433632,
-      "x": -3.6722079962529888,
-      "y": -2.733039425851144,
-      "yaw": 0.030648994684203006,
-      "z": 0.008725889836935992
-    },
-    {
-      "frame_id": "map",
-      "sample_index": 354,
-      "source": "/tf map->base_footprint",
-      "time_wall_sec": 1778759179.943909,
-      "x": -3.5897495290175314,
-      "y": -2.7354342408960677,
-      "yaw": -0.07154635298157347,
-      "z": 0.008729664308928742
-    },
-    {
-      "frame_id": "map",
-      "sample_index": 355,
-      "source": "/tf map->base_footprint",
-      "time_wall_sec": 1778759180.4542475,
-      "x": -3.5015649018653128,
-      "y": -2.7431712889323823,
-      "yaw": -0.10141512917930112,
-      "z": 0.008711329991192772
-    },
-    {
-      "frame_id": "map",
-      "sample_index": 356,
-      "source": "/tf map->base_footprint",
-      "time_wall_sec": 1778759180.961276,
-      "x": -3.4244277247951684,
-      "y": -2.7518680417420556,
-      "yaw": -0.11954433446292546,
-      "z": 0.008730945852025414
-    },
-    {
-      "frame_id": "map",
-      "sample_index": 357,
-      "source": "/tf map->base_footprint",
-      "time_wall_sec": 1778759181.4768677,
-      "x": -3.4065374610600547,
-      "y": -2.754015511180483,
-      "yaw": -0.21463127814197644,
-      "z": 0.00873106672696086
-    }
-  ],
-  "version": "v0_1",
-  "waypoint_results": [],
-  "waypoints_source": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/semantic_route_waypoints_v0_1.json"
-}
+[stage1_step30p1][ERROR] /clock did not publish. See /home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_validation/room8_manual_stable_check/bringup_logs/gazebo.log
 ```
 </details>
 
@@ -668,7 +390,7 @@ Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_v
   },
   "terminal": {
     "artifact_type": "stage1_room16_terminal_quality_validation",
-    "created_utc": "2026-05-14T11:46:22.162542+00:00",
+    "created_utc": "2026-05-14T13:00:02.610988+00:00",
     "final_arrival_action_success": true,
     "final_pose": {
       "frame_id": "map",
@@ -702,7 +424,7 @@ Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_v
   "through": {
     "all_through_rooms_success": true,
     "artifact_type": "through_room_physical_visit_validation",
-    "created_utc": "2026-05-14T11:46:22.162501+00:00",
+    "created_utc": "2026-05-14T13:00:02.610949+00:00",
     "gateway_only_failure_guard_passed": true,
     "room15_inside_dwell_sec": 0.0,
     "room15_inside_sample_count": 0,
@@ -751,7 +473,7 @@ Log: `/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/current_v
     "boundary_tolerance_point_violations_step30s7": 0,
     "boundary_tolerance_segment_violations_h8r2": 0,
     "boundary_tolerance_segment_violations_step30s7": 0,
-    "created_utc": "2026-05-14T11:46:22.310656+00:00",
+    "created_utc": "2026-05-14T13:00:02.745354+00:00",
     "final_wall_validation_passed": true,
     "h8r2_map_yaml": "/home/ws/workspace/BoxFusion/stage_outputs/stage1_00824_step30p1/maps/h8r2_gateway_preserving_nav_map.yaml",
     "max_wall_penetration_or_occupied_crossing": 0,

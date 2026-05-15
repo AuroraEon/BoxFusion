@@ -75,7 +75,8 @@ def write_md(path: Path, payload: dict[str, Any]) -> None:
     for key, value in payload.get("tf_frames", {}).items():
         lines.append(f"- `{key}`: `{value}`")
     for key, value in actions.items():
-        lines.append(f"- action `{key}`: `{value}`")
+        role = (payload.get("action_server_roles") or {}).get(key)
+        lines.append(f"- action `{key}`: `{value}` role=`{role}`")
     if payload.get("missing_conditions"):
         lines.extend(["", "## Missing Conditions", ""])
         lines.extend(f"- `{item}`" for item in payload["missing_conditions"])
@@ -186,7 +187,12 @@ class DataplaneProbe(Node):  # pragma: no cover - ROS runtime only
             return False
 
 
-def run_probe(timeout_sec: float, stage_output: Path) -> dict[str, Any]:
+def run_probe(
+    timeout_sec: float,
+    stage_output: Path,
+    require_compute_path_to_pose: bool = False,
+    require_navigate_to_pose: bool = False,
+) -> dict[str, Any]:
     if IMPORT_ERROR:
         return {
             "artifact_type": "step30s2_bringup_dataplane_report",
@@ -232,7 +238,24 @@ def run_probe(timeout_sec: float, stage_output: Path) -> dict[str, Any]:
             "follow_path_action_server_ready": action_servers["/follow_path"],
             "compute_path_to_pose_action_server_ready": action_servers["/compute_path_to_pose"],
         }
-        required = list(readiness)
+        required = [
+            "clock_publishing",
+            "odom_nonzero_rate",
+            "scan_nonzero_rate",
+            "tf_has_frames",
+            "tf_static_has_frames",
+            "map_received",
+            "cmd_vel_exists_with_subscribers",
+            "tf_map_to_odom_exists",
+            "tf_odom_to_robot_exists",
+            "tf_base_footprint_to_base_link_exists_or_recoverable",
+            "tf_base_link_to_base_scan_exists",
+            "follow_path_action_server_ready",
+        ]
+        if require_compute_path_to_pose:
+            required.append("compute_path_to_pose_action_server_ready")
+        if require_navigate_to_pose:
+            required.append("navigate_to_pose_action_server_ready")
         readiness["staticloc_dataplane_ready"] = all(bool(readiness[key]) for key in required)
         missing = [key for key in required if not readiness[key]]
         return {
@@ -246,6 +269,14 @@ def run_probe(timeout_sec: float, stage_output: Path) -> dict[str, Any]:
             "tf_frames": tf_frames,
             "tf_edges_observed": {key: sorted([f"{a}->{b}" for a, b in value]) for key, value in node.tf_edges.items()},
             "action_servers": action_servers,
+            "action_server_roles": {
+                "/follow_path": "hard_blocker_for_current_route_execution",
+                "/compute_path_to_pose": "non_blocking_diagnostic_unless_planning_gate_requested",
+                "/navigate_to_pose": "non_blocking_diagnostic_for_follow_path_runtime",
+            },
+            "required_conditions": required,
+            "require_compute_path_to_pose": require_compute_path_to_pose,
+            "require_navigate_to_pose": require_navigate_to_pose,
             "node_names": sorted(set(node.get_node_names())),
             "samples": {"odom": node.latest_odom, "scan": node.latest_scan, "map": node.latest_map},
             "readiness": readiness,
@@ -269,12 +300,19 @@ def main() -> int:
     parser.add_argument("--timeout-sec", type=float, default=15.0)
     parser.add_argument("--output-json", type=Path)
     parser.add_argument("--output-md", type=Path)
+    parser.add_argument("--require-compute-path-to-pose", action="store_true")
+    parser.add_argument("--require-navigate-to-pose", action="store_true")
     args = parser.parse_args()
     stage_output = args.stage_output_dir.resolve()
     out_dir = stage_output / "post_restructure_validation"
     output_json = args.output_json or out_dir / "step30s2_bringup_dataplane_report_v0_1.json"
     output_md = args.output_md or out_dir / "step30s2_bringup_dataplane_report_v0_1.md"
-    payload = run_probe(args.timeout_sec, stage_output)
+    payload = run_probe(
+        args.timeout_sec,
+        stage_output,
+        require_compute_path_to_pose=args.require_compute_path_to_pose,
+        require_navigate_to_pose=args.require_navigate_to_pose,
+    )
     write_json(output_json, payload)
     write_md(output_md, payload)
     print(json.dumps(payload, indent=2, sort_keys=True))

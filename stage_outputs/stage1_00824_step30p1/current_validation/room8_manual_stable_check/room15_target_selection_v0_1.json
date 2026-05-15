@@ -1,6 +1,6 @@
 {
   "artifact_type": "step30s7_target_selection",
-  "created_utc": "2026-05-14T11:42:32.877412+00:00",
+  "created_utc": "2026-05-14T12:59:13.011498+00:00",
   "interior_targets": {
     "room_16": {
       "derivation_method": "room_mask_free_cell_maximizing_gateway_clearance_and_wall_distance",
