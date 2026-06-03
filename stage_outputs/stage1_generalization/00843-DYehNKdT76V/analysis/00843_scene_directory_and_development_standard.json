@@ -1,0 +1,353 @@
+{
+  "scene_id": "00843-DYehNKdT76V",
+  "standard_status": "draft_for_00843_generalization",
+  "source_contract": {
+    "accepted_baseline": "stage_outputs/stage1_00824_step30p1",
+    "runtime_tools_read_only": [
+      "tools/stage1_nav",
+      "tools/stage1_step30p1"
+    ],
+    "audit_reports": [
+      "analysis/00824_readonly_pipeline_audit.md",
+      "analysis/00824_readonly_pipeline_audit.json",
+      "analysis/00843_00824_string_leakage_scan.md",
+      "analysis/00824_readonly_file_inventory.txt"
+    ],
+    "accepted_wording": "Step30P1 repaired execution succeeded with clean forward-only fallback.",
+    "caveats": [
+      "dual-wall visualizations are audit-critical and contract-critical but not necessarily runtime-loaded",
+      "committed/public topology JSONs alone do not prove Nav2 execution",
+      "runtime-loaded files and audit-critical files must be distinguished",
+      "the 00824 audit is sufficient for 00843 design but not sufficient for 00843 Nav2 rerun"
+    ]
+  },
+  "non_goals": [
+    "run live ROS/Gazebo/Nav2/RViz",
+    "fix DWB",
+    "execute FollowPath or NavigateToPose",
+    "claim 00843 GUI/Nav2 success",
+    "modify or migrate the accepted 00824 baseline",
+    "modify tools/stage1_nav or tools/stage1_step30p1",
+    "create a new StepXX evidence lane",
+    "write under runtime_stage1_frozen_evidence"
+  ],
+  "directory_layout": {
+    "input": {
+      "expected_files": [
+        "dataset_manifest.json",
+        "scene_config.yaml"
+      ],
+      "purpose": "source-scene identity and input configuration"
+    },
+    "canonical_stage1": {
+      "children": [
+        "raw_outputs",
+        "logs"
+      ],
+      "purpose": "canonical Stage1 raw outputs and logs"
+    },
+    "committed_public": {
+      "purpose": "curated public topology and room-world outputs"
+    },
+    "process": {
+      "floors": {
+        "floor_1": [
+          "room_segmentation/assets",
+          "room_segmentation/visualizations",
+          "gateway/assets",
+          "gateway/visualizations",
+          "maps"
+        ],
+        "floor_2": [
+          "room_segmentation/assets",
+          "room_segmentation/visualizations",
+          "gateway/assets",
+          "gateway/visualizations",
+          "maps"
+        ]
+      },
+      "vertical_transitions": [
+        "candidates",
+        "validated",
+        "visualizations"
+      ],
+      "objects": [
+        "detections_or_candidates",
+        "room_object_index",
+        "object_query_targets",
+        "visualizations"
+      ]
+    },
+    "routes": [
+      "room_routes",
+      "cross_floor_routes",
+      "object_routes"
+    ],
+    "runtime": {
+      "profiles": [
+        "floor_1_nav2",
+        "floor_2_nav2",
+        "cross_floor_nav2",
+        "object_nav_room_level"
+      ],
+      "assets": [
+        "gazebo",
+        "nav2",
+        "rviz",
+        "overlay"
+      ]
+    },
+    "runs": [
+      "rejected",
+      "accepted",
+      "active"
+    ],
+    "validation": [
+      "route",
+      "map",
+      "gateway",
+      "floor_transition",
+      "object_target",
+      "gui"
+    ],
+    "diagnostics": [
+      "leakage_scan",
+      "scene_isolation",
+      "failure_reports"
+    ],
+    "analysis": {
+      "purpose": "scene-specific policy, audit, and design reports"
+    }
+  },
+  "artifact_categories": [
+    {
+      "name": "source_data",
+      "directory": "input",
+      "git_default": "curated_small_manifests_only"
+    },
+    {
+      "name": "canonical_stage1_outputs",
+      "directory": "canonical_stage1",
+      "git_default": "not_committed_by_default"
+    },
+    {
+      "name": "committed_public_artifacts",
+      "directory": "committed_public",
+      "git_default": "curated_if_team_decides"
+    },
+    {
+      "name": "process_intermediates",
+      "directory": "process",
+      "git_default": "not_committed_by_default"
+    },
+    {
+      "name": "runtime_assets",
+      "directory": "runtime",
+      "git_default": "not_committed_by_default"
+    },
+    {
+      "name": "run_logs",
+      "directory": "runs",
+      "git_default": "not_committed_by_default"
+    },
+    {
+      "name": "validation_results",
+      "directory": "validation",
+      "git_default": "not_committed_by_default_except_curated_reports"
+    },
+    {
+      "name": "diagnostics",
+      "directory": "diagnostics",
+      "git_default": "not_committed_by_default_except_curated_reports"
+    },
+    {
+      "name": "analysis_reports",
+      "directory": "analysis",
+      "git_default": "curated_if_team_decides"
+    }
+  ],
+  "runtime_loaded_vs_audit_critical": {
+    "runtime_loaded": [
+      "map YAML/PGM/NPZ",
+      "route query JSON",
+      "semantic route waypoint JSON",
+      "Gazebo world",
+      "Nav2 launch/config",
+      "RViz config",
+      "overlay topic and namespace config",
+      "spawn pose and static TF parameters",
+      "validation-output path"
+    ],
+    "audit_critical": [
+      "dual-wall visualizations",
+      "gateway_wall_preclose exports",
+      "visual comparison overlays",
+      "source manifests",
+      "failure reports",
+      "directory governance reports"
+    ],
+    "rule": "Do not treat committed/public topology JSONs as proof of Nav2 execution."
+  },
+  "floor_specific_policy": {
+    "required_floor_paths": [
+      "process/floors/floor_1",
+      "process/floors/floor_2",
+      "runtime/profiles/floor_1_nav2",
+      "runtime/profiles/floor_2_nav2"
+    ],
+    "same_frame_requirements": [
+      "map YAML",
+      "map origin",
+      "route waypoints",
+      "spawn pose",
+      "static TF",
+      "room mask",
+      "gateway validation mask",
+      "validation mask"
+    ]
+  },
+  "vertical_transition_policy": {
+    "candidate_dir": "process/vertical_transitions/candidates",
+    "validated_dir": "process/vertical_transitions/validated",
+    "visualization_dir": "process/vertical_transitions/visualizations",
+    "route_dir": "routes/cross_floor_routes",
+    "runtime_profile_dir": "runtime/profiles/cross_floor_nav2",
+    "validation_dir": "validation/floor_transition",
+    "limitation": "Full cross-floor Nav2 is not complete and must not be claimed."
+  },
+  "object_navigation_policy": {
+    "candidate_dir": "process/objects/detections_or_candidates",
+    "room_object_index_dir": "process/objects/room_object_index",
+    "query_target_dir": "process/objects/object_query_targets",
+    "route_dir": "routes/object_routes",
+    "runtime_profile_dir": "runtime/profiles/object_nav_room_level",
+    "validation_dir": "validation/object_target",
+    "required_artifacts_before_claim": [
+      "object candidate artifact",
+      "object-room index",
+      "object query result",
+      "object target/approach point",
+      "object route",
+      "object-level validation"
+    ],
+    "limitation": "Object-level navigation is not complete and must not be claimed."
+  },
+  "runtime_profile_policy": {
+    "must_be_scene_specific": true,
+    "must_be_floor_specific": true,
+    "must_name": [
+      "map files",
+      "route files",
+      "Gazebo world",
+      "Nav2 launch/config",
+      "RViz config",
+      "overlay topic/namespaces",
+      "spawn pose",
+      "static TF assumptions",
+      "validation-output directory",
+      "run id",
+      "floor id"
+    ],
+    "forbidden_active_dependencies": [
+      "stage_outputs/stage1_00824_step30p1",
+      "tools/stage1_nav",
+      "tools/stage1_step30p1",
+      "copied 00824 world/config/RViz files",
+      "00824 marker conventions"
+    ]
+  },
+  "run_log_policy": {
+    "active": "runs/active",
+    "rejected": "runs/rejected",
+    "accepted": "runs/accepted",
+    "rejected_evidence_rule": "Rejected runs remain diagnostic evidence and must not be used as success evidence."
+  },
+  "validation_policy": {
+    "categories": [
+      "route",
+      "map",
+      "gateway",
+      "floor_transition",
+      "object_target",
+      "gui"
+    ],
+    "gui_success_requires": [
+      "Gazebo display",
+      "RViz BEV semantic overlay",
+      "00843 scene-isolated runtime assets"
+    ]
+  },
+  "generated_artifact_git_policy": {
+    "default": "do_not_commit_generated_artifacts_or_logs",
+    "generated_artifacts": [
+      "stage_outputs scene directories",
+      "runs",
+      "maps",
+      "route outputs",
+      "validation logs",
+      "diagnostics",
+      "generated runtime assets",
+      "screenshots",
+      "point clouds",
+      "cache files"
+    ],
+    "possible_curated_commit_material": [
+      "schemas",
+      "README files",
+      "policy drafts",
+      "contract reports",
+      "small stable manifests"
+    ]
+  },
+  "code_location_policy": {
+    "stage_outputs_code_allowed": false,
+    "future_centralized_code_paths": [
+      "tools/stage1_nav_generalized",
+      "tools/stage1_runtime"
+    ],
+    "implemented_in_this_task": false,
+    "copy_00824_scripts_now": false
+  },
+  "old_code_deletion_policy": {
+    "delete_unused_old_versions_after_generalized_validation": true,
+    "historical_evidence_locations": [
+      "stage_outputs/runs",
+      "analysis",
+      "diagnostics"
+    ],
+    "delete_00824_now": false
+  },
+  "scene_isolation_gate": [
+    "no active 00824 Gazebo world is loaded",
+    "no active 00824 RViz config is loaded",
+    "no active 00824 Nav2 launch/config defaults are loaded",
+    "no active 00824 map path is loaded",
+    "no active 00824 route or waypoint file is loaded",
+    "no active 00824 marker namespace or topic is required",
+    "map YAML, map origin, route waypoints, spawn pose, static TF, room mask, gateway validation mask, and validation mask all share the same 00843 floor frame",
+    "RViz /map displays the 00843 floor map",
+    "overlay topics/namespaces are 00843/floor-specific",
+    "validation outputs are written under the 00843 run directory",
+    "rejected previous 00843 runs remain marked rejected"
+  ],
+  "not_yet_claimable": [
+    "00843 GUI/Nav2 success",
+    "AMCL usage",
+    "manual cmd_vel",
+    "physical robot deployment",
+    "full collision-free guarantee",
+    "online object detection",
+    "object-level navigation completion",
+    "full cross-floor Nav2 completion",
+    "full multi-scene gateway extraction generalization",
+    "physical room visit from route inclusion alone",
+    "GUI success from Gazebo-only display"
+  ],
+  "next_steps": [
+    "quarantine or replace active copied 00824 runtime assets under the 00843 scene directory",
+    "create 00843/floor-specific runtime profile manifests",
+    "stage 00843/floor-specific Gazebo, Nav2, RViz, overlay, map, route, frame, and validation path contracts",
+    "re-run the static scene-isolation gate",
+    "only then consider a future runtime task"
+  ]
+}
