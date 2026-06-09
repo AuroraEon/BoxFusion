@@ -170,7 +170,7 @@ def generate_summary(
     runtime: dict[str, Any],
 ) -> dict[str, Any]:
     """Generate final summary.json."""
-    return {
+    summary = {
         "artifact_type": "task17c_summary",
         "created_utc": now_iso(),
         "project_name": "RSLG-SLAM",
@@ -184,3 +184,35 @@ def generate_summary(
         "failure_layer": runtime.get("failure_layer"),
         "failure_reason": runtime.get("failure_reason"),
     }
+
+    runtime_evidence_fields = [
+        "target_room",
+        "floor_id",
+        "runtime_execution_attempted",
+        "gazebo_started_without_nav2",
+        "no_nav2_action_servers_active",
+        "object_facing_approach_success",
+        "approach_position_reached",
+        "approach_yaw_aligned",
+        "yaw_facing_success",
+        "yaw_drift_success",
+        "wall_crossing_validation_passed",
+        "final_control_path_source",
+        "rounding_attempted",
+        "rounding_applied",
+        "fallback_to_original",
+        "fallback_reason",
+        "rounded_candidate_validation_passed",
+        "rounded_candidate_length_m",
+        "final_control_path_length_m",
+        "final_distance_to_approach_candidate_m",
+        "final_yaw_error_rad",
+        "trajectory_length_m",
+        "runtime_duration_sec",
+        "trajectory_minimum_clearance_m",
+    ]
+    for field in runtime_evidence_fields:
+        if field in runtime:
+            summary[field] = runtime[field]
+
+    return summary

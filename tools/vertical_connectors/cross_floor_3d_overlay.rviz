@@ -1,0 +1,67 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 1
+      Class: rviz_default_plugins/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Line Style:
+        Line Width: 0.03
+        Value: Lines
+      Name: Grid
+      Plane: XY
+      Plane Cell Count: 20
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: RSLG Cross-Floor Markers
+      Namespaces:
+        claim_boundary: true
+        connector_endpoint_markers: true
+        floor_context: true
+        floor_1_rooms: true
+        floor_2_rooms: true
+        floor_transition_markers: true
+        route_node_labels: true
+        same_floor_route: true
+        stair_connector_centerline: true
+      Queue Size: 10
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /rslg/cross_floor_markers
+      Value: true
+  Enabled: true
+  Global Options:
+    Background Color: 248; 248; 246
+    Fixed Frame: world
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 14
+      Focal Point:
+        X: -5.8
+        Y: 3.4
+        Z: 2.6
+      Name: Oblique 3D
+      Pitch: 0.65
+      Target Frame: <Fixed Frame>
+      Yaw: 0.85
+    Saved: ~
+Window Geometry:
+  Height: 900
+  Width: 1300

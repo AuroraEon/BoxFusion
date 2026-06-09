@@ -109,6 +109,9 @@ def simplify_control_path(
         "wall_crossing_validation_passed": validation["wall_crossing_validation_passed"],
         "minimum_clearance_m": validation.get("minimum_clearance_m"),
         "tested_sample_count": validation["tested_sample_count"],
+        "invalid_segment_count": validation.get("invalid_segment_count", 0),
+        "invalid_segments": validation.get("invalid_segments", []),
+        "invalid_samples": validation.get("invalid_samples", []),
     }
     return control_points, report
 
@@ -312,9 +315,15 @@ def build_control_path(
     simplification_report["created_utc"] = now_iso()
     simplification_report["artifact_type"] = "task17c_control_path_simplification_report"
 
-    # Round
+    simplified_valid = bool(simplification_report["wall_crossing_validation_passed"])
+    dense_validation = planner.validate_polyline(dense_points, require_inflated=True)
+    dense_valid = bool(dense_validation["wall_crossing_validation_passed"])
+    fallback_to_dense = not simplified_valid and dense_valid
+    rounding_input = simplified_path if simplified_valid else list(dense_points)
+
+    # Round the simplified path, or the validated dense fallback when simplification failed.
     control_path, rounding_report = round_control_path(
-        simplified_path, planner, semantic_anchors_list,
+        rounding_input, planner, semantic_anchors_list,
         min_clearance_threshold=params.inflation_radius_m * 0.6,
         chaikin_iterations=params.corner_rounding_chaikin_iterations,
         resample_spacing=params.corner_rounding_resample_spacing,
@@ -328,15 +337,55 @@ def build_control_path(
     fallback_to_original = rounding_report.get("fallback_to_original", False)
     rounded_candidate_validation_passed = rounding_report.get("wall_crossing_validation_passed", False) if not fallback_to_original else False
 
-    if fallback_to_original:
+    if not simplified_valid and not dense_valid:
+        control_path = list(dense_points)
+        final_control_path_source = "dense_route_fallback"
+        fallback_reason = "simplified and dense paths failed inflated occupancy validation"
+    elif fallback_to_original and fallback_to_dense:
+        final_control_path_source = "dense_route_fallback"
+        fallback_reason = "simplified path invalid; rounded dense fallback invalid; using validated dense route"
+    elif fallback_to_original:
         final_control_path_source = "fallback_simplified_control_path"
         fallback_reason = "rounded path failed wall-crossing validation"
     elif rounding_applied:
         final_control_path_source = "rounded_control_path"
-        fallback_reason = None
+        fallback_reason = "simplified path invalid; rounded validated dense fallback selected" if fallback_to_dense else None
+    elif fallback_to_dense:
+        final_control_path_source = "dense_route_fallback"
+        fallback_reason = "simplified path invalid; validated dense route selected"
     else:
         final_control_path_source = "simplified_control_path"
         fallback_reason = "no corners rounded" if rounding_report.get("corners_considered", 0) > 0 else "no corners to round"
+
+    final_validation = planner.validate_polyline(control_path, require_inflated=True)
+    simplification_report.update({
+        "dense_route_generation_passed": dense_valid,
+        "dense_route_waypoint_count": len(dense_points),
+        "dense_route_minimum_clearance_m": dense_validation.get("minimum_clearance_m"),
+        "simplification_attempted": True,
+        "simplified_path_validation_passed": simplified_valid,
+        "simplified_path_failure_reason": None if simplified_valid else "control path failed inflated occupancy validation",
+        "simplified_invalid_segment_count": simplification_report.get("invalid_segment_count", 0),
+        "dense_fallback_attempted": not simplified_valid,
+        "dense_fallback_validation_passed": dense_valid if not simplified_valid else False,
+        "resampled_dense_fallback_attempted": False,
+        "resampled_dense_fallback_validation_passed": False,
+        "rounding_attempted": True,
+        "rounding_applied": rounding_applied,
+        "rounded_candidate_validation_passed": rounded_candidate_validation_passed,
+        "fallback_to_dense_or_resampled": fallback_to_dense,
+        "final_control_path_source": final_control_path_source,
+        "final_control_path_length_m": round(route_length(control_path), 6),
+        "final_control_path_minimum_clearance_m": final_validation.get("minimum_clearance_m"),
+        "wall_crossing_validation_passed": final_validation["wall_crossing_validation_passed"],
+        "endpoint_consistency_passed": (
+            bool(control_path)
+            and distance(control_path[0], dense_points[0]) < 1e-6
+            and distance(control_path[-1], dense_points[-1]) < 1e-6
+        ),
+        "failure_layer": None if final_validation["wall_crossing_validation_passed"] else "control_path_fallback_validation",
+        "failure_reason": None if final_validation["wall_crossing_validation_passed"] else "final control path failed inflated occupancy validation",
+    })
 
     return ControlPathResult(
         control_path=control_path,

@@ -1,0 +1,25 @@
+project_name: RSLG-SLAM
+task_name: task23a_clean_obj178_quadruped_proxy_gui_demo_rebuild
+workspace_root: /home/ws/workspace/BoxFusion
+claim_boundary: visual_kinematic_proxy_only
+
+stage_output_dir: stage_outputs/stage1_generalization/00843-DYehNKdT76V/clean_rerun
+map_yaml: stage_outputs/stage1_generalization/00843-DYehNKdT76V/clean_rerun/maps/floor_2/stage1_floor_2_stable_occupancy_map.yaml
+task23a_output_dir: stage_outputs/stage1_generalization/00843-DYehNKdT76V/tasks/task23a_clean_obj178_quadruped_proxy_gui_demo_rebuild
+
+robot_profile: tools/object_nav/robot_profiles/champ_reference_kinematic_proxy.yaml
+query: bed
+object_id: obj_178
+start_room: room_11
+floor_id: floor_2
+timeout_sec: 420
+ros_domain_id: 84
+
+controller_profile_source: explicit_obj178_dense_fallback_old_controller_reproduced_2_of_2
+controller_parameters:
+  max_linear_speed: 0.10
+  lookahead_distance: 0.60
+  lookahead_min: 0.40
+  lookahead_max: 1.00
+  angular_smoothing_alpha: 0.40
+  angular_rate_limit: 0.15

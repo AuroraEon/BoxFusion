@@ -133,8 +133,22 @@ class OccupancyPlanner:
 
     def validate_polyline(self, points: list[dict[str, Any]], require_inflated: bool = False) -> dict[str, Any]:
         tested: list[tuple[int, int]] = []
-        for l, r in zip(points, points[1:]):
-            tested.extend(self.sampled_cells(l, r))
+        invalid_segments: list[dict[str, Any]] = []
+        for segment_index, (l, r) in enumerate(zip(points, points[1:])):
+            segment_cells = self.sampled_cells(l, r)
+            tested.extend(segment_cells)
+            segment_invalid = [
+                rc for rc in segment_cells
+                if not (self.traversable(rc) if require_inflated else self.free(rc))
+            ]
+            if segment_invalid:
+                invalid_segments.append({
+                    "segment_index": segment_index,
+                    "start": {"x": float(l["x"]), "y": float(l["y"])},
+                    "end": {"x": float(r["x"]), "y": float(r["y"])},
+                    "invalid_sample_count": len(segment_invalid),
+                    "first_invalid_world_xy": [round(v, 6) for v in self.xy(segment_invalid[0])],
+                })
         if len(points) == 1:
             tested.append(self.rc(float(points[0]["x"]), float(points[0]["y"])))
         invalid = [
@@ -152,6 +166,8 @@ class OccupancyPlanner:
             "tested_sample_count": len(tested),
             "occupied_or_invalid_sample_count": len(invalid),
             "invalid_samples": invalid[:30],
+            "invalid_segment_count": len(invalid_segments),
+            "invalid_segments": invalid_segments,
             "minimum_clearance_m": round(min(clearances), 6) if clearances else None,
         }
 

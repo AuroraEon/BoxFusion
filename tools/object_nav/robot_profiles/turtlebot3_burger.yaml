@@ -1,0 +1,25 @@
+robot_name: turtlebot3_burger
+robot_type: differential_mobile_base
+base_frame: base_footprint
+pose_source: tf
+odom_frame: odom
+map_frame: map
+cmd_topic: /cmd_vel
+cmd_msg_type: geometry_msgs/msg/Twist
+command_model: differential
+max_linear_speed: 0.12
+max_angular_speed: 0.38
+footprint_radius_m: 0.17
+footprint_polygon: null
+inflation_radius_m: 0.17
+min_clearance_m: 0.17
+control_rate_hz: 10.0
+yaw_drift_limit_m: 0.12
+settle_time_sec: 0.70
+supports_cmd_vel: true
+requires_gait_controller: false
+spawn_launch: tools/object_nav/launch_lightweight_gazebo_turtlebot3.sh
+required_env:
+  TURTLEBOT3_MODEL: burger
+known_limitations:
+  - Validated only for 00843 floor_2 same-floor no-Nav2 object-facing approach runs.

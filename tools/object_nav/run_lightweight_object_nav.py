@@ -16,8 +16,6 @@ import argparse
 import json
 import math
 import os
-import re
-import subprocess
 import sys
 import time
 from collections import deque
@@ -49,6 +47,9 @@ from lightweight_backend.reporting import (
     generate_approach_yaw_validation_report, generate_summary,
 )
 from lightweight_backend.visualization import plot_visualization, plot_approach_yaw_local_zoom
+from lightweight_backend.tracking_quality import generate_tracking_quality_report, plot_tracking_error
+from robot_adapters import adapter_type_for_profile, create_robot_adapter, load_robot_profile
+from robot_adapters.base_adapter import BaseRobotAdapter
 
 from object_nav_common import canonical_object_id, load_index, run_query  # noqa: E402
 
@@ -58,13 +59,7 @@ TASKS_ROOT = ROOT / "stage_outputs/stage1_generalization" / SCENE_ID / "tasks"
 DEFAULT_STAGE = ROOT / "stage_outputs/stage1_generalization" / SCENE_ID / "clean_rerun"
 DEFAULT_OUTPUT = TASKS_ROOT / TASK_NAME
 INDEX_PATH = TASKS_ROOT / "task14a_object_nav_experiment_adapter/object_candidate_index_v0_1.json"
-LAUNCHER = THIS_DIR / "launch_lightweight_gazebo_turtlebot3.sh"
-
-NAV2_ACTIONS = {"/compute_path_to_pose", "/follow_path", "/navigate_to_pose"}
-NAV2_PROCESS_PATTERN = re.compile(
-    r"planner_server|controller_server|bt_navigator|behavior_server|recoveries_server|"
-    r"waypoint_follower|nav2_map_server|lifecycle_manager_navigation|nav2_costmap"
-)
+DEFAULT_ROBOT_PROFILE = THIS_DIR / "robot_profiles/turtlebot3_burger.yaml"
 
 
 def rel(path: Path | str | None) -> str | None:
@@ -80,6 +75,33 @@ def read_json(path: Path, default: Any = None) -> Any:
     if not path.exists():
         return default
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def apply_robot_profile_defaults(args: argparse.Namespace, profile: dict[str, Any]) -> None:
+    """Fill task18-compatible controller defaults from the selected robot profile."""
+    profile_defaults = {
+        "max_linear_speed": "max_linear_speed",
+        "max_angular_speed": "max_angular_speed",
+        "lookahead_distance": "lookahead_distance",
+        "lookahead_min": "lookahead_min",
+        "lookahead_max": "lookahead_max",
+        "angular_smoothing_alpha": "angular_smoothing_alpha",
+        "angular_rate_limit": "angular_rate_limit",
+        "inflation_radius_m": "inflation_radius_m",
+        "xy_drift_limit_m": "yaw_drift_limit_m",
+        "approach_settle_sec": "settle_time_sec",
+        "control_rate_hz": "control_rate_hz",
+    }
+    for arg_name, profile_key in profile_defaults.items():
+        if getattr(args, arg_name, None) is None:
+            fallback = {
+                "lookahead_distance": 0.60,
+                "lookahead_min": 0.40,
+                "lookahead_max": 1.00,
+                "angular_smoothing_alpha": 0.40,
+                "angular_rate_limit": 0.15,
+            }.get(arg_name)
+            setattr(args, arg_name, profile.get(profile_key, fallback))
 
 
 def point_in_polygon(x: float, y: float, polygon: list[list[float]]) -> bool:
@@ -362,35 +384,6 @@ def approach_candidate_fn(args: argparse.Namespace, selected: dict[str, Any], se
     return candidate if valid else None, proxy
 
 
-# ─── Process utilities ───────────────────────────────────────────────────────────
-
-def process_snapshot() -> dict[str, Any]:
-    result = subprocess.run(["ps", "-eo", "pid=,ppid=,stat=,comm=,args="], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    relevant = [l.strip() for l in result.stdout.splitlines() if re.search(r"gzserver|gazebo|turtlebot3|nav2_|planner_server|controller_server|bt_navigator|costmap", l, re.I) and "ps -eo" not in l]
-    forbidden = [l for l in relevant if NAV2_PROCESS_PATTERN.search(l)]
-    return {"relevant_processes": relevant, "forbidden_nav2_processes": forbidden, "no_nav2_processes_present": not forbidden}
-
-
-def graph_snapshot(env: dict[str, str]) -> dict[str, Any]:
-    def capture(cmd: list[str]) -> dict[str, Any]:
-        try:
-            r = subprocess.run(cmd, cwd=ROOT, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
-            return {"stdout": r.stdout, "returncode": r.returncode}
-        except Exception as e:
-            return {"stdout": "", "returncode": None, "error": str(e)}
-    actions = capture(["ros2", "action", "list"])
-    action_rows = {l.strip() for l in (actions.get("stdout") or "").splitlines() if l.strip()}
-    topics = capture(["ros2", "topic", "list"])
-    nodes = capture(["ros2", "node", "list"])
-    forbidden_actions = sorted(action_rows.intersection(NAV2_ACTIONS))
-    forbidden_nodes = sorted({l.strip() for l in (nodes.get("stdout") or "").splitlines() if NAV2_PROCESS_PATTERN.search(l)})
-    return {
-        "topics": topics, "actions": actions, "nodes": nodes,
-        "forbidden_nav2_actions": forbidden_actions, "forbidden_nav2_nodes": forbidden_nodes,
-        "no_nav2_actions_or_nodes_present": not forbidden_actions and not forbidden_nodes,
-    }
-
-
 # ─── ROS velocity execution ─────────────────────────────────────────────────────
 
 def run_velocity_execution(
@@ -401,50 +394,17 @@ def run_velocity_execution(
     proxy: dict[str, Any],
     planner: OccupancyPlanner,
     out: Path,
+    adapter: BaseRobotAdapter,
 ) -> dict[str, Any]:
     try:
         import rclpy
-        from geometry_msgs.msg import Twist
-        from rclpy.duration import Duration
-        from rclpy.node import Node
-        from tf2_ros import Buffer, TransformException, TransformListener
     except Exception as exc:
         return {"success": False, "failure_layer": "pose_feedback", "failure_reason": f"ROS imports unavailable: {exc}"}
-
-    def yaw_from_q(q):
-        return math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
-
-    class ControlNode(Node):
-        def __init__(self):
-            super().__init__("task18_lightweight_executor")
-            self.tf_buffer = Buffer(cache_time=Duration(seconds=20.0))
-            self.tf_listener = TransformListener(self.tf_buffer, self)
-            self.publisher = self.create_publisher(Twist, "/cmd_vel", 10)
-
-        def pose(self):
-            try:
-                t = self.tf_buffer.lookup_transform("map", "base_footprint", rclpy.time.Time(), timeout=Duration(seconds=0.15))
-                return {"x": float(t.transform.translation.x), "y": float(t.transform.translation.y),
-                        "yaw": yaw_from_q(t.transform.rotation), "frame_id": "map", "source": "/tf map->base_footprint",
-                        "stamp_ns": int(t.header.stamp.sec) * 1000000000 + int(t.header.stamp.nanosec)}
-            except TransformException:
-                return None
-
-        def command(self, linear: float, angular: float):
-            msg = Twist()
-            msg.linear.x = float(linear)
-            msg.angular.z = float(angular)
-            self.publisher.publish(msg)
-
-        def stop(self):
-            for _ in range(4):
-                self.command(0.0, 0.0)
-                rclpy.spin_once(self, timeout_sec=0.03)
 
     result: dict[str, Any] = {"success": False, "failure_layer": None, "failure_reason": None}
     controller = CurvatureController(params)
     rclpy.init(args=None)
-    node = ControlNode()
+    node = adapter.initialize_ros_node()
     try:
         # Wait for pose
         deadline = time.monotonic() + 10.0
@@ -549,9 +509,8 @@ def run_velocity_execution(
         })
         return result
     finally:
-        node.stop()
         try:
-            node.destroy_node()
+            adapter.destroy_ros_node()
         finally:
             if rclpy.ok():
                 rclpy.shutdown()
@@ -564,61 +523,40 @@ def run_velocity_execution(
 def execute_runtime(params: ControllerParams, dense_route: dict[str, Any], control_path: list[dict[str, Any]],
                     candidate: dict[str, Any], proxy: dict[str, Any], planner: OccupancyPlanner, out: Path,
                     args: argparse.Namespace) -> dict[str, Any]:
-    env = dict(os.environ)
-    env["ROS_DOMAIN_ID"] = str(args.ros_domain_id)
-    env.setdefault("TURTLEBOT3_MODEL", "burger")
-    os.environ["ROS_DOMAIN_ID"] = env["ROS_DOMAIN_ID"]
-    os.environ.setdefault("TURTLEBOT3_MODEL", env["TURTLEBOT3_MODEL"])
+    adapter = create_robot_adapter(
+        args.robot_profile_data,
+        root=ROOT,
+        out=out,
+        stage_output_dir=args.stage_output_dir,
+        floor_id=args.floor_id,
+        map_yaml=planner.map_yaml,
+        ros_domain_id=str(args.ros_domain_id),
+        gui=args.gui,
+        top_level_command=sys.argv,
+    )
 
-    pre_process = process_snapshot()
-    write_json(out / "process_list_before_bringup.json", pre_process)
-
-    profile = args.stage_output_dir / "runtime/profiles/floor_2_nav2_task12_controller_robust/runtime_profile.json"
-    start_command = [
-        str(LAUNCHER), "--stage-output-dir", str(args.stage_output_dir), "--floor-id", args.floor_id,
-        "--map-yaml", str(planner.map_yaml), "--runtime-profile", str(profile), "--ros-domain-id", str(args.ros_domain_id),
-        "--log-dir", str(out / "bringup_logs"), "--gui" if args.gui else "--headless",
-    ]
-    stop_command = [str(LAUNCHER), "--stage-output-dir", str(args.stage_output_dir), "--runtime-profile", str(profile),
-                    "--ros-domain-id", str(args.ros_domain_id), "--log-dir", str(out / "bringup_logs"), "--stop"]
-
-    write_json(out / "exact_runtime_commands.json", {
-        "artifact_type": "task17c_exact_runtime_commands", "created_utc": now_iso(),
-        "top_level_command": sys.argv, "launcher_start": start_command, "launcher_stop": stop_command,
-        "prohibited_nav2_actions": sorted(NAV2_ACTIONS),
-    })
-
-    launch_result = subprocess.run(start_command, cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    write_text(out / "no_nav2_bringup.log", launch_result.stdout)
-
-    graph = graph_snapshot(env)
-    process_after = process_snapshot()
-    write_json(out / "ros_graph_no_nav2.json", graph)
-
-    topics = graph.get("topics", {}).get("stdout") or ""
-    ready = bool(launch_result.returncode == 0 and graph["no_nav2_actions_or_nodes_present"]
-                 and process_after["no_nav2_processes_present"] and "/clock" in topics)
-
-    write_json(out / "bringup_readiness.json", {
-        "artifact_type": "task17c_bringup_readiness", "created_utc": now_iso(),
-        "gazebo_started_without_nav2": ready, "failure_reason": None if ready else "bringup failed",
-    })
+    adapter.start_bringup()
+    readiness = adapter.wait_until_ready()
+    ready = bool(readiness.get("gazebo_started_without_nav2"))
+    no_nav2 = adapter.validate_no_nav2()
 
     runtime: dict[str, Any]
     try:
         if not ready:
             runtime = {"success": False, "failure_layer": "no_nav2_bringup", "failure_reason": "bringup failed"}
         else:
-            runtime = run_velocity_execution(params, dense_route, control_path, candidate, proxy, planner, out)
+            runtime = run_velocity_execution(params, dense_route, control_path, candidate, proxy, planner, out, adapter)
     finally:
         if args.keep_open_sec > 0 and ready:
             time.sleep(args.keep_open_sec)
-        subprocess.run(stop_command, cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        adapter.stop_bringup()
 
     runtime.update({
         "runtime_execution_attempted": ready,
         "gazebo_started_without_nav2": ready,
-        "no_nav2_action_servers_active": not graph.get("forbidden_nav2_actions"),
+        "no_nav2_action_servers_active": no_nav2.get("no_nav2_action_servers_active"),
+        "robot_profile": adapter.profile.get("robot_name"),
+        "robot_profile_path": rel(args.robot_profile),
     })
 
     # Trajectory metrics
@@ -648,26 +586,32 @@ def main() -> int:
     parser.add_argument("--gui", action="store_true")
     parser.add_argument("--keep-open-sec", type=float, default=0.0)
     parser.add_argument("--ros-domain-id", default=os.environ.get("ROS_DOMAIN_ID", "84"))
+    parser.add_argument("--robot-profile", type=Path, default=DEFAULT_ROBOT_PROFILE)
     parser.add_argument("--pose-source", choices=["tf", "odom", "gazebo"], default="tf")
     # Controller params (defaults match task17e)
-    parser.add_argument("--max-linear-speed", type=float, default=0.12)
-    parser.add_argument("--max-angular-speed", type=float, default=0.38)
-    parser.add_argument("--lookahead-distance", type=float, default=0.60)
+    parser.add_argument("--max-linear-speed", type=float, default=None)
+    parser.add_argument("--max-angular-speed", type=float, default=None)
+    parser.add_argument("--lookahead-distance", type=float, default=None)
+    parser.add_argument("--lookahead-min", type=float, default=None)
+    parser.add_argument("--lookahead-max", type=float, default=None)
+    parser.add_argument("--angular-smoothing-alpha", type=float, default=None)
+    parser.add_argument("--angular-rate-limit", type=float, default=None)
     parser.add_argument("--heading-kp", type=float, default=0.80)
     parser.add_argument("--goal-tolerance", type=float, default=0.30)
     parser.add_argument("--approach-position-tolerance-m", type=float, default=0.35)
     parser.add_argument("--approach-controller-stop-tolerance-m", type=float, default=0.30)
     parser.add_argument("--approach-creep-max-attempts", type=int, default=5)
     parser.add_argument("--approach-creep-step-m", type=float, default=0.04)
-    parser.add_argument("--approach-settle-sec", type=float, default=0.7)
+    parser.add_argument("--approach-settle-sec", type=float, default=None)
     parser.add_argument("--approach-creep-boundary-upper-m", type=float, default=0.38)
     parser.add_argument("--yaw-internal-tolerance-rad", type=float, default=0.38)
     parser.add_argument("--yaw-report-tolerance-rad", type=float, default=0.50)
-    parser.add_argument("--xy-drift-limit-m", type=float, default=0.12)
+    parser.add_argument("--xy-drift-limit-m", type=float, default=None)
     parser.add_argument("--timeout-sec", type=float, default=240.0)
     parser.add_argument("--path-deviation-limit-m", type=float, default=0.75)
-    parser.add_argument("--inflation-radius-m", type=float, default=0.17)
+    parser.add_argument("--inflation-radius-m", type=float, default=None)
     parser.add_argument("--path-spacing-m", type=float, default=0.20)
+    parser.add_argument("--control-rate-hz", type=float, default=None)
     parser.add_argument("--yaw-kp", type=float, default=1.0)
     parser.add_argument("--max-yaw-angular-speed", type=float, default=0.25)
     parser.add_argument("--yaw-timeout-sec", type=float, default=30.0)
@@ -679,6 +623,9 @@ def main() -> int:
     args.output_dir = args.output_dir.resolve()
     if args.map_yaml:
         args.map_yaml = args.map_yaml.resolve()
+    args.robot_profile = args.robot_profile.resolve()
+    args.robot_profile_data = load_robot_profile(args.robot_profile)
+    apply_robot_profile_defaults(args, args.robot_profile_data)
     if not args.object_id:
         args.object_id = None
 
@@ -691,6 +638,8 @@ def main() -> int:
         max_linear_speed=args.max_linear_speed,
         max_angular_speed=args.max_angular_speed,
         lookahead_base=args.lookahead_distance,
+        lookahead_min=args.lookahead_min,
+        lookahead_max=args.lookahead_max,
         heading_kp=args.heading_kp,
         goal_tolerance=args.goal_tolerance,
         approach_position_tolerance_m=args.approach_position_tolerance_m,
@@ -709,10 +658,29 @@ def main() -> int:
         path_deviation_limit_m=args.path_deviation_limit_m,
         inflation_radius_m=args.inflation_radius_m,
         path_spacing_m=args.path_spacing_m,
+        control_rate_hz=args.control_rate_hz,
         control_path_spacing=args.control_path_spacing,
         control_path_gateway_spacing=args.control_path_gateway_spacing,
+        angular_smoothing_alpha=args.angular_smoothing_alpha,
+        angular_rate_limit=args.angular_rate_limit,
     )
-    write_json(out / "controller_params.json", params.to_json())
+    write_json(out / "robot_profile_report.json", {
+        "artifact_type": "task20_robot_profile_report",
+        "created_utc": now_iso(),
+        "robot_profile_path": rel(args.robot_profile),
+        "robot_profile": args.robot_profile_data,
+        "adapter": adapter_type_for_profile(args.robot_profile_data),
+        "nav2_used": False,
+        "quadruped_support_claimed": False,
+        "quadruped_visual_kinematic_proxy_claimed": (
+            args.robot_profile_data.get("claim_boundary") == "visual_kinematic_proxy_only"
+        ),
+    })
+    controller_report = params.to_json()
+    controller_report["cmd_vel_topic"] = args.robot_profile_data.get("cmd_topic")
+    controller_report["robot_profile"] = args.robot_profile_data.get("robot_name")
+    controller_report["robot_profile_path"] = rel(args.robot_profile)
+    write_json(out / "controller_params.json", controller_report)
 
     # Load artifacts
     artifacts, failure = load_artifacts(args, out)
@@ -755,7 +723,10 @@ def main() -> int:
     write_json(out / "control_path_simplification_report.json", cp_result.simplification_report)
 
     if not cp_result.simplification_report["wall_crossing_validation_passed"]:
-        runtime.update({"failure_layer": "control_path_simplification", "failure_reason": "control path failed occupancy validation"})
+        runtime.update({
+            "failure_layer": cp_result.simplification_report.get("failure_layer"),
+            "failure_reason": cp_result.simplification_report.get("failure_reason"),
+        })
         write_json(out / "runtime_result.json", runtime)
         return 1
 
@@ -784,6 +755,15 @@ def main() -> int:
         "final_control_path_length_m": round(route_length(control_path), 6),
         "rounded_candidate_validation_passed": cp_result.rounded_candidate_validation_passed,
         "fallback_reason": cp_result.fallback_reason,
+        "dense_route_generation_passed": cp_result.simplification_report.get("dense_route_generation_passed"),
+        "simplified_path_validation_passed": cp_result.simplification_report.get("simplified_path_validation_passed"),
+        "simplified_invalid_segment_count": cp_result.simplification_report.get("simplified_invalid_segment_count"),
+        "dense_fallback_attempted": cp_result.simplification_report.get("dense_fallback_attempted"),
+        "dense_fallback_validation_passed": cp_result.simplification_report.get("dense_fallback_validation_passed"),
+        "fallback_to_dense_or_resampled": cp_result.simplification_report.get("fallback_to_dense_or_resampled"),
+        "final_control_path_minimum_clearance_m": cp_result.simplification_report.get("final_control_path_minimum_clearance_m"),
+        "wall_crossing_validation_passed": cp_result.simplification_report.get("wall_crossing_validation_passed"),
+        "endpoint_consistency_passed": cp_result.simplification_report.get("endpoint_consistency_passed"),
     })
 
     # Approach candidate
@@ -823,7 +803,24 @@ def main() -> int:
             "fallback_to_original": cp_result.fallback_to_original,
             "rounded_candidate_validation_passed": cp_result.rounded_candidate_validation_passed,
             "fallback_reason": cp_result.fallback_reason,
+            "dense_fallback_attempted": cp_result.simplification_report.get("dense_fallback_attempted"),
+            "dense_fallback_validation_passed": cp_result.simplification_report.get("dense_fallback_validation_passed"),
+            "fallback_to_dense_or_resampled": cp_result.simplification_report.get("fallback_to_dense_or_resampled"),
+            "simplified_path_validation_passed": cp_result.simplification_report.get("simplified_path_validation_passed"),
+            "simplified_invalid_segment_count": cp_result.simplification_report.get("simplified_invalid_segment_count"),
+            "final_control_path_minimum_clearance_m": cp_result.simplification_report.get("final_control_path_minimum_clearance_m"),
         })
+        traj = read_json(out / "executed_trajectory.json", {}).get("samples") or []
+        commands = read_json(out / "cmd_vel_log.json", {}).get("commands") or []
+        tracking_quality = generate_tracking_quality_report(
+            traj, control_path, commands, params.max_angular_speed)
+        write_json(out / "tracking_quality_report.json", tracking_quality)
+        plot_tracking_error(tracking_quality, out / "route_following_tracking_error.png")
+        runtime["tracking_quality_metrics"] = {
+            key: value for key, value in tracking_quality.items()
+            if key not in {"tracking_error_samples", "threshold_checks", "thresholds", "artifact_type"}
+        }
+        runtime["tracking_quality_passed"] = tracking_quality["tracking_quality_passed"]
         write_json(out / "runtime_result.json", runtime)
 
         # Post-execution visualization
