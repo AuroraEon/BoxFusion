@@ -1,0 +1,37 @@
+{
+  "manifest_id": "workspace_policy_manifest_v0_1",
+  "schema_version": "0.1",
+  "source_code_roots": [
+    "boxfusion/",
+    "tools/",
+    "config/",
+    "tests/",
+    "docs/rslg_slam/"
+  ],
+  "future_canonical_tool_root": "tools/rslg_pipeline/",
+  "task_evidence_pattern": "stage_outputs/.../tasks/<task_id>_<task_name>/",
+  "stage_outputs_policy": {
+    "classification": "generated_output_workspace",
+    "permanent_project_truth": false,
+    "historical_stage_outputs_required_for_static_validation": false,
+    "may_be_backed_up_deleted_or_regenerated_by_explicit_user_decision": true,
+    "ordinary_tasks_must_not_restore_historical_outputs": true,
+    "task_evidence_may_create_small_new_paths": true
+  },
+  "large_rerun_candidate_pattern": "<scene_root>/<task_id>_*_candidate/",
+  "canonical_promoted_output_policy": {
+    "path_name": "clean_rerun",
+    "ordinary_tasks_may_write": false,
+    "policy": "Canonical promoted output only."
+  },
+  "reference_baseline_policy": {
+    "path": "stage_outputs/stage1_00824_step30p1",
+    "ordinary_tasks_may_modify": false,
+    "required_for_static_validation": false,
+    "policy": "Historical generated reference baseline. Read-only when present; absence after explicit user backup/deletion is not a static-validation failure."
+  },
+  "runtime_evidence_policy": {
+    "must_not_promote_into": "committed_public",
+    "ordinary_tasks_may_commit_runtime_evidence": false
+  }
+}

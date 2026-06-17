@@ -1,9 +1,0 @@
-{
-  "scene_id": "00824-Dd4bFSTQ8gi",
-  "artifact_type": "step30b2_failure_analysis",
-  "step": "step30b2",
-  "version": "v0_1",
-  "remaining_mismatch_count": 0,
-  "remaining_mismatches": [],
-  "honest_result": "No remaining positive-pair mismatches."
-}

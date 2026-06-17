@@ -1,0 +1,26 @@
+{
+  "manifest_id": "gitignore_plan_manifest_v0_1",
+  "schema_version": "0.1",
+  "created_by_task": "task25d_rslg_manifest_refinement_gitignore_and_tool_migration_plan",
+  "gitignore_modified_by_task25d": false,
+  "plan_document": "docs/rslg_slam/gitignore_plan.md",
+  "patch_candidate": "docs/rslg_slam/gitignore_candidate.patch",
+  "proposed_ignore_areas": [
+    "generated stage and candidate outputs",
+    "runtime evidence and logs",
+    "temporary and scratch files",
+    "large media, ROS bag, point cloud, map, and model artifacts",
+    "build/install products",
+    "task-local evidence directories under stage_outputs/"
+  ],
+  "intended_tracked_areas": [
+    "boxfusion/",
+    "tools/",
+    "config/",
+    "tests/",
+    "docs/rslg_slam/"
+  ],
+  "stage_outputs_policy": "stage_outputs/ should generally be ignored by git, but protected as local evidence/output and not deleted.",
+  "protected_local_evidence_policy": "Ignoring generated evidence does not authorize deletion, overwriting, or promotion into clean_rerun.",
+  "application_policy": "Do not apply the candidate patch until a future task explicitly authorizes a minimal .gitignore change and reviews current tracking needs."
+}

@@ -1,8 +1,0 @@
-[INFO] [launch]: All log files can be found below /home/ws/.ros/log/2026-05-14-20-59-17-879834-DESKTOP-24F4MES-27621
-[INFO] [launch]: Default logging verbosity is set to INFO
-[INFO] [gzserver-1]: process started with pid [27639]
-[INFO] [gzclient   -2]: process started with pid [27642]
-[gzclient   -2] 
-[gzclient   -2] libcurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to fuel.ignitionrobotics.org:443 
-[gzclient   -2] 
-[gzclient   -2] libcurl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to fuel.gazebosim.org:443 

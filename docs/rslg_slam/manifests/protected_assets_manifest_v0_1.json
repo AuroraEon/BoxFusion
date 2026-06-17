@@ -1,0 +1,72 @@
+{
+  "manifest_id": "protected_assets_manifest_v0_1",
+  "schema_version": "0.1",
+  "policy": "Active protected source/docs/config/code assets are distinct from historical generated evidence paths. Historical stage_outputs paths may be archived or deleted by explicit user decision and are not required for static validation.",
+  "active_protected_assets": [
+    {
+      "path": "docs/rslg_slam",
+      "role": "RSLG-SLAM source documentation and manifest contracts",
+      "policy": "ordinary tasks may update only when explicitly requested and consistent with project truth",
+      "ordinary_tasks_may_modify": false,
+      "exists": true
+    },
+    {
+      "path": "tools/rslg_pipeline",
+      "role": "Canonical RSLG-SLAM pipeline tool namespace",
+      "policy": "ordinary tasks may update only for requested pipeline implementation or validation work",
+      "ordinary_tasks_may_modify": false,
+      "exists": true
+    }
+  ],
+  "historical_generated_evidence_paths": [
+    {
+      "path": "stage_outputs/stage1_00824_step30p1",
+      "role": "00824 historical generated reference baseline",
+      "policy": "read-only when present; may be absent after explicit user backup/deletion; not required for static validation",
+      "ordinary_tasks_may_modify": false,
+      "required_for_static_validation": false
+    },
+    {
+      "path": "stage_outputs/stage1_generalization/00843-DYehNKdT76V/clean_rerun",
+      "role": "00843 canonical promoted clean rerun output",
+      "policy": "ordinary tasks must not write into it; may be absent after explicit user backup/deletion; not required for static validation",
+      "ordinary_tasks_may_modify": false,
+      "required_for_static_validation": false
+    },
+    {
+      "path": "stage_outputs/stage1_generalization/00843-DYehNKdT76V/tasks/task24h_cross_floor_visual_proxy_tracking_mode",
+      "role": "task24h visual-kinematic cross-floor tracking evidence",
+      "policy": "historical generated evidence; read-only when present; may be archived/deleted by explicit user decision",
+      "ordinary_tasks_may_modify": false,
+      "required_for_static_validation": false
+    },
+    {
+      "path": "stage_outputs/stage1_generalization/00843-DYehNKdT76V/tasks/task24h2_tracking_demo_hardening_and_gui_evidence_pack",
+      "role": "task24h-related hardening evidence",
+      "policy": "historical generated evidence; read-only when present; may be archived/deleted by explicit user decision",
+      "ordinary_tasks_may_modify": false,
+      "required_for_static_validation": false
+    },
+    {
+      "path": "stage_outputs/stage1_generalization/00843-DYehNKdT76V/tasks/task24i_cross_floor_object_level_tracking_smoke",
+      "role": "task24i object-level cross-floor smoke-test evidence",
+      "policy": "historical generated evidence; read-only when present; may be archived/deleted by explicit user decision",
+      "ordinary_tasks_may_modify": false,
+      "required_for_static_validation": false
+    },
+    {
+      "path": "stage_outputs/stage1_generalization/00843-DYehNKdT76V/tasks/task25b_formal_connector_object_interface_exporter_and_staged_rerun",
+      "role": "task25b staged formal reintegration evidence",
+      "policy": "historical generated evidence; do not promote into clean_rerun unless explicitly authorized; may be archived/deleted by explicit user decision",
+      "ordinary_tasks_may_modify": false,
+      "required_for_static_validation": false
+    },
+    {
+      "path": "stage_outputs/stage1_generalization/00843-DYehNKdT76V/tasks/task25a_stage_a_vertical_connector_and_object_interface_reintegration_preflight",
+      "role": "reintegration_preflight_evidence",
+      "policy": "historical generated evidence; ordinary tasks may not overwrite it when present; may be archived/deleted by explicit user decision",
+      "ordinary_tasks_may_modify": false,
+      "required_for_static_validation": false
+    }
+  ]
+}

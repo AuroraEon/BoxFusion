@@ -1,6 +1,0 @@
-[INFO] [1778765649.367978132] [spawn_entity]: Spawn Entity started
-[INFO] [1778765649.368347940] [spawn_entity]: Loading entity XML from file /opt/ros/foxy/share/turtlebot3_gazebo/models/turtlebot3_burger/model.sdf
-[INFO] [1778765649.369883700] [spawn_entity]: Waiting for service /spawn_entity, timeout = 30
-[INFO] [1778765649.370150961] [spawn_entity]: Waiting for service /spawn_entity
-[INFO] [1778765649.373213085] [spawn_entity]: Calling service /spawn_entity
-[INFO] [1778765649.668617874] [spawn_entity]: Spawn status: SpawnEntity: Successfully spawned entity [turtlebot3_burger]
