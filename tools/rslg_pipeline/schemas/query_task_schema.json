@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rslg_query_task_schema",
+  "title": "RSLGQueryTask",
+  "description": "Input unit for the RSLG-SLAM static Layer 3 planner (plan_query_static). A QueryTask expresses a language/task navigation query plus its expected structured route truth and guardrails. It is consumed to produce an RSLGRouteResult. RSLG-SLAM is the project name; BoxFusion is only a historical repository path.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_name",
+    "schema_version",
+    "query_id",
+    "query_text",
+    "query_type",
+    "scene_id"
+  ],
+  "properties": {
+    "schema_name": { "const": "rslg_query_task" },
+    "schema_version": { "type": "string" },
+    "project_name": { "type": ["string", "null"] },
+    "query_id": { "type": "string" },
+    "query_text": { "type": "string" },
+    "query_type": {
+      "type": "string",
+      "enum": [
+        "object_to_path",
+        "object_in_room",
+        "room_gateway",
+        "floor_connector",
+        "cross_floor_room",
+        "cross_floor_object"
+      ]
+    },
+    "scene_id": { "type": "string" },
+    "start": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "start_pose": { "type": ["object", "array", "null"] },
+        "start_room_id": { "type": ["string", "null"] },
+        "start_floor_id": { "type": ["string", "null"] }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "target_type": {
+          "type": ["string", "null"],
+          "enum": ["object", "room", "gateway", "floor_connector", null]
+        },
+        "target_object_id": { "type": ["string", "null"] },
+        "target_object_category": { "type": ["string", "null"] },
+        "target_room_id": { "type": ["string", "null"] },
+        "target_floor_id": { "type": ["string", "null"] },
+        "target_gateway_id": { "type": ["string", "null"] }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "expected_object_id": { "type": ["string", "null"] },
+        "expected_room_id": { "type": ["string", "null"] },
+        "expected_floor_id": { "type": ["string", "null"] },
+        "expected_room_sequence": { "type": "array", "items": { "type": "string" } },
+        "expected_gateway_sequence": { "type": "array" },
+        "expected_vertical_connector": { "type": ["string", "null"] },
+        "expected_approach_candidate_id": { "type": ["string", "null"] },
+        "forbidden_runtime_goals": { "type": "array", "items": { "type": "string" } },
+        "forbidden_transition_edges": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "support": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "requires_object": { "type": ["boolean", "null"] },
+        "requires_room": { "type": ["boolean", "null"] },
+        "requires_gateway": { "type": ["boolean", "null"] },
+        "requires_floor": { "type": ["boolean", "null"] },
+        "requires_route_contract": { "type": ["boolean", "null"] },
+        "dualmap_native_support": {
+          "type": ["string", "null"],
+          "enum": ["native", "object_proxy", "unsupported", "not_evaluated", null]
+        }
+      }
+    },
+    "evaluation_modes": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "planner_static": { "type": ["boolean", "null"] },
+        "runtime_static": { "type": ["boolean", "null"] },
+        "rviz_demo": { "type": ["boolean", "null"] },
+        "gazebo_smoke": { "type": ["boolean", "null"] }
+      }
+    }
+  }
+}

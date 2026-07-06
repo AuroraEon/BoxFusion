@@ -7,9 +7,9 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Optional
 
+from .project_truth import HISTORICAL_REPOSITORY_PATH, PROJECT_NAME
 
-PROJECT_NAME = "RSLG-SLAM"
-DEFAULT_REPO_ROOT = Path("/home/ws/workspace/BoxFusion")
+DEFAULT_REPO_ROOT = HISTORICAL_REPOSITORY_PATH
 MANIFEST_INDEX_PATH = Path("docs/rslg_slam/manifests/rslg_slam_manifest_index_v0_1.json")
 
 

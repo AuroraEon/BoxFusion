@@ -49,7 +49,7 @@ EXPECTED_OBJECT_ID = "obj_175"
 EXPECTED_OBJECT_LABEL = "curtain"
 EXPECTED_TARGET_FLOOR = "floor_2"
 EXPECTED_TARGET_ROOM = "room_14"
-EXPECTED_APPROACH_ID = "generated_ring_037"
+EXPECTED_APPROACH_ID = "generated_ring_002"
 
 REQUIRED_MANIFEST_KEYS = [
     "project_truth_manifest",

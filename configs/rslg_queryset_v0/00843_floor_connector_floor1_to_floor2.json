@@ -1,0 +1,47 @@
+{
+  "schema_name": "rslg_query_task",
+  "schema_version": "0.1",
+  "project_name": "RSLG-SLAM",
+  "query_id": "00843_floor_connector_floor1_to_floor2",
+  "query_text": "Cross from floor_1 to floor_2 through the vertical connector.",
+  "query_type": "floor_connector",
+  "scene_id": "00843-DYehNKdT76V",
+  "start": {
+    "start_pose": null,
+    "start_room_id": "room_3",
+    "start_floor_id": "floor_1"
+  },
+  "target": {
+    "target_type": "floor_connector",
+    "target_object_id": null,
+    "target_object_category": null,
+    "target_room_id": "room_7",
+    "target_floor_id": "floor_2",
+    "target_gateway_id": "vt_1"
+  },
+  "expected": {
+    "expected_object_id": null,
+    "expected_room_id": "room_7",
+    "expected_floor_id": "floor_2",
+    "expected_room_sequence": ["room_2", "room_3", "room_7", "room_13", "room_14"],
+    "expected_gateway_sequence": [],
+    "expected_vertical_connector": "vt_1",
+    "expected_approach_candidate_id": null,
+    "forbidden_runtime_goals": [],
+    "forbidden_transition_edges": ["vt_1_centerline_e003"]
+  },
+  "support": {
+    "requires_object": false,
+    "requires_room": true,
+    "requires_gateway": true,
+    "requires_floor": true,
+    "requires_route_contract": true,
+    "dualmap_native_support": "unsupported"
+  },
+  "evaluation_modes": {
+    "planner_static": true,
+    "runtime_static": true,
+    "rviz_demo": true,
+    "gazebo_smoke": false
+  }
+}

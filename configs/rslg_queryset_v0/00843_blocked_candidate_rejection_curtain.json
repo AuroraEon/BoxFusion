@@ -1,0 +1,47 @@
+{
+  "schema_name": "rslg_query_task",
+  "schema_version": "0.1",
+  "project_name": "RSLG-SLAM",
+  "query_id": "00843_blocked_candidate_rejection_curtain",
+  "query_text": "Go to the curtain in room_14, but never use the blocked approach.",
+  "query_type": "cross_floor_object",
+  "scene_id": "00843-DYehNKdT76V",
+  "start": {
+    "start_pose": null,
+    "start_room_id": "room_2",
+    "start_floor_id": "floor_1"
+  },
+  "target": {
+    "target_type": "object",
+    "target_object_id": "obj_175",
+    "target_object_category": "curtain",
+    "target_room_id": "room_14",
+    "target_floor_id": "floor_2",
+    "target_gateway_id": null
+  },
+  "expected": {
+    "expected_object_id": "obj_175",
+    "expected_room_id": "room_14",
+    "expected_floor_id": "floor_2",
+    "expected_room_sequence": ["room_2", "room_3", "room_7", "room_13", "room_14"],
+    "expected_gateway_sequence": [],
+    "expected_vertical_connector": "vt_1",
+    "expected_approach_candidate_id": "generated_ring_002",
+    "forbidden_runtime_goals": ["generated_ring_037"],
+    "forbidden_transition_edges": ["vt_1_centerline_e003"]
+  },
+  "support": {
+    "requires_object": true,
+    "requires_room": true,
+    "requires_gateway": false,
+    "requires_floor": true,
+    "requires_route_contract": true,
+    "dualmap_native_support": "object_proxy"
+  },
+  "evaluation_modes": {
+    "planner_static": true,
+    "runtime_static": true,
+    "rviz_demo": false,
+    "gazebo_smoke": false
+  }
+}

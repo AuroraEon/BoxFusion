@@ -1,0 +1,251 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rslg_route_result_schema",
+  "title": "RSLGRouteResult",
+  "description": "Central Layer 3 route-interface artifact for RSLG-SLAM language-to-route navigation. Wraps room/object route artifacts into one schema-consistent structure that the Layer 4 lightweight PID follower, visualization adapters, and Table 2/3/4 evaluators consume. RSLG-SLAM is the project name; BoxFusion is only a historical repository path.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_name",
+    "schema_version",
+    "identity",
+    "start",
+    "target",
+    "semantic_route",
+    "route_segments",
+    "approach",
+    "metric_path",
+    "validation",
+    "light_geometry",
+    "runtime_interface",
+    "claim_boundary",
+    "provenance"
+  ],
+  "properties": {
+    "schema_name": { "const": "rslg_route_result" },
+    "schema_version": { "type": "string" },
+    "identity": {
+      "type": "object",
+      "required": [
+        "query_id",
+        "query_text",
+        "query_type",
+        "scene_id",
+        "planner_version",
+        "created_by"
+      ],
+      "properties": {
+        "query_id": { "type": "string" },
+        "query_text": { "type": ["string", "null"] },
+        "query_type": {
+          "type": "string",
+          "enum": [
+            "object_to_path",
+            "object_in_room",
+            "room_gateway",
+            "floor_connector",
+            "cross_floor_room",
+            "cross_floor_object"
+          ]
+        },
+        "scene_id": { "type": "string" },
+        "planner_version": { "type": "string" },
+        "created_by": { "type": "string" }
+      }
+    },
+    "start": {
+      "type": "object",
+      "required": ["start_pose", "start_room_id", "start_floor_id"],
+      "properties": {
+        "start_pose": { "type": ["object", "array", "null"] },
+        "start_room_id": { "type": ["string", "null"] },
+        "start_floor_id": { "type": ["string", "null"] }
+      }
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "target_type",
+        "target_object_id",
+        "target_object_category",
+        "target_room_id",
+        "target_floor_id",
+        "target_gateway_id"
+      ],
+      "properties": {
+        "target_type": {
+          "type": "string",
+          "enum": ["object", "room", "gateway", "floor_connector"]
+        },
+        "target_object_id": { "type": ["string", "null"] },
+        "target_object_category": { "type": ["string", "null"] },
+        "target_room_id": { "type": ["string", "null"] },
+        "target_floor_id": { "type": ["string", "null"] },
+        "target_gateway_id": { "type": ["string", "null"] }
+      }
+    },
+    "semantic_route": {
+      "type": "object",
+      "required": [
+        "room_sequence",
+        "floor_sequence",
+        "gateway_sequence",
+        "vertical_connector_id",
+        "connector_sequence"
+      ],
+      "properties": {
+        "room_sequence": { "type": "array", "items": { "type": "string" } },
+        "floor_sequence": { "type": "array", "items": { "type": "string" } },
+        "gateway_sequence": { "type": "array" },
+        "vertical_connector_id": { "type": ["string", "null"] },
+        "connector_sequence": { "type": "array" }
+      }
+    },
+    "route_segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "segment_id",
+          "segment_type",
+          "path_found",
+          "validation_status"
+        ],
+        "properties": {
+          "segment_id": { "type": "string" },
+          "segment_type": {
+            "type": "string",
+            "enum": [
+              "same_floor",
+              "vertical_transition",
+              "object_approach",
+              "same_floor_metric",
+              "connector_handoff",
+              "object_approach_metric",
+              "semantic_only"
+            ]
+          },
+          "floor_id": { "type": ["string", "null"] },
+          "from_room_id": { "type": ["string", "null"] },
+          "to_room_id": { "type": ["string", "null"] },
+          "connector_id": { "type": ["string", "null"] },
+          "transition_edge": { "type": ["string", "null"] },
+          "start": { "type": ["array", "object", "null"] },
+          "end": { "type": ["array", "object", "null"] },
+          "waypoints": { "type": ["array", "integer", "null"] },
+          "segment_length": { "type": ["number", "null"] },
+          "path_source": { "type": ["string", "null"] },
+          "path_found": { "type": ["boolean", "null"] },
+          "validation_status": {
+            "type": "string",
+            "enum": ["passed", "failed", "partial", "not_validated", "blocked"]
+          }
+        }
+      }
+    },
+    "approach": {
+      "type": "object",
+      "required": [
+        "approach_policy",
+        "approach_candidates",
+        "selected_approach",
+        "rejected_candidates",
+        "candidate_trial_count"
+      ],
+      "properties": {
+        "approach_policy": { "type": ["string", "null"] },
+        "approach_candidates": { "type": "array" },
+        "selected_approach": { "type": ["object", "null"] },
+        "rejected_candidates": { "type": "array" },
+        "candidate_trial_count": { "type": ["integer", "null"] }
+      }
+    },
+    "metric_path": {
+      "type": "object",
+      "required": ["path", "path_length", "path_found", "endpoint"],
+      "properties": {
+        "path": { "type": ["array", "string", "null"] },
+        "path_length": { "type": ["number", "null"] },
+        "path_found": { "type": ["boolean", "null"] },
+        "endpoint": { "type": ["array", "object", "null"] },
+        "path_source": { "type": ["string", "null"] },
+        "metric_path_scope": { "type": ["string", "null"] }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["validation_status", "route_feasible", "route_validity"],
+      "properties": {
+        "wall_crossing_count": { "type": ["integer", "null"] },
+        "invalid_cell_ratio": { "type": ["number", "null"] },
+        "endpoint_free": { "type": ["boolean", "null"] },
+        "endpoint_connected": { "type": ["boolean", "null"] },
+        "endpoint_clearance": { "type": ["number", "null"] },
+        "endpoint_to_object_distance": { "type": ["number", "null"] },
+        "local_path_valid": { "type": ["boolean", "null"] },
+        "route_feasible": { "type": ["boolean", "null"] },
+        "route_validity": { "type": ["string", "null"] },
+        "validation_status": {
+          "type": "string",
+          "enum": ["passed", "failed", "partial", "not_validated", "blocked"]
+        },
+        "failure_reason": { "type": ["string", "null"] }
+      }
+    },
+    "light_geometry": {
+      "type": "object",
+      "properties": {
+        "stable_map_profile": { "type": ["string", "null"] },
+        "traversability_map_ref": { "type": ["string", "null"] },
+        "room_mask_ref": { "type": ["string", "null"] },
+        "gateway_geometry_ref": { "type": ["string", "null"] },
+        "vertical_connector_ref": { "type": ["string", "null"] },
+        "object_geometry_ref": { "type": ["string", "null"] }
+      }
+    },
+    "runtime_interface": {
+      "type": "object",
+      "required": [
+        "compatible_with_pid_follower",
+        "requires_nav2",
+        "requires_amcl",
+        "runtime_input_ref"
+      ],
+      "properties": {
+        "compatible_with_pid_follower": { "type": "boolean" },
+        "requires_nav2": { "type": "boolean", "const": false },
+        "requires_amcl": { "type": "boolean", "const": false },
+        "runtime_input_ref": { "type": ["string", "null"] }
+      }
+    },
+    "claim_boundary": {
+      "type": "object",
+      "required": [
+        "no_nav2_dependency",
+        "no_amcl_dependency",
+        "no_real_robot_claim",
+        "no_collision_free_guarantee",
+        "no_physical_stair_climbing_claim",
+        "no_go2_control_claim"
+      ],
+      "properties": {
+        "no_nav2_dependency": { "type": "boolean", "const": true },
+        "no_amcl_dependency": { "type": "boolean", "const": true },
+        "no_real_robot_claim": { "type": "boolean", "const": true },
+        "no_collision_free_guarantee": { "type": "boolean", "const": true },
+        "no_physical_stair_climbing_claim": { "type": "boolean", "const": true },
+        "no_go2_control_claim": { "type": "boolean", "const": true }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source_artifacts", "canonical_root"],
+      "properties": {
+        "source_artifacts": { "type": "array" },
+        "source_hashes_if_available": { "type": ["object", "array", "null"] },
+        "canonical_root": { "type": ["string", "null"] },
+        "notes": { "type": ["string", "array", "null"] }
+      }
+    }
+  }
+}
