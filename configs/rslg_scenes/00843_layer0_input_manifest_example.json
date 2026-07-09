@@ -1,0 +1,85 @@
+{
+  "schema_name": "rslg_layer0_input_manifest",
+  "schema_version": "0.1",
+  "project_name": "RSLG-SLAM",
+  "scene_id": "00843-DYehNKdT76V",
+  "dataset_name": "hm3d",
+  "sequence_id": "00843-DYehNKdT76V",
+  "rgb_root": {
+    "path": "/home/ws/data/00843-DYehNKdT76V",
+    "exists": null,
+    "is_file": null,
+    "is_dir": null
+  },
+  "depth_root": {
+    "path": "/home/ws/data/00843-DYehNKdT76V",
+    "exists": null,
+    "is_file": null,
+    "is_dir": null
+  },
+  "pose_root": {
+    "path": "/home/ws/data/00843-DYehNKdT76V",
+    "exists": null,
+    "is_file": null,
+    "is_dir": null
+  },
+  "semantic_assets": {
+    "class_text_path": {
+      "path": "data/panoptic_categories_nomerge.txt",
+      "exists": null,
+      "is_file": null,
+      "is_dir": null
+    },
+    "text_features_path": {
+      "path": "data/class_features_small.pt",
+      "exists": null,
+      "is_file": null,
+      "is_dir": null
+    }
+  },
+  "config_path": {
+    "path": "config/hm3d.yaml",
+    "exists": null,
+    "is_file": null,
+    "is_dir": null
+  },
+  "model_checkpoint_path": {
+    "path": "models/cutr_rgbd.pth",
+    "exists": null,
+    "is_file": null,
+    "is_dir": null
+  },
+  "clip_checkpoint_path": {
+    "path": "models/ViT-B-32/open_clip_pytorch_model.bin",
+    "exists": null,
+    "is_file": null,
+    "is_dir": null
+  },
+  "text_features_path": {
+    "path": "data/class_features_small.pt",
+    "exists": null,
+    "is_file": null,
+    "is_dir": null
+  },
+  "class_text_path": {
+    "path": "data/panoptic_categories_nomerge.txt",
+    "exists": null,
+    "is_file": null,
+    "is_dir": null
+  },
+  "frame_count_if_known": null,
+  "canonical_output_root": "stage_outputs/rslg_slam/00843-DYehNKdT76V/canonical",
+  "intended_layer1_output_root": "stage_outputs/rslg_slam/00843-DYehNKdT76V/canonical/layer1_world_model",
+  "provenance_notes": "Example only. Path existence and hashes should be filled by a local manifest run when needed. QueryTask is Layer 3 input, not Layer 0.",
+  "claim_boundary": {
+    "manifest_only": true,
+    "runs_inference": false,
+    "imports_legacy_stage_a": false,
+    "requires_gpu": false,
+    "modifies_canonical_artifacts": false,
+    "query_task_is_layer3_input": true,
+    "not_full_raw_rgbd_to_layer1_rerun": true
+  },
+  "created_by": "task53a_layer0_2_entrypoint_and_frozen_mode_audit",
+  "created_at": null
+}

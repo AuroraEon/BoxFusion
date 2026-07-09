@@ -1,9 +1,0 @@
-# Room id in the debug lifecycle/publication diagnostics view.
-string room_id
----
-# `success=false` indicates a malformed request or invalid node configuration.
-bool success
-# Empty when the wrapper-level request succeeded.
-string error_code
-# JSON payload string carrying the current thin diagnostics-layer response body.
-string json_response

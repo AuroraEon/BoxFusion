@@ -1,8 +1,0 @@
-# Empty request; this returns debug-only online-topology publication diagnostics.
----
-# `success=false` indicates a malformed request or invalid node configuration.
-bool success
-# Empty when the wrapper-level request succeeded.
-string error_code
-# JSON payload string carrying the current thin diagnostics-layer response body.
-string json_response

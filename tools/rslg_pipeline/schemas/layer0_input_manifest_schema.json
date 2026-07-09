@@ -1,0 +1,44 @@
+{
+  "schema_name": "rslg_layer0_input_manifest_schema",
+  "schema_version": "0.1",
+  "project_name": "RSLG-SLAM",
+  "description": "Lightweight provenance schema for Layer 0 input manifests. This schema records paths and claim boundaries only; it does not imply an inference run.",
+  "required_fields": [
+    "schema_name",
+    "schema_version",
+    "project_name",
+    "scene_id",
+    "dataset_name",
+    "sequence_id",
+    "rgb_root",
+    "depth_root",
+    "pose_root",
+    "semantic_assets",
+    "config_path",
+    "model_checkpoint_path",
+    "clip_checkpoint_path",
+    "text_features_path",
+    "class_text_path",
+    "frame_count_if_known",
+    "canonical_output_root",
+    "intended_layer1_output_root",
+    "provenance_notes",
+    "claim_boundary",
+    "created_by",
+    "created_at"
+  ],
+  "path_record_shape": {
+    "path": "string or null",
+    "exists": "boolean or null",
+    "is_file": "boolean or null",
+    "is_dir": "boolean or null"
+  },
+  "claim_boundary_requirements": {
+    "manifest_only": true,
+    "runs_inference": false,
+    "imports_legacy_stage_a": false,
+    "requires_gpu": false,
+    "modifies_canonical_artifacts": false,
+    "query_task_is_layer3_input": true
+  }
+}

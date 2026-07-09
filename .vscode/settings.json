@@ -1,9 +1,0 @@
-{
-    "python-envs.defaultEnvManager": "ms-python.python:conda",
-    "python-envs.defaultPackageManager": "ms-python.python:conda",
-    "ros.distro": "noetic",
-    "remote.SSH.useExecServer": false,
-    "remote.SSH.useLocalServer": false,
-    "remote.SSH.showLoginTerminal": true,
-    "cmake.sourceDirectory": "/home/ws/workspace/BoxFusion/ros_interfaces"
-}

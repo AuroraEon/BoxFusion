@@ -1,0 +1,130 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="rslg_scripted_stair_transition_turtlebot3_burger">
+    <gravity>0 0 -9.8</gravity>
+    <atmosphere type="adiabatic"/>
+
+    <plugin name="gazebo_ros_state" filename="libgazebo_ros_state.so"/>
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <model name="rslg_floor_1_flat_pid_platform_z0">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>10.200000 3.500000 0.080000</size></box></geometry>
+          <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>10.200000 3.500000 0.080000</size></box></geometry>
+          <material>
+            <ambient>0.650 0.720 0.760 1.000</ambient>
+            <diffuse>0.650 0.720 0.760 1.000</diffuse>
+          </material>
+        </visual>
+      </link>
+      <pose>-1.260000 1.750000 -0.040000 0 0 0</pose>
+    </model>
+
+    <model name="rslg_floor_2_flat_pid_platform_z1_6">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>5.600000 5.900000 0.080000</size></box></geometry>
+          <surface><friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction></surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>5.600000 5.900000 0.080000</size></box></geometry>
+          <material>
+            <ambient>0.540 0.760 0.600 1.000</ambient>
+            <diffuse>0.540 0.760 0.600 1.000</diffuse>
+          </material>
+        </visual>
+      </link>
+      <pose>-6.650000 3.550000 1.560000 0 0 0</pose>
+    </model>
+
+    <model name="rslg_stair_landing_entry_marker">
+      <static>true</static>
+      <link name="link">
+        <visual name="visual">
+          <geometry><cylinder><radius>0.180000</radius><length>0.060000</length></cylinder></geometry>
+          <material><ambient>0.150 0.500 1.000 1.000</ambient><diffuse>0.150 0.500 1.000 1.000</diffuse></material>
+        </visual>
+      </link>
+      <pose>-5.262000 1.254000 0.045000 0 0 0</pose>
+    </model>
+
+    <model name="rslg_stair_landing_exit_marker">
+      <static>true</static>
+      <link name="link">
+        <visual name="visual">
+          <geometry><cylinder><radius>0.180000</radius><length>0.060000</length></cylinder></geometry>
+          <material><ambient>0.100 0.900 0.350 1.000</ambient><diffuse>0.100 0.900 0.350 1.000</diffuse></material>
+        </visual>
+      </link>
+      <pose>-5.223000 5.437000 1.645000 0 0 0</pose>
+    </model>
+
+    <model name="rslg_visual_staircase_vt_1_centerline_e001">
+      <static>true</static>
+      <link name="step_01"><visual name="visual"><geometry><box><size>1.200000 0.260000 0.100000</size></box></geometry><material><ambient>0.700 0.590 0.840 1.000</ambient><diffuse>0.700 0.590 0.840 1.000</diffuse></material></visual><pose>0.000000 0.000000 0.000000 0 0 0</pose></link>
+      <link name="step_02"><visual name="visual"><geometry><box><size>1.200000 0.260000 0.200000</size></box></geometry><material><ambient>0.680 0.570 0.820 1.000</ambient><diffuse>0.680 0.570 0.820 1.000</diffuse></material></visual><pose>0.002438 0.261438 0.050000 0 0 0</pose></link>
+      <link name="step_03"><visual name="visual"><geometry><box><size>1.200000 0.260000 0.300000</size></box></geometry><material><ambient>0.660 0.550 0.800 1.000</ambient><diffuse>0.660 0.550 0.800 1.000</diffuse></material></visual><pose>0.004875 0.522875 0.100000 0 0 0</pose></link>
+      <link name="step_04"><visual name="visual"><geometry><box><size>1.200000 0.260000 0.400000</size></box></geometry><material><ambient>0.640 0.530 0.780 1.000</ambient><diffuse>0.640 0.530 0.780 1.000</diffuse></material></visual><pose>0.007313 0.784313 0.150000 0 0 0</pose></link>
+      <link name="step_05"><visual name="visual"><geometry><box><size>1.200000 0.260000 0.500000</size></box></geometry><material><ambient>0.620 0.510 0.760 1.000</ambient><diffuse>0.620 0.510 0.760 1.000</diffuse></material></visual><pose>0.009750 1.045750 0.200000 0 0 0</pose></link>
+      <link name="step_06"><visual name="visual"><geometry><box><size>1.200000 0.260000 0.600000</size></box></geometry><material><ambient>0.600 0.490 0.740 1.000</ambient><diffuse>0.600 0.490 0.740 1.000</diffuse></material></visual><pose>0.012188 1.307188 0.250000 0 0 0</pose></link>
+      <link name="step_07"><visual name="visual"><geometry><box><size>1.200000 0.260000 0.700000</size></box></geometry><material><ambient>0.580 0.470 0.720 1.000</ambient><diffuse>0.580 0.470 0.720 1.000</diffuse></material></visual><pose>0.014625 1.568625 0.300000 0 0 0</pose></link>
+      <link name="step_08"><visual name="visual"><geometry><box><size>1.200000 0.260000 0.800000</size></box></geometry><material><ambient>0.560 0.450 0.700 1.000</ambient><diffuse>0.560 0.450 0.700 1.000</diffuse></material></visual><pose>0.017063 1.830063 0.350000 0 0 0</pose></link>
+      <link name="step_09"><visual name="visual"><geometry><box><size>1.200000 0.260000 0.900000</size></box></geometry><material><ambient>0.540 0.430 0.680 1.000</ambient><diffuse>0.540 0.430 0.680 1.000</diffuse></material></visual><pose>0.019500 2.091500 0.400000 0 0 0</pose></link>
+      <link name="step_10"><visual name="visual"><geometry><box><size>1.200000 0.260000 1.000000</size></box></geometry><material><ambient>0.520 0.410 0.660 1.000</ambient><diffuse>0.520 0.410 0.660 1.000</diffuse></material></visual><pose>0.021938 2.352938 0.450000 0 0 0</pose></link>
+      <link name="step_11"><visual name="visual"><geometry><box><size>1.200000 0.260000 1.100000</size></box></geometry><material><ambient>0.500 0.390 0.640 1.000</ambient><diffuse>0.500 0.390 0.640 1.000</diffuse></material></visual><pose>0.024375 2.614375 0.500000 0 0 0</pose></link>
+      <link name="step_12"><visual name="visual"><geometry><box><size>1.200000 0.260000 1.200000</size></box></geometry><material><ambient>0.480 0.370 0.620 1.000</ambient><diffuse>0.480 0.370 0.620 1.000</diffuse></material></visual><pose>0.026813 2.875813 0.550000 0 0 0</pose></link>
+      <link name="step_13"><visual name="visual"><geometry><box><size>1.200000 0.260000 1.300000</size></box></geometry><material><ambient>0.460 0.350 0.600 1.000</ambient><diffuse>0.460 0.350 0.600 1.000</diffuse></material></visual><pose>0.029250 3.137250 0.600000 0 0 0</pose></link>
+      <link name="step_14"><visual name="visual"><geometry><box><size>1.200000 0.260000 1.400000</size></box></geometry><material><ambient>0.440 0.330 0.580 1.000</ambient><diffuse>0.440 0.330 0.580 1.000</diffuse></material></visual><pose>0.031688 3.398688 0.650000 0 0 0</pose></link>
+      <link name="step_15"><visual name="visual"><geometry><box><size>1.200000 0.260000 1.500000</size></box></geometry><material><ambient>0.420 0.310 0.560 1.000</ambient><diffuse>0.420 0.310 0.560 1.000</diffuse></material></visual><pose>0.034125 3.660125 0.700000 0 0 0</pose></link>
+      <link name="step_16"><visual name="visual"><geometry><box><size>1.200000 0.260000 1.600000</size></box></geometry><material><ambient>0.400 0.290 0.540 1.000</ambient><diffuse>0.400 0.290 0.540 1.000</diffuse></material></visual><pose>0.036563 3.921563 0.750000 0 0 0</pose></link>
+      <pose>-5.262000 1.254000 0.050000 0 0 0</pose>
+    </model>
+
+    <model name="rslg_stair_side_rail_left">
+      <static>true</static>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>0.060000 4.300000 0.080000</size></box></geometry>
+          <material><ambient>0.120 0.140 0.180 1.000</ambient><diffuse>0.120 0.140 0.180 1.000</diffuse></material>
+        </visual>
+      </link>
+      <pose>-4.600000 3.345000 1.150000 0 0 0</pose>
+    </model>
+
+    <model name="rslg_stair_side_rail_right">
+      <static>true</static>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>0.060000 4.300000 0.080000</size></box></geometry>
+          <material><ambient>0.120 0.140 0.180 1.000</ambient><diffuse>0.120 0.140 0.180 1.000</diffuse></material>
+        </visual>
+      </link>
+      <pose>-5.900000 3.345000 1.150000 0 0 0</pose>
+    </model>
+
+    <model name="rslg_scripted_transition_label_panel">
+      <static>true</static>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>1.800000 0.040000 0.400000</size></box></geometry>
+          <material><ambient>0.180 0.180 0.220 1.000</ambient><diffuse>0.180 0.180 0.220 1.000</diffuse></material>
+        </visual>
+      </link>
+      <pose>-4.250000 3.450000 1.220000 0 0 1.570796</pose>
+    </model>
+
+    <include>
+      <uri>model://turtlebot3_burger</uri>
+      <pose>2.750000 1.300000 0.010000 0 0 3.141593</pose>
+    </include>
+  </world>
+</sdf>

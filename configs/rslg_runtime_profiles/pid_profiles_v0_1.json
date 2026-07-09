@@ -1,0 +1,160 @@
+{
+  "schema_name": "rslg_pid_runtime_profiles",
+  "schema_version": "0.1",
+  "project_name": "RSLG-SLAM",
+  "claim_boundary": {
+    "evidence_type": "lightweight_pid_replay_only",
+    "planner_behavior_changed": false,
+    "query_tasks_changed": false,
+    "canonical_artifacts_changed": false,
+    "requires_ros": false,
+    "requires_nav2": false,
+    "requires_amcl": false,
+    "requires_map_server": false,
+    "requires_gazebo": false,
+    "requires_rviz_live": false,
+    "claims_real_robot_deployment": false,
+    "claims_physical_stair_climbing": false,
+    "claims_global_collision_free_guarantee": false
+  },
+  "profiles": {
+    "conservative_zero_collision": {
+      "source_task": "task56b",
+      "source_candidate": "candidate_011_v0p10_w0p8_lg0p8_ag2p5_tol0p06_yaw0p20",
+      "promotion_status": "promoted_for_regression_validation",
+      "intended_use": "Safest lightweight replay profile for the current RSLG-SLAM static validation chain.",
+      "params": {
+        "dt": 0.1,
+        "max_linear_velocity": 0.1,
+        "max_angular_velocity": 0.8,
+        "linear_gain": 0.8,
+        "angular_gain": 2.5,
+        "waypoint_tolerance": 0.06,
+        "yaw_tolerance": 0.2,
+        "timeout_sec": 240.0,
+        "stuck_window_sec": 8.0,
+        "stuck_progress_epsilon": 0.02,
+        "robot_radius": 0.18
+      },
+      "evidence_summary": {
+        "source_scene_id": "00843-DYehNKdT76V",
+        "source_task": "task56b_pid_replay_collision_diagnosis_and_mitigation_sweep",
+        "query_count": 6,
+        "success_count": 6,
+        "partial_count": 0,
+        "failure_count": 0,
+        "total_collision_count": 0,
+        "target_segment_collision_count": 0,
+        "invalid_cell_count": 0,
+        "stuck_timeout_count": 0,
+        "average_final_error_m": 0.043215,
+        "average_waypoint_reached_ratio": 1.0,
+        "generated_ring_037_selected_count": 0,
+        "vt_1_centerline_e003_transition_count": 0,
+        "collision_check_mode": "stable_map_footprint"
+      }
+    },
+    "practical_zero_collision": {
+      "source_task": "task56b",
+      "source_candidate": "candidate_001_lower_v_stricter_tol",
+      "promotion_status": "promoted_for_regression_validation",
+      "intended_use": "Recommended practical lightweight replay profile if task-local regression passes.",
+      "params": {
+        "dt": 0.1,
+        "max_linear_velocity": 0.15,
+        "max_angular_velocity": 0.8,
+        "linear_gain": 0.8,
+        "angular_gain": 2.0,
+        "waypoint_tolerance": 0.08,
+        "yaw_tolerance": 0.25,
+        "timeout_sec": 240.0,
+        "stuck_window_sec": 8.0,
+        "stuck_progress_epsilon": 0.02,
+        "robot_radius": 0.18
+      },
+      "evidence_summary": {
+        "source_scene_id": "00843-DYehNKdT76V",
+        "source_task": "task56b_pid_replay_collision_diagnosis_and_mitigation_sweep",
+        "query_count": 6,
+        "success_count": 6,
+        "partial_count": 0,
+        "failure_count": 0,
+        "total_collision_count": 0,
+        "target_segment_collision_count": 0,
+        "invalid_cell_count": 0,
+        "stuck_timeout_count": 0,
+        "average_final_error_m": 0.062766,
+        "average_waypoint_reached_ratio": 1.0,
+        "generated_ring_037_selected_count": 0,
+        "vt_1_centerline_e003_transition_count": 0,
+        "collision_check_mode": "stable_map_footprint"
+      }
+    },
+    "baseline_task56": {
+      "source_task": "task56",
+      "source_candidate": "baseline_fixed_parameters",
+      "promotion_status": "baseline_only_not_recommended_default",
+      "intended_use": "Baseline comparison only; not recommended as the default lightweight replay profile.",
+      "params": {
+        "dt": 0.1,
+        "max_linear_velocity": 0.25,
+        "max_angular_velocity": 0.8,
+        "linear_gain": 0.8,
+        "angular_gain": 1.5,
+        "waypoint_tolerance": 0.12,
+        "yaw_tolerance": 0.25,
+        "timeout_sec": 240.0,
+        "stuck_window_sec": 8.0,
+        "stuck_progress_epsilon": 0.02,
+        "robot_radius": 0.18
+      },
+      "evidence_summary": {
+        "source_scene_id": "00843-DYehNKdT76V",
+        "source_task": "task56_pid_runtime_executable_replay_validation",
+        "query_count": 6,
+        "success_count": 2,
+        "partial_count": 4,
+        "failure_count": 0,
+        "total_collision_count": 32,
+        "target_segment_collision_count": 32,
+        "invalid_cell_count": 0,
+        "stuck_timeout_count": 0,
+        "average_final_error_m": 0.098865,
+        "average_waypoint_reached_ratio": 1.0,
+        "generated_ring_037_selected_count": 0,
+        "vt_1_centerline_e003_transition_count": 0,
+        "collision_check_mode": "stable_map_footprint"
+      }
+    },
+    "baseline_plus_densify_010": {
+      "source_task": "task56b",
+      "source_candidate": "baseline_parameters_with_0p10m_task_local_densification",
+      "promotion_status": "optional_task_local_replay_time_mitigation_only",
+      "intended_use": "Diagnostic replay-time mitigation evidence only; not a canonical default and not a planner change.",
+      "params": {
+        "dt": 0.1,
+        "max_linear_velocity": 0.25,
+        "max_angular_velocity": 0.8,
+        "linear_gain": 0.8,
+        "angular_gain": 1.5,
+        "waypoint_tolerance": 0.12,
+        "yaw_tolerance": 0.25,
+        "timeout_sec": 240.0,
+        "stuck_window_sec": 8.0,
+        "stuck_progress_epsilon": 0.02,
+        "robot_radius": 0.18
+      },
+      "replay_time_transform": {
+        "mode": "densify_same_floor_waypoints",
+        "max_spacing_m": 0.1,
+        "canonical_default": false,
+        "planner_behavior_changed": false
+      },
+      "evidence_summary": {
+        "source_scene_id": "00843-DYehNKdT76V",
+        "source_task": "task56b_pid_replay_collision_diagnosis_and_mitigation_sweep",
+        "summary": "Task-local 0.10 m densification removed collision samples in task56b and supports the corner-cutting diagnosis, but it is not promoted as the default runtime profile."
+      }
+    }
+  }
+}

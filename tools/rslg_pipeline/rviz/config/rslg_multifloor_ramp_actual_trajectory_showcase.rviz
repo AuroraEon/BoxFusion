@@ -1,0 +1,222 @@
+Panels:
+  - Class: rviz_common/Displays
+    Help Height: 78
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+        - /RSLG Multifloor Ramp Markers1
+        - /RSLG Multifloor Planned Path1
+        - /RSLG Multifloor Executed Path1
+        - /RSLG Multifloor Robot Pose1
+        - /Gazebo Odom1
+      Splitter Ratio: 0.5
+    Tree Height: 520
+  - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.35
+      Cell Size: 1
+      Class: rviz_default_plugins/Grid
+      Color: 160; 160; 160
+      Enabled: true
+      Line Style:
+        Line Width: 0.03
+        Value: Lines
+      Name: Reference Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 30
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Marker Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /rslg/multifloor_ramp_marker_array
+      Name: RSLG Multifloor Ramp Markers
+      Namespaces:
+        {}
+      Queue Size: 10
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 45; 190; 255
+      Enabled: true
+      Head Diameter: 0.15
+      Head Length: 0.2
+      Length: 0.3
+      Line Style: Lines
+      Line Width: 0.055
+      Name: RSLG Multifloor Planned Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0.03
+      Pose Color: 45; 190; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.03
+      Shaft Diameter: 0.05
+      Shaft Length: 0.1
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /rslg/multifloor_planned_path_odom
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 255; 210; 25
+      Enabled: true
+      Head Diameter: 0.15
+      Head Length: 0.2
+      Length: 0.3
+      Line Style: Lines
+      Line Width: 0.045
+      Name: RSLG Multifloor Executed Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0.07
+      Pose Color: 255; 210; 25
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.03
+      Shaft Diameter: 0.05
+      Shaft Length: 0.1
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /rslg/multifloor_gazebo_executed_path
+      Value: true
+    - Alpha: 1
+      Axes Length: 0.45
+      Axes Radius: 0.04
+      Class: rviz_default_plugins/Pose
+      Color: 255; 255; 255
+      Enabled: true
+      Head Length: 0.28
+      Head Radius: 0.10
+      Name: RSLG Multifloor Robot Pose
+      Queue Size: 10
+      Shaft Length: 0.55
+      Shaft Radius: 0.05
+      Shape: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /rslg/multifloor_gazebo_robot_pose
+      Value: true
+    - Angle Tolerance: 0.1
+      Class: rviz_default_plugins/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: false
+        Position:
+          Alpha: 0.3
+          Color: 204; 51; 204
+          Scale: 1
+          Value: false
+        Value: true
+      Enabled: true
+      Keep: 200
+      Name: Gazebo Odom
+      Position Tolerance: 0.05
+      Shape:
+        Alpha: 0.65
+        Axes Length: 0.28
+        Axes Radius: 0.025
+        Color: 255; 255; 255
+        Head Length: 0.2
+        Head Radius: 0.06
+        Shaft Length: 0.35
+        Shaft Radius: 0.025
+        Value: Arrow
+      Topic:
+        Depth: 20
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /odom
+      Value: true
+    - Class: rviz_default_plugins/TF
+      Enabled: false
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+      Marker Scale: 0.5
+      Name: Optional TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        {}
+      Update Interval: 0
+      Value: false
+  Enabled: true
+  Global Options:
+    Background Color: 28; 30; 34
+    Fixed Frame: odom
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 12
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.06
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: -3.8
+        Y: 3.2
+        Z: 0.8
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.01
+      Pitch: 1.05
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz)
+      Yaw: 4.4
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 900
+  Hide Left Dock: false
+  Width: 1280

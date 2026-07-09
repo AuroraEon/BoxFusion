@@ -1,7 +1,9 @@
 # RSLG-SLAM Planner Project Truth
 
-This planner-facing note locks the same project truth used by
-`docs/rslg_slam_truth/PROJECT_TRUTH.md` and `tools/rslg_pipeline/project_truth.py`.
+This planner-facing note is part of the current RSLG-SLAM truth surface under
+`docs/rslg_slam_planner/`, aligned with `tools/rslg_pipeline/project_truth.py`.
+`docs/rslg_slam/` was migrated into this planner truth surface and deleted in
+task53b; it must not be restored as a competing source of project truth.
 
 ## Positioning
 
@@ -23,7 +25,22 @@ climbing claim, quadruped gait/control stack, LLM runtime, or osmAG-Nav system.
 
 The current formal route surface is:
 
-`QueryTask -> plan_query_static / batch_plan_query_static -> RSLGRouteResult -> RouteResult-derived Layer 4 adapter inputs`
+`Frozen canonical Layer 1/2 artifacts + Layer 3 QueryTask -> plan_query_static / batch_plan_query_static -> RSLGRouteResult -> RouteResult-derived Layer 4 adapter inputs`
+
+Layer 0 is the raw input/provenance layer: RGB-D frames, depth, provided poses,
+sequence identity, dataset/config paths, semantic class text, model/checkpoint
+provenance, text-feature provenance, and an input manifest. QueryTask is not
+Layer 0. QueryTask is the input unit for Layer 3: Navigation Interface Layer.
+
+The current task49-task52 static demo path runs in frozen canonical mode. It
+consumes existing canonical Layer 1/2 artifacts and does not rerun Stage-A or raw
+RGB-D inference. A full raw RGB-D to Layer 1 rerun remains legacy-backed through
+Stage-A lineage until a clean current Layer 1 builder exists.
+
+The current authoritative documentation surface is `docs/rslg_slam_planner/`.
+Old `00824`, `Step30P1`, `Stage1`, Nav2, AMCL, map_server, task39, task41, and
+task42 material is historical evidence only. It is not the current formal
+planner/runtime path.
 
 ## Runtime Policy
 
@@ -53,3 +70,10 @@ The current formal route surface is:
 - `vt_1_centerline_e003` is a forbidden non-transition edge and must never be
   used as the transition.
 - Floor z values are visualization-only: `floor_1` z=`0.0`, `floor_2` z=`1.6`.
+
+## Workspace Policy
+
+Task evidence belongs under task directories in
+`stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/`. Old generated outputs are
+historical evidence, not current truth sources, and should not be restored as
+the active source for current docs or validators.

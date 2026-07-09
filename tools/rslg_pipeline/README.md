@@ -1,8 +1,12 @@
 # RSLG-SLAM Pipeline
 
-`tools/rslg_pipeline/` is the formal RSLG-SLAM command surface.
+`tools/rslg_pipeline/` is the formal RSLG-SLAM command surface. RSLG-SLAM is a route-oriented light-geometry semantic world model and a semantic-topological world model interface for language-to-route navigation.
 
-RSLG-SLAM is Rich Semantic + Light Geometry: a posed RGB-D semantic-topological world-modeling backend that produces structured semantic-topological navigation interfaces and formal route/validation artifacts.
+`BoxFusion` is only the historical repository path.
+
+`docs/rslg_slam_planner/` is the current RSLG-SLAM truth surface. The old
+`docs/rslg_slam/` documentation tree was migrated and deleted in task53b and
+must not be restored as a competing truth source.
 
 ## Official Layers
 
@@ -12,83 +16,152 @@ RSLG-SLAM is Rich Semantic + Light Geometry: a posed RGB-D semantic-topological 
 - Layer 3: Navigation Interface Layer
 - Layer 4: Runtime Validation Layer
 
+## Current Formal Chain
+
+`Frozen canonical Layer 1/2 artifacts + QueryTask -> plan_query_static / batch_plan_query_static -> RSLGRouteResult -> RouteResult-derived Layer 4 adapter inputs`
+
+This is frozen canonical mode. QueryTask is the Layer 3 request object, not the
+raw Layer 0 input of the project.
+
 ## Formal Entrypoints
 
-- `build_world_model.py` and `run_layer1_world_model.sh`: Layer 1 world-model entrypoints.
-- `build_layer2_formal_artifacts.py` and `run_layer2_formal_artifacts.sh`: Layer 2 stable maps, vertical connector, object interface, and formal artifact generation.
-- `build_layer3_navigation_interface.py` and `run_layer3_navigation_interface.sh`: Layer 3 navigation-interface generation.
-- `plan_query_static.py`: formal static Layer 3 planner. It reads an `rslg_query_task` JSON (`schemas/query_task_schema.json`) and runs the generic static planner core (`planning/route_planner.py`) to produce an `RSLGRouteResult` (`schemas/route_result_schema.json`). Target resolution, room/floor route, connector resolution, and approach selection are performed from canonical Layer 2/3 artifacts; only the full metric-path length may be canonical-fallback derived. See `docs/rslg_slam_planner/GENERIC_STATIC_PLANNER_CORE.md`.
-- `batch_plan_query_static.py`: initial batch surface that runs the planner core over a queryset manifest (`configs/rslg_queryset_v0/queryset_manifest.json`) and writes batch summaries. It does not compute final paper tables.
-- `export_route_result_runtime_inputs.py`: Layer 4 adapter-input exporter for RouteResult-derived PID runtime, RViz marker, and z-aware visualization payloads.
-- `audits/validate_project_truth.py`: guardrail check for project truth, object goal truth, transition-edge truth, layer naming, and claim boundaries.
-- `audits/validate_query_task.py`: schema and semantic validator for `RSLGQueryTask` specs.
-- `audits/validate_route_result.py`: schema and semantic validator for `RSLGRouteResult` artifacts.
-- `audits/validate_planner_smoke.py`: lightweight planner smoke validation over a directory of generated route results (no final paper tables).
+- `plan_query_static.py`: single QueryTask static planner. Reads an `rslg_query_task` JSON and writes an `RSLGRouteResult` JSON.
+- `batch_plan_query_static.py`: runs the current six-query manifest at `configs/rslg_queryset_v0/queryset_manifest.json`.
+- `export_route_result_runtime_inputs.py`: exports RouteResult-derived PID follower, RViz marker, and z-aware overlay inputs.
+- `runtime/replay_pid_runtime_input.py`: replays RouteResult-derived PID inputs with a lightweight 2D waypoint follower and task-local reports.
+- `viz/export_static_visualization_pack.py`: exports the static Layer 4 HTML/Markdown/SVG visualization pack from RouteResults and adapter inputs.
+- `audits/validate_project_truth.py`: project truth, layer naming, object goal, transition edge, and claim-boundary guard.
+- `audits/validate_query_task.py`: QueryTask schema/semantic validation.
+- `audits/validate_route_result.py`: RouteResult schema/semantic validation.
+- `audits/validate_planner_smoke.py`: directory-level planner smoke validation.
+- `audits/validate_route_result_runtime_adapters.py`: adapter-input validation.
 
-The formal current surface is: QueryTask JSON -> `plan_query_static.py` / `batch_plan_query_static.py` -> `planning/route_planner.py` -> `RSLGRouteResult` JSON -> RouteResult-derived Layer 4 adapter inputs. The preview-only `build_route_contracts.py`, `build_route_plans.py`, `planning/route_contracts.py`, and `planning/route_plans.py` dry-run wrappers were retired in task49c; the `planning/wrap_current_routes_as_route_results.py` seed wrapper was retired in task49d. See `docs/rslg_slam_planner/PREVIEW_WRAPPERS_RETIRED.md`.
+Layer 0-2 provenance and builders:
 
-## Safe Static Regeneration
+- `build_input_manifest.py`: Layer 0 provenance manifest writer. It records
+  RGB-D/depth/pose/config/model/class/text-feature paths and claim boundaries
+  only; it does not run inference or modify canonical artifacts.
+- `build_world_model.py` and `run_layer1_world_model.sh`: Layer 1 canonical wrapper around the legacy Stage-A implementation. Do not treat `stage_a_demo.py` as the current planner entrypoint or as part of frozen static demo mode.
+- `build_layer2_formal_artifacts.py`: current final Layer 2 canonical artifact builder.
+- `build_stable_maps.py` and `build_object_interfaces.py`: legacy/candidate provenance surfaces, not the current QueryTask input path.
 
-Formal Layer 3 and RouteResult-derived Layer 4 adapter generation support task-local safe mode:
+## Planner Ownership
+
+- `planning/query_task.py`: QueryTask constants, loading, and semantic validation.
+- `planning/artifact_loader.py`: read-only canonical artifact loading.
+- `planning/target_resolver.py`: target grounding.
+- `planning/room_route.py`: room/floor route planning over the route planner graph.
+- `planning/floor_connector_route.py`: connector sequence and transition-edge
+  handling.
+- `planning/metric_path_stitcher.py`: dynamic metric path stitching.
+- `planning/route_result.py`: `RSLGRouteResult` validation and schema-facing
+  contract.
+
+## Current Static Demo
+
+Use the frozen canonical path for current handoff demos:
 
 ```bash
---scene-id 00843-DYehNKdT76V \
---canonical-root stage_outputs/rslg_slam/00843-DYehNKdT76V/canonical \
---output-dir stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/<task>/<safe-output> \
---dry-run \
---no-canonical-write
+/home/ws/miniconda3/envs/boxfusion/bin/python -m tools.rslg_pipeline.batch_plan_query_static \
+  --queryset-manifest configs/rslg_queryset_v0/queryset_manifest.json \
+  --canonical-root stage_outputs/rslg_slam/00843-DYehNKdT76V/canonical \
+  --output-dir stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/<task>/demo_pack/route_results \
+  --no-canonical-write
 ```
 
-`--canonical-root` is read-only input context. `--output-dir` redirects generated validation or replay outputs. `--dry-run` keeps execution offline/static, and `--no-canonical-write` fails fast if an output path would land under canonical. These static modes do not launch live ROS, Gazebo, RViz, Nav2, AMCL, map_server, route executors, rclpy nodes, Habitat rendering, or world-model inference.
+```bash
+/home/ws/miniconda3/envs/boxfusion/bin/python -m tools.rslg_pipeline.export_route_result_runtime_inputs \
+  --route-results-dir stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/<task>/demo_pack/route_results \
+  --output-dir stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/<task>/demo_pack/runtime_adapter_inputs \
+  --floor-z-map '{"floor_1": 0.0, "floor_2": 1.6}' \
+  --no-canonical-write
+```
 
-## Ownership Boundaries
+```bash
+/home/ws/miniconda3/envs/boxfusion/bin/python -m tools.rslg_pipeline.viz.export_static_visualization_pack \
+  --route-results-dir stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/<task>/demo_pack/route_results \
+  --adapter-inputs-dir stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/<task>/demo_pack/runtime_adapter_inputs \
+  --output-dir stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/<task>/demo_pack/static_visualization \
+  --floor-z-map '{"floor_1": 0.0, "floor_2": 1.6}' \
+  --title 'RSLG-SLAM Static Visualization Pack'
+```
 
-Layer 3 planner ownership lives under `planning/`.
+For the fuller handoff map, see
+`docs/rslg_slam_planner/HANDOFF_README.md`,
+`docs/rslg_slam_planner/LAYER_ENTRYPOINTS.md`, and
+`docs/rslg_slam_planner/STATIC_PIPELINE_QUICKSTART.md`.
+- `planning/floor_connector_route.py`: connector resolution and transition-edge guard.
+- `planning/approach_candidate_planner.py`: selected object approach policy.
+- `planning/metric_path_stitcher.py`: dynamic per-floor metric-path stitching.
+- `planning/route_result.py`: RouteResult construction and validation.
+- `planning/route_planner.py`: generic static planner orchestration.
 
-- `planning/occupancy_planner.py` owns occupancy-grid A* and polyline validation.
-- `planning/object_approach.py` owns the current object approach goal ownership/validation helpers: `generated_ring_002` for `obj_175`.
-- `planning/query_task.py` owns the `RSLGQueryTask` schema constants, construction, loading, and semantic validation.
-- `planning/route_result.py` owns the `RSLGRouteResult` schema constants, construction, and semantic validation.
-- `planning/artifact_loader.py` loads canonical Layer 2/3 artifacts (structured missing-artifact status; read-only).
-- `planning/target_resolver.py` resolves a QueryTask target into a grounded object/room/floor/connector target.
-- `planning/room_route.py` builds a room adjacency graph from `route_planner_graph_v0_1.json` and plans a BFS room/floor route.
-- `planning/floor_connector_route.py` resolves the vertical connector and enforces the transition-edge guard.
-- `planning/approach_candidate_planner.py` selects the object approach via an explicit policy over canonical candidate records.
-- `planning/route_planner.py` is the generic static planner core: `plan_static_query(query_task, canonical_root)` orchestrates the above into an `RSLGRouteResult`. See `docs/rslg_slam_planner/GENERIC_STATIC_PLANNER_CORE.md`.
-- The preview-only `planning/route_contracts.py` and `planning/route_plans.py` dry-run generators (and their `build_route_contracts.py` / `build_route_plans.py` compatibility wrappers) were removed in task49c. The `planning/wrap_current_routes_as_route_results.py` seed wrapper was removed in task49d after the planner core superseded it. See `docs/rslg_slam_planner/PREVIEW_WRAPPERS_RETIRED.md`.
+## Layer 4 Adapter Ownership
 
-Layer 4 runtime validation lives under `runtime/`.
+- `runtime/route_result_runtime_adapter.py`: lightweight PID/proportional `/cmd_vel` + `/odom` input.
+- `runtime/replay_pid_runtime_input.py`: offline PID runtime replay over RouteResult-derived inputs; validates waypoint tracking, stable-map footprint checks when available, and semantic connector handoffs.
+- `runtime/diagnose_pid_replay_collisions.py`: offline segment-focused collision diagnostics for existing PID replay reports and trajectories.
+- `runtime/sweep_pid_runtime_replay.py`: bounded task-local PID replay parameter and waypoint-shaping sweep runner.
+- `runtime/route_result_marker_adapter.py`: optional RViz marker input records.
+- `runtime/route_result_z_aware_adapter.py`: visualization-only z-aware overlay records.
+- `runtime/base_level_route_follower.py`: optional lightweight waypoint follower; not Nav2.
+- `viz/export_static_visualization_pack.py`: static HTML/Markdown/SVG visualization pack exporter.
+- `viz/live_marker_publisher.py`: optional bounded marker publisher for RouteResult-derived RViz marker inputs.
+- `viz/z_aware_trajectory_markers.py`: optional z-aware marker helpers for visualization overlays.
 
-- `export_route_result_runtime_inputs.py` exports all current RouteResult-derived Layer 4 adapter inputs without launching ROS, Gazebo, RViz, Nav2, or AMCL.
-- `runtime/route_result_runtime_adapter.py` builds the lightweight PID/proportional `/cmd_vel` + `/odom` waypoint-follower input.
-- `runtime/route_result_marker_adapter.py` builds RViz marker input records; RViz itself is optional and not launched by the exporter.
-- `runtime/route_result_z_aware_adapter.py` builds visualization-only z-aware vertical transition overlays.
-- `runtime/base_level_route_follower.py` is the current lightweight PID/proportional `/cmd_vel` + `/odom` waypoint follower. It consumes RouteResult-derived PID runtime input or an `RSLGRouteResult` converted through the adapter.
-- The legacy `runtime/cross_floor_runtime.py` and `runtime/object_runtime.py` Nav2/`map_server` executor modules were removed in task49b. See `docs/rslg_slam_planner/LEGACY_RUNTIME_REMOVED.md`.
-- The pre-RouteResult `export_runtime_inputs.py`, `run_layer4_runtime_validation_static.sh`, and `run_rslg_pipeline_static.sh` wrappers were retired in task50 because the formal Layer 4 surface is now RouteResult-derived adapter input generation and validation.
+## Static Regeneration
 
-Replay and visualization live under `viz/`.
+Layer 0 manifest example:
 
-- `viz/live_marker_publisher.py` publishes RouteResult-derived marker payloads when a ROS environment is intentionally used as an optional Layer 4 visualization adapter.
-- `viz/z_aware_trajectory_markers.py` contains visualization-only marker helpers for z-aware overlays.
+```bash
+/home/ws/miniconda3/envs/boxfusion/bin/python -m tools.rslg_pipeline.build_input_manifest   --scene-id 00843-DYehNKdT76V   --dataset-name hm3d   --sequence-id 00843-DYehNKdT76V   --rgb-root /home/ws/data/00843-DYehNKdT76V   --depth-root /home/ws/data/00843-DYehNKdT76V   --pose-root /home/ws/data/00843-DYehNKdT76V   --config-path config/hm3d.yaml   --model-checkpoint-path models/cutr_rgbd.pth   --clip-checkpoint-path models/ViT-B-32/open_clip_pytorch_model.bin   --class-text-path data/panoptic_categories_nomerge.txt   --text-features-path data/class_features_small.pt   --canonical-root stage_outputs/rslg_slam/00843-DYehNKdT76V/canonical   --output-json stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/<task>/layer0_input_manifest.json   --no-canonical-write
+```
 
-Static audits live under `audits/`.
+Layer 3 RouteResult generation:
 
-## Current Truth
+```bash
+/home/ws/miniconda3/envs/boxfusion/bin/python -m tools.rslg_pipeline.batch_plan_query_static   --queryset-manifest configs/rslg_queryset_v0/queryset_manifest.json   --canonical-root stage_outputs/rslg_slam/00843-DYehNKdT76V/canonical   --output-dir stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/<task>/route_results   --no-canonical-write
+```
 
-- Main scene: `00843-DYehNKdT76V`.
-- Route: `room_2 floor_1 -> room_3 floor_1 -> vt_1 / vc_vt_1 -> room_7 floor_2 -> room_13 floor_2 -> room_14 floor_2`.
+```bash
+/home/ws/miniconda3/envs/boxfusion/bin/python -m tools.rslg_pipeline.export_route_result_runtime_inputs   --route-results-dir stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/<task>/route_results   --output-dir stage_outputs/rslg_slam/00843-DYehNKdT76V/tasks/<task>/runtime_adapter_inputs   --floor-z-map '{"floor_1": 0.0, "floor_2": 1.6}'   --no-canonical-write
+```
+
+## Current 00843 Truth
+
+- Scene: `00843-DYehNKdT76V`.
+- Object target: `obj_175` / `curtain` / `room_14` / `floor_2`.
+- Selected runtime approach: `generated_ring_002` at `[-7.020484, 1.558795]`, yaw `-2.09057`, clearance `0.20`.
+- Blocked legacy evidence: `generated_ring_037`; never a runtime goal.
 - True transition edge: `vt_1_centerline_e001`.
-- Non-transition edge: `vt_1_centerline_e003`.
-- Object query: `curtain in room_14 on floor_2`.
-- Object id: `obj_175`.
-- Current object approach goal: `generated_ring_002` at `[-7.020484, 1.558795]`, yaw `-2.09057`, clearance `0.20 m`.
-- `generated_ring_037` is blocked legacy evidence only and is not a runtime goal.
+- Forbidden non-transition edge: `vt_1_centerline_e003`; never a transition edge.
+- Visualization-only floor z: `floor_1 = 0.0`, `floor_2 = 1.6`.
 
-## Historical Directories
+## Runtime Policy
 
-Historical directories such as `tools/object_nav/`, `tools/stage1_nav/`, `tools/stage1_runtime/`, `tools/stage1_step30p1/`, and `tools/vertical_connectors/` are not formal RSLG-SLAM entrypoints. Essential planner, schema, runtime validation, and replay logic has been migrated or wrapped under `tools/rslg_pipeline/`.
+No Nav2, AMCL, map_server, nav2_map_server, ROS lifecycle runtime dependency, planner_server, controller_server, bt_navigator, NavigateToPose, or FollowPath is required by the current formal chain. RViz and Gazebo are optional Layer 4 adapters only and are not launched by the static exporter.
+
+## Documentation
+
+- `docs/rslg_slam_planner/TRUTH_SOURCE_INDEX.md`
+- `docs/rslg_slam_planner/PROJECT_TRUTH.md`
+- `docs/rslg_slam_planner/MAIN_CHAIN_OVERVIEW.md`
+- `docs/rslg_slam_planner/LAYER0_2_PROVENANCE.md`
+- `docs/rslg_slam_planner/LAYER_ENTRYPOINTS.md`
+- `docs/rslg_slam_planner/FROZEN_CANONICAL_MODE.md`
+- `docs/rslg_slam_planner/STAGE_A_LEGACY_BOUNDARY.md`
+- `docs/rslg_slam_planner/FORMAL_ARTIFACT_INDEX.md`
+- `docs/rslg_slam_planner/DEMO_PACK_README.md`
+- `docs/rslg_slam_planner/VISUALIZATION_QUICKSTART.md`
+- `docs/rslg_slam_planner/PID_RUNTIME_REPLAY_QUICKSTART.md`
+- `docs/rslg_slam_planner/PID_REPLAY_COLLISION_MITIGATION.md`
+- `docs/rslg_slam_planner/LEGACY_BOUNDARY.md`
+- Existing policy/schema docs under `docs/rslg_slam_planner/`
+
+Old `00824`, `Step30P1`, `Stage1`, task39, task41, and task42 runtime/showcase
+material is historical evidence only. The current formal path is QueryTask to
+`RSLGRouteResult` to RouteResult-derived Layer 4 adapter inputs.
 
 ## Claim Boundaries
 
-RSLG-SLAM does not claim dense reconstruction, neural implicit SLAM, a full embodied navigation benchmark, a full BEV planner, AMCL success, an LLM runtime system, real robot deployment, a collision-free guarantee, or osmAG-Nav.
+RSLG-SLAM does not claim dense reconstruction, neural implicit SLAM, a full embodied navigation benchmark, a full BEV planner, Nav2 success, AMCL success, real robot deployment, physical stair climbing, Unitree Go2 control, quadruped gait control, collision-free guarantee, LLM runtime, or osmAG-Nav.
